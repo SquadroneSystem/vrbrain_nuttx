@@ -153,9 +153,9 @@ const struct {
 	{"sensors",		test_sensors,	0},
 	{"hrt",			test_hrt,	OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"adc",			test_adc,	OPT_NOJIGTEST},
+	{"tone",		test_tone,	0},
 	{"rc",			test_rc,	OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"mtd",			test_mtd,	0},
-	{"buzzer",		test_buzzer,	OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"uart_bridge",	test_uart_bridge,	OPT_NOJIGTEST | OPT_NOALLTEST},
 
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
@@ -164,9 +164,9 @@ const struct {
 	{"sensors",		test_sensors,	0},
 	{"hrt",			test_hrt,	OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"adc",			test_adc,	OPT_NOJIGTEST},
+	{"tone",		test_tone,	0},
 	{"rc",			test_rc,	OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"mtd",			test_mtd,	0},
-	{"buzzer",		test_buzzer,	OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"uart_bridge",	test_uart_bridge,	OPT_NOJIGTEST | OPT_NOALLTEST},
 
 #endif

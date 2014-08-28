@@ -16,7 +16,7 @@ MODULES		+= drivers/stm32
 MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= drivers/led
-MODULES		+= drivers/buzzer
+#MODULES		+= drivers/buzzer
 
 
 MODULES		+= drivers/boards/vrbrain-v51

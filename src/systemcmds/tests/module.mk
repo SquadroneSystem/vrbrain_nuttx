@@ -57,7 +57,6 @@ SRCS			 = test_adc.c \
 			   tests_main.c \
 			   test_rc.c \
 			   test_mtd.c \
-			   test_buzzer.c \
 			   test_uart_bridge.c
 endif
 
@@ -69,7 +68,6 @@ SRCS			 = test_adc.c \
 			   tests_main.c \
 			   test_rc.c \
 			   test_mtd.c \
-			   test_buzzer.c \
 			   test_uart_bridge.c
 endif
 

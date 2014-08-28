@@ -96,9 +96,6 @@ __BEGIN_DECLS
 extern void led_init();
 extern void led_on(int led);
 extern void led_off(int led);
-extern void buzzer_init();
-extern void buzzer_on(int buzzer);
-extern void buzzer_off(int buzzer);
 __END_DECLS
 
 /****************************************************************************
@@ -239,9 +236,9 @@ __EXPORT int nsh_archinitialize(void)
 
 
 
-	/* initial BUZZER state */
-	drv_buzzer_start();
-	buzzer_off(BUZZER_EXT);
+
+
+
 
 	/* initial LED state */
 	drv_led_start();
