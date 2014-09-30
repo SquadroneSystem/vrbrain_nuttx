@@ -41,7 +41,7 @@ INCDIROPT = -w
 endif
 CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" "$(TOPDIR)$(DELIM)sched"}
 
-# Basic BINFMT source files 
+# Basic BINFMT source files
 
 BINFMT_ASRCS  =
 BINFMT_CSRCS  = binfmt_globals.c binfmt_register.c binfmt_unregister.c
@@ -63,13 +63,14 @@ BINFMT_CSRCS += symtab_findorderedbyname.c symtab_findorderedbyvalue.c
 
 # Add configured binary modules
 
-VPATH = 
+VPATH =
 SUBDIRS =
 DEPPATH = --dep-path .
 
 include libnxflat$(DELIM)Make.defs
 include libelf$(DELIM)Make.defs
 include libbuiltin$(DELIM)Make.defs
+include libpcode$(DELIM)Make.defs
 
 BINFMT_AOBJS = $(BINFMT_ASRCS:.S=$(OBJEXT))
 BINFMT_COBJS = $(BINFMT_CSRCS:.c=$(OBJEXT))

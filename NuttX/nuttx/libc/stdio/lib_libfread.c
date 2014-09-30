@@ -1,7 +1,7 @@
 /****************************************************************************
  * libc/stdio/lib_libfread.c
  *
- *   Copyright (C) 2007-2009, 2011-2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2011-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,7 @@
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>  /* for CONFIG_STDIO_BUFFER_SIZE */
+#include <nuttx/config.h>
 
 #include <sys/types.h>
 #include <stdio.h>
@@ -178,7 +178,7 @@ ssize_t lib_fread(FAR void *ptr, size_t count, FAR FILE *stream)
 
               if (count > buffer_available)
                 {
-                  bytes_read = read(stream->fs_filedes, dest, count);
+                  bytes_read = read(stream->fs_fd, dest, count);
                   if (bytes_read < 0)
                     {
                       /* An error occurred on the read.  The error code is
@@ -204,7 +204,7 @@ ssize_t lib_fread(FAR void *ptr, size_t count, FAR FILE *stream)
 
                       /* Were all of the requested bytes read? */
 
-                      if (bytes_read < count)
+                      if ((size_t)bytes_read < count)
                         {
                           /* No.  We must be at the end of file. */
 
@@ -226,7 +226,7 @@ ssize_t lib_fread(FAR void *ptr, size_t count, FAR FILE *stream)
                    * into the buffer.
                    */
 
-                  bytes_read = read(stream->fs_filedes, stream->fs_bufread, buffer_available);
+                  bytes_read = read(stream->fs_fd, stream->fs_bufread, buffer_available);
                   if (bytes_read < 0)
                     {
                       /* An error occurred on the read.  The error code is
@@ -258,7 +258,7 @@ ssize_t lib_fread(FAR void *ptr, size_t count, FAR FILE *stream)
 
       while (count > 0)
         {
-          bytes_read = read(stream->fs_filedes, dest, count);
+          bytes_read = read(stream->fs_fd, dest, count);
           if (bytes_read < 0)
             {
               /* An error occurred on the read.  The error code is
@@ -307,12 +307,12 @@ ssize_t lib_fread(FAR void *ptr, size_t count, FAR FILE *stream)
       lib_give_semaphore(stream);
     }
 
-  return bytes_read;  
+  return bytes_read;
 
 /* Error exits */
 
 errout_with_errno:
+  stream->fs_flags |= __FS_FLAG_ERROR;
   lib_give_semaphore(stream);
-  return -get_errno();  
+  return -get_errno();
 }
-

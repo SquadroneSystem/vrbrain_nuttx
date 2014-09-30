@@ -33,8 +33,8 @@
  *
  ****************************************************************************/
 
-#ifndef __EXAMPLES_UIP_INTERNAL_H
-#define __EXAMPLES_UIP_INTERNAL_H
+#ifndef __EXAMPLES_UDP_INTERNAL_H
+#define __EXAMPLES_UDP_INTERNAL_H
 
 /****************************************************************************
  * Included Files
@@ -44,6 +44,8 @@
 #else
 # include <debug.h>
 #endif
+
+#include <arpa/inet.h>
 
 /****************************************************************************
  * Definitions
@@ -87,4 +89,4 @@
 extern void send_client(void);
 extern void recv_server(void);
 
-#endif /* __EXAMPLES_UIP_INTERNAL_H */
+#endif /* __EXAMPLES_UDP_INTERNAL_H */

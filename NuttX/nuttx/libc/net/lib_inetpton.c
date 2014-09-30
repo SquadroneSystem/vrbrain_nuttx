@@ -53,6 +53,7 @@
 #include <errno.h>
 
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 /****************************************************************************
  * Public Functions
@@ -133,7 +134,7 @@ int inet_pton(int af, FAR const char *src, FAR void *dst)
   numoffset = 0;
   ndots     = 0;
 
-  for(;;)
+  for (;;)
     {
       ch = (uint8_t)src[srcoffset++];
 
@@ -231,7 +232,7 @@ int inet_pton(int af, FAR const char *src, FAR void *dst)
   nrsep     = 0;
   rtime     = false;
 
-  for(;;)
+  for (;;)
     {
       ch = (uint8_t)src[srcoffset++];
 

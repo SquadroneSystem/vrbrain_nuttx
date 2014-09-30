@@ -63,7 +63,7 @@
 #    define HAVE_USB_CONSOLE 1
 
 /* Check for a generic USB console.  In this case, the USB console device
- * must be provided in CONFIG_NSH_CONDEV.
+ * must be provided in CONFIG_NSH_USBCONDEV.
  */
 
 #  elif defined(CONFIG_NSH_USBCONSOLE)
@@ -83,7 +83,7 @@
 
 #ifdef __cplusplus
 #define EXTERN extern "C"
-extern "C" 
+extern "C"
 {
 #else
 #define EXTERN extern
@@ -97,7 +97,7 @@ extern "C"
  * Name: nsh_initialize
  *
  * Description:
- *   This nterfaces is used to initialize the NuttShell (NSH).
+ *   This interface is used to initialize the NuttShell (NSH).
  *   nsh_initialize() should be called one during application start-up prior
  *   to executing either nsh_consolemain() or nsh_telnetstart().
  *
@@ -119,7 +119,7 @@ void nsh_initialize(void);
  *   single an NSH instance that operates on stdin and stdout.  This
  *   function does not return.
  *
- *   This function handles generic /dev/console character devices, or 
+ *   This function handles generic /dev/console character devices, or
  *   special USB console devices.  The USB console requires some special
  *   operations to handle the cases where the session is lost when the
  *   USB device is unplugged and restarted when the USB device is plugged
@@ -132,8 +132,8 @@ void nsh_initialize(void);
  * Returned Values:
  *   This function does not normally return.  exit() is usually called to
  *   terminate the NSH session.  This function will return in the event of
- *   an error.  In that case, a nonzero value is returned (EXIT_FAILURE=1).
- *  
+ *   an error.  In that case, a non-zero value is returned (EXIT_FAILURE=1).
+ *
  ****************************************************************************/
 
 int nsh_consolemain(int argc, char *argv[]);
@@ -153,7 +153,7 @@ int nsh_consolemain(int argc, char *argv[]);
  * Returned Values:
  *   The task ID of the Telnet daemon was successfully started.  A negated
  *   errno value will be returned on failure.
- *  
+ *
  ****************************************************************************/
 
 int nsh_telnetstart(void);

@@ -84,7 +84,7 @@
 #undef CONFIG_TSC2007_REFCNT
 
 /* I don't think that it is necessary to activate the converters before
- * making meaurements.  However, I will keep this functionality enabled
+ * making measurements.  However, I will keep this functionality enabled
  * until I have a change to prove that that activation is unnecessary.
  */
 
@@ -128,7 +128,7 @@
 
 /* This describes the state of one contact */
 
-enum tsc2007_contact_3
+enum tsc2007_contact_e
 {
   CONTACT_NONE = 0,                    /* No contact */
   CONTACT_DOWN,                        /* First contact */
@@ -209,7 +209,7 @@ static int tsc2007_poll(FAR struct file *filep, struct pollfd *fds, bool setup);
  * Private Data
  ****************************************************************************/
 
-/* This the the vtable that supports the character driver interface */
+/* This the vtable that supports the character driver interface */
 
 static const struct file_operations tsc2007_fops =
 {
@@ -261,7 +261,7 @@ static void tsc2007_notify(FAR struct tsc2007_dev_s *priv)
        * is no longer available.
        */
 
-      sem_post(&priv->waitsem); 
+      sem_post(&priv->waitsem);
     }
 
   /* If there are threads waiting on poll() for TSC2007 data to become available,
@@ -295,7 +295,7 @@ static int tsc2007_sample(FAR struct tsc2007_dev_s *priv,
   int ret = -EAGAIN;
 
   /* Interrupts me be disabled when this is called to (1) prevent posting
-   * of semphores from interrupt handlers, and (2) to prevent sampled data
+   * of semaphores from interrupt handlers, and (2) to prevent sampled data
    * from changing until it has been reported.
    */
 
@@ -349,7 +349,7 @@ static int tsc2007_waitsample(FAR struct tsc2007_dev_s *priv,
   int ret;
 
   /* Interrupts me be disabled when this is called to (1) prevent posting
-   * of semphores from interrupt handlers, and (2) to prevent sampled data
+   * of semaphores from interrupt handlers, and (2) to prevent sampled data
    * from changing until it has been reported.
    *
    * In addition, we will also disable pre-emption to prevent other threads
@@ -367,13 +367,13 @@ static int tsc2007_waitsample(FAR struct tsc2007_dev_s *priv,
   sem_post(&priv->devsem);
 
   /* Try to get the a sample... if we cannot, then wait on the semaphore
-   * that is posted when new sample data is availble.
+   * that is posted when new sample data is available.
    */
 
   while (tsc2007_sample(priv, sample) < 0)
     {
       /* Wait for a change in the TSC2007 state */
- 
+
       priv->nwaiters++;
       ret = sem_wait(&priv->waitsem);
       priv->nwaiters--;
@@ -390,7 +390,7 @@ static int tsc2007_waitsample(FAR struct tsc2007_dev_s *priv,
         }
     }
 
-  /* Re-acquire the the semaphore that manages mutually exclusive access to
+  /* Re-acquire the semaphore that manages mutually exclusive access to
    * the device structure.  We may have to wait here.  But we have our sample.
    * Interrupts and pre-emption will be re-enabled while we wait.
    */
@@ -436,7 +436,7 @@ static int tsc2007_activate(FAR struct tsc2007_dev_s *priv, uint8_t cmd)
    msg.flags  = 0;                     /* Write transaction, beginning with START */
    msg.buffer = &data;                 /* Transfer from this address */
    msg.length = 1;                     /* Send one byte following the address */
- 
+
    /* Ignore errors from the setup command (because it is not ACKed) */
 
    (void)I2C_TRANSFER(priv->i2c, &msg, 1);
@@ -449,7 +449,7 @@ static int tsc2007_activate(FAR struct tsc2007_dev_s *priv, uint8_t cmd)
    msg.flags  = 0;                     /* Write transaction, beginning with START */
    msg.buffer = &data;                 /* Transfer from this address */
    msg.length = 1;                     /* Send one byte following the address */
- 
+
    ret = I2C_TRANSFER(priv->i2c, &msg, 1);
    if (ret < 0)
      {
@@ -487,7 +487,7 @@ static int tsc2007_transfer(FAR struct tsc2007_dev_s *priv, uint8_t cmd)
    msg.flags  = 0;                     /* Write transaction, beginning with START */
    msg.buffer = &cmd;                  /* Transfer from this address */
    msg.length = 1;                     /* Send one byte following the address */
- 
+
    ret = I2C_TRANSFER(priv->i2c, &msg, 1);
    if (ret < 0)
      {
@@ -531,7 +531,7 @@ static int tsc2007_transfer(FAR struct tsc2007_dev_s *priv, uint8_t cmd)
    msg.flags  = I2C_M_READ;            /* Read transaction, beginning with START */
    msg.buffer = data12;                /* Transfer to this address */
    msg.length = 2;                     /* Read two bytes following the address */
- 
+
    ret = I2C_TRANSFER(priv->i2c, &msg, 1);
    if (ret < 0)
      {
@@ -699,7 +699,7 @@ static void tsc2007_worker(FAR void *arg)
 
   if (pendown)
     {
-      /* If this is the first (acknowledged) pend down report, then report
+      /* If this is the first (acknowledged) pen down report, then report
        * this as the first contact.  If contact == CONTACT_DOWN, it will be
        * set to set to CONTACT_MOVE after the contact is first sampled.
        */
@@ -726,7 +726,7 @@ static void tsc2007_worker(FAR void *arg)
   priv->sample.id = priv->id;
   priv->penchange = true;
 
-  /* Notify any waiters that nes TSC2007 data is available */
+  /* Notify any waiters that new TSC2007 data is available */
 
   tsc2007_notify(priv);
 
@@ -810,7 +810,7 @@ static int tsc2007_open(FAR struct file *filep)
   ret = sem_wait(&priv->devsem);
   if (ret < 0)
     {
-      /* This should only happen if the wait was canceled by an signal */
+      /* This should only happen if the wait was cancelled by an signal */
 
       DEBUGASSERT(errno == EINTR);
       return -EINTR;
@@ -865,7 +865,7 @@ static int tsc2007_close(FAR struct file *filep)
   ret = sem_wait(&priv->devsem);
   if (ret < 0)
     {
-      /* This should only happen if the wait was canceled by an signal */
+      /* This should only happen if the wait was cancelled by an signal */
 
       DEBUGASSERT(errno == EINTR);
       return -EINTR;
@@ -922,7 +922,7 @@ static ssize_t tsc2007_read(FAR struct file *filep, FAR char *buffer, size_t len
   ret = sem_wait(&priv->devsem);
   if (ret < 0)
     {
-      /* This should only happen if the wait was canceled by an signal */
+      /* This should only happen if the wait was cancelled by an signal */
 
       DEBUGASSERT(errno == EINTR);
       return -EINTR;
@@ -990,7 +990,7 @@ static ssize_t tsc2007_read(FAR struct file *filep, FAR char *buffer, size_t len
     {
       if (sample.contact == CONTACT_DOWN)
         {
-          /* First contact */
+          /* Loss of contact */
 
           report->point[0].flags  = TOUCH_DOWN | TOUCH_ID_VALID | TOUCH_POS_VALID;
         }
@@ -1038,7 +1038,7 @@ static int tsc2007_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
   ret = sem_wait(&priv->devsem);
   if (ret < 0)
     {
-      /* This should only happen if the wait was canceled by an signal */
+      /* This should only happen if the wait was cancelled by an signal */
 
       DEBUGASSERT(errno == EINTR);
       return -EINTR;
@@ -1114,7 +1114,7 @@ static int tsc2007_poll(FAR struct file *filep, FAR struct pollfd *fds,
   ret = sem_wait(&priv->devsem);
   if (ret < 0)
     {
-      /* This should only happen if the wait was canceled by an signal */
+      /* This should only happen if the wait was cancelled by an signal */
 
       DEBUGASSERT(errno == EINTR);
       return -EINTR;

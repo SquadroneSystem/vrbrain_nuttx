@@ -84,7 +84,7 @@ void uart_xmitchars(FAR uart_dev_t *dev)
 {
   uint16_t nbytes = 0;
 
-  /* Send while we still have data & room in the fifo */
+  /* Send while we still have data in the TX buffer & room in the fifo */
 
   while (dev->xmit.head != dev->xmit.tail && uart_txready(dev))
     {
@@ -103,6 +103,11 @@ void uart_xmitchars(FAR uart_dev_t *dev)
 
   /* When all of the characters have been sent from the buffer disable the TX
    * interrupt.
+   *
+   * Potential bug?  If nbytes == 0 && (dev->xmit.head == dev->xmit.tail) &&
+   * dev->xmitwaiting == true, then disabling the TX interrupt will leave
+   * the uart_write() logic waiting to TX to complete with no TX interrupts.
+   * Can that happen?
    */
 
   if (dev->xmit.head == dev->xmit.tail)
@@ -142,14 +147,33 @@ void uart_recvchars(FAR uart_dev_t *dev)
       nexthead = 0;
     }
 
-  /* Loop putting characters into the receive buffer until either there are no
-   * further characters to available.
+  /* Loop putting characters into the receive buffer until there are no further
+   * characters to available.
    */
 
   while (uart_rxavailable(dev))
     {
-      char ch =  uart_receive(dev, &status);
-      
+      bool is_full = (nexthead == dev->recv.tail);
+      char ch;
+
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+      /* Check if RX buffer is full and allow serial low-level driver to pause
+       * processing. This allows proper utilization of hardware flow control.
+       */
+
+      if (is_full)
+        {
+          if (uart_rxflowcontrol(dev))
+            {
+              /* Low-level driver activated RX flow control, exit loop now. */
+
+              break;
+            }
+        }
+#endif
+
+      ch = uart_receive(dev, &status);
+
       /* If the RX buffer becomes full, then the serial data is discarded.  This is
        * necessary because on most serial hardware, you must read the data in order
        * to clear the RX interrupt. An option on some hardware might be to simply
@@ -158,7 +182,7 @@ void uart_recvchars(FAR uart_dev_t *dev)
        * some large internal buffering).
        */
 
-      if (nexthead != dev->recv.tail)
+      if (!is_full)
         {
           /* Add the character to the buffer */
 

@@ -58,7 +58,6 @@
 
 #include "up_arch.h"
 #include "up_internal.h"
-#include "os_internal.h"
 #include "atmega_internal.h"
 
 /****************************************************************************
@@ -158,6 +157,9 @@ struct uart_ops_s g_usart0_ops =
   .receive        = usart0_receive,
   .rxint          = usart0_rxint,
   .rxavailable    = usart0_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
   .send           = usart0_send,
   .txint          = usart0_txint,
   .txready        = usart0_txready,

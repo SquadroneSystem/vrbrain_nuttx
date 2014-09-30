@@ -43,7 +43,7 @@
 
 #include <nuttx/arch.h>
 #include <nuttx/fs/fs.h>
-#include <nuttx/ramlog.h>
+#include <nuttx/syslog/ramlog.h>
 
 #include "up_arch.h"
 #include "up_internal.h"
@@ -127,7 +127,7 @@ void up_initialize(void)
   /* Initialize the system timer interrupt */
 
 #if !defined(CONFIG_SUPPRESS_INTERRUPTS) && !defined(CONFIG_SUPPRESS_TIMER_INTS)
-  up_timerinit();
+  up_timer_initialize();
 #endif
 
   /* Register devices */
@@ -180,5 +180,5 @@ void up_initialize(void)
 
   up_usbinitialize();
 
-  up_ledon(LED_IRQSENABLED);
+  board_led_on(LED_IRQSENABLED);
 }

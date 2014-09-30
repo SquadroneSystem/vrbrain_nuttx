@@ -56,7 +56,7 @@
  ****************************************************************************/
 
 /* The CPU frequency is given by BOARD_CPU_CLOCK (defined in board.h).  The
- * desired interrupt frequency is given by CONFIG_MSEC_PER_TICK.  An unscaled
+ * desired interrupt frequency is given by CONFIG_USEC_PER_TICK.  An unscaled
  * ideal match is given by:
  *
  *   CLOCK = CPU_CLOCK / DIVISOR                      # CPU clocks/sec
@@ -132,7 +132,7 @@ int up_timerisr(int irq, uint32_t *regs)
 }
 
 /****************************************************************************
- * Function:  up_timerinit
+ * Function:  up_timer_initialize
  *
  * Description:
  *   This function is called during start-up to initialize the timer
@@ -141,7 +141,7 @@ int up_timerisr(int irq, uint32_t *regs)
  *
  ****************************************************************************/
 
-void up_timerinit(void)
+void up_timer_initialize(void)
 {
   /* Setup timer 1 compare match A to generate a tick interrupt.
    *

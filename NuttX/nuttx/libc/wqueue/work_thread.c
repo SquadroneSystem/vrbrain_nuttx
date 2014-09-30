@@ -148,26 +148,44 @@ static void work_process(FAR struct wqueue_s *wqueue)
            */
 
           worker = work->worker;
-          arg    = work->arg;
 
-          /* Mark the work as no longer being queued */
-
-          work->worker = NULL;
-
-          /* Do the work.  Re-enable interrupts while the work is being
-           * performed... we don't have any idea how long that will take!
+          /* Check for a race condition where the work may be nullified
+           * before it is removed from the queue.
            */
 
-          irqrestore(flags);
-          worker(arg);
+          if (worker != NULL)
+            {
+              /* Extract the work argument (before re-enabling interrupts) */
 
-          /* Now, unfortunately, since we re-enabled interrupts we don't
-           * know the state of the work list and we will have to start
-           * back at the head of the list.
-           */
+              arg = work->arg;
 
-          flags = irqsave();
-          work  = (FAR struct work_s *)wqueue->q.head;
+              /* Mark the work as no longer being queued */
+
+              work->worker = NULL;
+
+              /* Do the work.  Re-enable interrupts while the work is being
+               * performed... we don't have any idea how long that will take!
+               */
+
+              irqrestore(flags);
+              worker(arg);
+
+              /* Now, unfortunately, since we re-enabled interrupts we don't
+               * know the state of the work list and we will have to start
+               * back at the head of the list.
+               */
+
+              flags = irqsave();
+              work  = (FAR struct work_s *)wqueue->q.head;
+            }
+          else
+            {
+              /* Cancelled.. Just move to the next work in the list with
+               * interrupts still disabled.
+               */
+
+              work = (FAR struct work_s *)work->dq.flink;
+            }
         }
       else
         {
@@ -182,7 +200,7 @@ static void work_process(FAR struct wqueue_s *wqueue)
 
               next = remaining;
             }
-              
+
           /* Then try the next in the list. */
 
           work = (FAR struct work_s *)work->dq.flink;
@@ -215,7 +233,7 @@ static void work_process(FAR struct wqueue_s *wqueue)
  *     These worker threads are started by the OS during normal bringup.
  *
  *   work_usrthread:  This is a user mode work queue.  It must be built into
- *     the applicatino blob during the user phase of a kernel build.  The
+ *     the application blob during the user phase of a kernel build.  The
  *     user work thread will then automatically be started when the system
  *     boots by calling through the pointer found in the header on the user
  *     space blob.
@@ -231,7 +249,7 @@ static void work_process(FAR struct wqueue_s *wqueue)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_SCHED_HPWORK
+#if defined(CONFIG_SCHED_HPWORK)
 
 int work_hpthread(int argc, char *argv[])
 {
@@ -290,7 +308,7 @@ int work_lpthread(int argc, char *argv[])
 #endif /* CONFIG_SCHED_LPWORK */
 #endif /* CONFIG_SCHED_HPWORK */
 
-#ifdef CONFIG_SCHED_USRWORK
+#if defined(CONFIG_SCHED_USRWORK) && !defined(__KERNEL__)
 
 int work_usrthread(int argc, char *argv[])
 {

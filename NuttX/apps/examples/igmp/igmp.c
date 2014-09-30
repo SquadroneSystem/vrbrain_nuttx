@@ -44,9 +44,11 @@
 #include <unistd.h>
 #include <debug.h>
 
+#include <arpa/inet.h>
 #include <net/if.h>
-#include <nuttx/net/uip/uip.h>
-#include <apps/netutils/uiplib.h>
+#include <netinet/in.h>
+
+#include <apps/netutils/netlib.h>
 #include <apps/netutils/ipmsfilter.h>
 
 #include "igmp.h"
@@ -89,7 +91,7 @@ int igmp_main(int argc, char *argv[])
 #endif
 
   message("Configuring Ethernet...\n");
-  
+
   /* Many embedded network interfaces must have a software assigned MAC */
 
 #ifdef CONFIG_EXAMPLES_IGMP_NOMAC
@@ -99,23 +101,23 @@ int igmp_main(int argc, char *argv[])
   mac[3] = 0xad;
   mac[4] = 0xbe;
   mac[5] = 0xef;
-  uip_setmacaddr("eth0", mac);
+  netlib_setmacaddr("eth0", mac);
 #endif
 
   /* Set up our host address */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_IGMP_IPADDR);
-  uip_sethostaddr("eth0", &addr);
+  netlib_sethostaddr("eth0", &addr);
 
   /* Set up the default router address */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_IGMP_DRIPADDR);
-  uip_setdraddr("eth0", &addr);
+  netlib_setdraddr("eth0", &addr);
 
   /* Setup the subnet mask */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_IGMP_NETMASK);
-  uip_setnetmask("eth0", &addr);
+  netlib_setnetmask("eth0", &addr);
 
   /* Not much of a test for now */
   /* Join the group */

@@ -148,7 +148,7 @@ int main(int argc, char **argv, char **envp)
             fprintf(stderr, "Missing option argument, option: %c\n", optopt);
             show_usage(argv[0]);
 
-           break;
+          default:
             fprintf(stderr, "Unexpected option: %c\n", ch);
             show_usage(argv[0]);
         }
@@ -157,7 +157,7 @@ int main(int argc, char **argv, char **envp)
   if (optind >= argc)
     {
        fprintf(stderr, "Missing <cvs-file> and <symtab-file>\n");
-       show_usage(argv[0]);          
+       show_usage(argv[0]);
     }
 
   csvpath = argv[optind];
@@ -166,7 +166,7 @@ int main(int argc, char **argv, char **envp)
   if (optind >= argc)
     {
        fprintf(stderr, "Missing <symtab-file>\n");
-       show_usage(argv[0]);      
+       show_usage(argv[0]);
     }
 
   symtab = argv[optind];
@@ -175,8 +175,8 @@ int main(int argc, char **argv, char **envp)
   if (optind < argc)
     {
        fprintf(stderr, "Unexpected garbage at the end of the line\n");
-       show_usage(argv[0]);      
-    }    
+       show_usage(argv[0]);
+    }
 
   /* Open the CSV file for reading */
 
@@ -222,6 +222,7 @@ int main(int argc, char **argv, char **envp)
 
   fprintf(outstream, "/* %s: Auto-generated symbol table.  Do not edit */\n\n", symtab);
   fprintf(outstream, "#include <nuttx/config.h>\n");
+  fprintf(outstream, "#include <nuttx/compiler.h>\n");
   fprintf(outstream, "#include <nuttx/binfmt/symtab.h>\n\n");
 
   /* Output all of the require header files */

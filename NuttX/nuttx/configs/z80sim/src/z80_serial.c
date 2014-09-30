@@ -53,7 +53,6 @@
 #include <arch/serial.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 #ifdef USE_SERIALDRIVER
@@ -97,6 +96,9 @@ static const struct uart_ops_s g_uart_ops =
   up_receive,               /* receive */
   up_rxint,                 /* rxint */
   up_rxavailable,           /* rxavailable */
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  NULL,                     /* rxflowcontrol */
+#endif
   up_send,                  /* send */
   up_txint,                 /* txint */
   up_txready,               /* txready */
@@ -318,7 +320,7 @@ static bool up_txempty(FAR struct uart_dev_s *dev)
  * Name: up_serialinit
  *
  * Description:
- *   Performs the low level UART initialization early in 
+ *   Performs the low level UART initialization early in
  *   debug so that the serial console will be available
  *   during bootup.  This must be called before up_serialinit.
  *

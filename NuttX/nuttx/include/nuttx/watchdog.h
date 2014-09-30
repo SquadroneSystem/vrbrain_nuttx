@@ -75,7 +75,7 @@
  *
  * WDIOC_MINTIME    - Set the minimum ping time.  If two keepalive ioctls
  *                    are received within this time, a reset event will
- *                    be generated.  This feature should assume to be 
+ *                    be generated.  This feature should assume to be
  *                    disabled after WDIOC_SETTIMEOUT.
  *                    Argument: A 32-bit time value in milliseconds.
  */
@@ -112,7 +112,7 @@ struct watchdog_capture_s
  * and returned by the "lower half" getstatus() method.
  */
 
-struct watchdog_status_s 
+struct watchdog_status_s
 {
   uint32_t  flags;          /* See WDFLAGS_* definitions above */
   uint32_t  timeout;        /* The current timeout setting (in milliseconds) */
@@ -125,7 +125,7 @@ struct watchdog_status_s
  */
 
 struct watchdog_lowerhalf_s;
-struct watchdog_ops_s 
+struct watchdog_ops_s
 {
   /* Required methods ********************************************************/
   /* Start the watchdog timer, resetting the time to the current timeout */
@@ -197,7 +197,8 @@ struct watchdog_lowerhalf_s
 
 #ifdef __cplusplus
 #define EXTERN extern "C"
-extern "C" {
+extern "C"
+{
 #else
 #define EXTERN extern
 #endif
@@ -235,8 +236,8 @@ extern "C" {
  *
  ****************************************************************************/
 
-EXTERN FAR void *watchdog_register(FAR const char *path,
-                                   FAR struct watchdog_lowerhalf_s *lower);
+FAR void *watchdog_register(FAR const char *path,
+                            FAR struct watchdog_lowerhalf_s *lower);
 
 /****************************************************************************
  * Name: watchdog_unregister
@@ -253,7 +254,7 @@ EXTERN FAR void *watchdog_register(FAR const char *path,
  *
  ****************************************************************************/
 
-EXTERN void watchdog_unregister(FAR void *handle);
+void watchdog_unregister(FAR void *handle);
 
 /****************************************************************************
  * Platform-Independent "Lower-Half" Watchdog Driver Interfaces
@@ -270,8 +271,8 @@ EXTERN void watchdog_unregister(FAR void *handle);
  *   Perform architecture-specific initialization of the Watchdog hardware.
  *   This interface should be provided by all configurations using
  *   to avoid exposed platform-dependent logic.
- * 
- *   At a minimum, this function should all watchdog_register() which is
+ *
+ *   At a minimum, this function should call watchdog_register() which is
  *   described above.
  *
  * Input parameters:
@@ -282,7 +283,7 @@ EXTERN void watchdog_unregister(FAR void *handle);
  *
  ****************************************************************************/
 
-EXTERN int up_wdginitialize(void);
+int up_wdginitialize(void);
 
 #undef EXTERN
 #ifdef __cplusplus

@@ -41,7 +41,7 @@
  ************************************************************************************/
 
 #include <nuttx/config.h>
-#include <nuttx/fb.h>
+#include <nuttx/video/fb.h>
 
 #include <sys/types.h>
 #include <assert.h>
@@ -65,8 +65,9 @@
 #  define LCD_YRES       67
 
 /* Debug ******************************************************************************/
+
 #ifdef CONFIG_DEBUG_LCD
-# define lcddbg(format, arg...)  vdbg(format, ##arg)
+# define lcddbg(format, ...)  vdbg(format, ##__VA_ARGS__)
 #else
 # define lcddbg(x...)
 #endif
@@ -203,11 +204,14 @@ static void fb_ssd1783_send_cmdlist(const struct ssd1783_cmdlist *p)
 {
   int i=0;
 
-  while(p->is_cmd != END)
+  while (p->is_cmd != END)
     {
       uint16_t sendcmd = p->data;
-      if(p->is_cmd == DATA)
-        sendcmd |= 0x0100; /* 9th bit is cmd/data flag */
+      if (p->is_cmd == DATA)
+        {
+          sendcmd |= 0x0100; /* 9th bit is cmd/data flag */
+        }
+
       uwire_xfer(SSD1783_DEV_ID, SSD1783_UWIRE_BITLEN, &sendcmd, NULL);
       p++;
       i++;

@@ -45,7 +45,8 @@
 #include <8052.h>
 #include <nuttx/arch.h>
 
-#include "os_internal.h"
+#include "task/task.h"
+#include "sched/sched.h"
 #include "up_internal.h"
 
 /****************************************************************************************
@@ -79,7 +80,7 @@ void _exit(int status)
 {
   FAR struct tcb_s* tcb;
 
-  dbg("TCB=%p exitting\n", tcb);
+  dbg("TCB=%p exiting\n", tcb);
 
   /* Disable interrupts.  Interrupts will remain disabled until
    * the new task is resumed below when the save IE is restored.

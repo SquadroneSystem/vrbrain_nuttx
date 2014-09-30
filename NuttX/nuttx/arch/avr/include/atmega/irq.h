@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/avr/include/avr/atmega/irq.h
+ * arch/avr/include/atmega/irq.h
  *
  *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -48,7 +48,7 @@
 #include <arch/avr/avr.h>
 
 /****************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /* The ATmega128 has 35 interrupt vectors including vector 0, the reset

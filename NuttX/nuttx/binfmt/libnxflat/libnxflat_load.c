@@ -80,7 +80,7 @@
  * Description:
  *   Loads the binary specified by nxflat_init into memory, mapping
  *   the I-space executable regions, allocating the D-Space region,
- *   and inializing the data segment (relocation information is
+ *   and initializing the data segment (relocation information is
  *   temporarily loaded into the BSS region.  BSS will be cleared
  *   by nxflat_bind() after the relocation data has been processed).
  *
@@ -195,7 +195,7 @@ int nxflat_load(struct nxflat_loadinfo_s *loadinfo)
       bdbg("Failed to read .data section: %d\n", ret);
       goto errout;
     }
-       
+
   bvdbg("TEXT: %08x Entry point offset: %08x Data offset: %08x\n",
       loadinfo->ispace, loadinfo->entryoffs, doffset);
 

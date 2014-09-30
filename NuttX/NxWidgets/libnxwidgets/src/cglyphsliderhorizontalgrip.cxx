@@ -72,7 +72,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include "cglyphsliderhorizontalgrip.hxx"
 #include "ibitmap.hxx"
 
@@ -100,7 +100,7 @@ CGlyphSliderHorizontalGrip::CGlyphSliderHorizontalGrip(CWidgetControl *pWidgetCo
                                              nxgl_coord_t x, nxgl_coord_t y,
                                              nxgl_coord_t width, nxgl_coord_t height,
                                              IBitmap *pGripBitmap)
-: CImage(pWidgetControl, 0, (height>>1) - (pGripBitmap->getHeight() >> 1), 
+: CImage(pWidgetControl, 0, (height>>1) - (pGripBitmap->getHeight() >> 1),
        pGripBitmap->getWidth(), pGripBitmap->getHeight(),
        pGripBitmap, 0)
 {
@@ -167,7 +167,7 @@ void CGlyphSliderHorizontalGrip::onReleaseOutside(nxgl_coord_t x, nxgl_coord_t y
  */
 
 void CGlyphSliderHorizontalGrip::onDrag(nxgl_coord_t x, nxgl_coord_t y,
-                                   nxgl_coord_t vX, nxgl_coord_t vY)
+                                       nxgl_coord_t vX, nxgl_coord_t vY)
 {
   // Work out where we're moving to
 

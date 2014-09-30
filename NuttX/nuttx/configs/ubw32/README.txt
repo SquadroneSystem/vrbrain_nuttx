@@ -170,7 +170,7 @@ MAX3232 Connection
   RX  -- J4 pin 30: U1RX/RF2
   GND -- J4 pin 40: GND
   Vcc -- J4 pin 39: 5V
- 
+
 Toolchains
 ==========
 
@@ -262,7 +262,7 @@ Toolchains
 
   Windows Native Toolchains
   -------------------------
-  
+
   NOTE:  There are several limitations to using a Windows based toolchain in a
   Cygwin environment.  The three biggest are:
 
@@ -342,7 +342,7 @@ LEDs
   ----- ----- -------------------------------------------------------------
   LABEL COLOR CONTROL
   ----- ----- -------------------------------------------------------------
-  USB   Green   RF3. This could be used by software if USB is not used. 
+  USB   Green   RF3. This could be used by software if USB is not used.
                      Otherwise, RF3 is used as the USBID signal.
   LED1  While   RE2, Pulled up.  Low value illuminates
   LED2  Red     RE1, Pulled up.  Low value illuminates
@@ -369,7 +369,7 @@ Buttons
 
     RE6 User switch
     RE7 Program switch
- 
+
 PIC32MX Configuration Options
 =============================
 
@@ -412,19 +412,15 @@ PIC32MX Configuration Options
     CONFIG_ENDIAN_BIG - define if big endian (default is little
        endian)
 
-    CONFIG_DRAM_SIZE - Describes the installed DRAM (CPU SRAM in this case):
+    CONFIG_RAM_SIZE - Describes the installed DRAM (CPU SRAM in this case):
 
-       CONFIG_DRAM_SIZE=(32*1024) (32Kb)
+       CONFIG_RAM_SIZE=(32*1024) (32Kb)
 
        There is an additional 32Kb of SRAM in AHB SRAM banks 0 and 1.
 
-    CONFIG_DRAM_START - The start address of installed DRAM
+    CONFIG_RAM_START - The start address of installed DRAM
 
-       CONFIG_DRAM_START=0xa0000000
-
-    CONFIG_ARCH_IRQPRIO - The PIC32MXx supports interrupt prioritization
-
-       CONFIG_ARCH_IRQPRIO=y
+       CONFIG_RAM_START=0xa0000000
 
     CONFIG_ARCH_LEDS - Use LEDs to show state. Unique to boards that
        have LEDs
@@ -493,7 +489,7 @@ PIC32MX Configuration Options
       CONFIG_PIC32MX_CODEWP - Default 1 (disabled)
     DEVCFG1: (All settings determined by selections in board.h)
     DEVCFG2: (All settings determined by selections in board.h)
-    DEVCFG3: 
+    DEVCFG3:
       CONFIG_PIC32MX_USBIDO - USB USBID Selection.  Default 1 if USB enabled
         (USBID pin is controlled by the USB module), but 0 (GPIO) otherwise.
       CONFIG_PIC32MX_VBUSIO - USB VBUSON Selection (Default 1 if USB enabled
@@ -579,17 +575,15 @@ selected as follow:
 
 Where <subdir> is one of the following:
 
-  ostest:
-  =======
-    Description.
-    ------------
-    This configuration directory, performs a simple OS test using
-    apps/examples/ostest.
+  nsh:
+
+    This is the NuttShell (NSH) using the NSH startup logic at
+    apps/examples/nsh.
 
     NOTES:
-    ------ 
+
     1. This configuration uses the mconf-based configuration tool.  To
-       change this configuration using that tool, you should:
+       change this configurations using that tool, you should:
 
        a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
           and misc/tools/
@@ -597,59 +591,42 @@ Where <subdir> is one of the following:
        b. Execute 'make menuconfig' in nuttx/ in order to start the
           reconfiguration process.
 
-    2. Serial Output.
+    2. Serial Output
 
        The OS test produces all of its test output on the serial console.
-       This configuration has UART1 enabled as a serial console. 
+       This configuration has UART1 enabled as a serial console.
 
        TX  -- J4 pin 31: U1TX/RF8
        RX  -- J4 pin 30: U1RX/RF2
        GND -- J4 pin 40: GND
        Vcc -- J4 pin 39: 5V
- 
-  nsh:
-  ====
-    Description.
-    ------------
-    This is the NuttShell (NSH) using the NSH startup logic at
-    apps/examples/nsh.
 
-    Serial Output.
-    --------------
-    The OS test produces all of its test output on the serial console.
-    This configuration has UART1 enabled as a serial console.
+    3. USB Configuations
 
-    TX  -- J4 pin 31: U1TX/RF8
-    RX  -- J4 pin 30: U1RX/RF2
-    GND -- J4 pin 40: GND
-    Vcc -- J4 pin 39: 5V
- 
-    USB Configuations.
-    -----------------
-    Several USB device configurations can be enabled and included
-    as NSH built-in built in functions.
+       Several USB device configurations can be enabled and included
+       as NSH built-in built in functions.
 
-    All USB device configurations require the following basic setup in
-    your NuttX configuration file to enable USB device support:
+       All USB device configurations require the following basic setup in
+       your NuttX configuration file to enable USB device support:
 
-      CONFIG_USBDEV=y         : Enable basic USB device support
-      CONFIG_PIC32MX_USBDEV=y : Enable PIC32 USB device support
+         CONFIG_USBDEV=y         : Enable basic USB device support
+         CONFIG_PIC32MX_USBDEV=y : Enable PIC32 USB device support
 
-    examples/usbterm - This option can be enabled by uncommenting
-    the following line in the appconfig file:
+       examples/usbterm - This option can be enabled by adding the
+       following to the NuttX configuration file:
 
-      CONFIGURED_APPS += examples/usbterm
+         CONFIG_EXAMPLES_USBTERM=y
 
-    And by enabling one of the USB serial devices:
+       And by enabling one of the USB serial devices:
 
-      CONFIG_PL2303=y         : Enable the Prolifics PL2303 emulation
-      CONFIG_CDCACM=y         : or the CDC/ACM serial driver (not both)
+         CONFIG_PL2303=y         : Enable the Prolifics PL2303 emulation
+         CONFIG_CDCACM=y         : or the CDC/ACM serial driver (not both)
 
-    examples/cdcacm -  The examples/cdcacm program can be included as an
-    function by uncommenting the following line in the appconfig file:
+       system/cdcacm -  The system/cdcacm program can be included as an
+       function by adding the  following to the NuttX configuration file:
 
-      CONFIGURED_APPS += examples/cdcacm
+         CONFIG_SYSTEM_CDCACM=y
 
-    and defining the following in your .config file:
+       and defining the following in your .config file:
 
-      CONFIG_CDCACM=y         : Enable the CDCACM device
+         CONFIG_CDCACM=y         : Enable the CDCACM device

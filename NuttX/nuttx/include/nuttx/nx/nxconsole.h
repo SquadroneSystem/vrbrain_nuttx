@@ -233,7 +233,7 @@ extern "C" {
  *   minor - The device minor number
  *
  * Return:
- *   A non-NULL handle is returned on success. 
+ *   A non-NULL handle is returned on success.
  *
  ****************************************************************************/
 
@@ -256,7 +256,7 @@ EXTERN NXCONSOLE nx_register(NXWINDOW hwnd, FAR struct nxcon_window_s *wndo,
  *   minor - The device minor number
  *
  * Return:
- *   A non-NULL handle is returned on success. 
+ *   A non-NULL handle is returned on success.
  *
  ****************************************************************************/
 
@@ -281,7 +281,7 @@ EXTERN NXCONSOLE nxtk_register(NXTKWINDOW hfwnd,
  *   minor - The device minor number
  *
  * Return:
- *   A non-NULL handle is returned on success. 
+ *   A non-NULL handle is returned on success.
  *
  ****************************************************************************/
 
@@ -334,7 +334,7 @@ EXTERN void nxcon_redraw(NXCONSOLE handle, FAR const struct nxgl_rect_s *rect,
  *  This function should be driven by the window kbdin callback function
  *  (see nx.h).  When the NxConsole is the top window and keyboard input is
  *  received on the top window, that window callback should be directed to
- *  this function.  This function will buffer the keyboard data and may
+ *  this function.  This function will buffer the keyboard data and make
  *  it available to the NxConsole as stdin.
  *
  *  If CONFIG_NXCONSOLE_NXKBDIN is not selected, then the NxConsole will

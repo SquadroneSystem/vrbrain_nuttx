@@ -1,7 +1,7 @@
 /****************************************************************************
  * examples/touchscreen/tc_main.c
  *
- *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2011, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,6 +48,10 @@
 #include <errno.h>
 #include <debug.h>
 
+#ifdef CONFIG_EXAMPLES_TOUCHSCREEN_MOUSE
+#  include <nuttx/input/mouse.h>
+#endif
+
 #include <nuttx/input/touchscreen.h>
 
 #include "tc.h"
@@ -86,14 +90,20 @@
 
 int tc_main(int argc, char *argv[])
 {
+#ifdef CONFIG_EXAMPLES_TOUCHSCREEN_MOUSE
+  struct mouse_report_s sample;
+#else
   struct touch_sample_s sample;
+#endif
   ssize_t nbytes;
 #if defined(CONFIG_NSH_BUILTIN_APPS) || CONFIG_EXAMPLES_TOUCHSCREEN_NSAMPLES > 0
   long nsamples;
 #endif
   int fd;
   int errval = 0;
+#ifdef CONFIG_EXAMPLES_TOUCHSCREEN_ARCHINIT
   int ret;
+#endif
 
   /* If this example is configured as an NX add-on, then limit the number of
    * samples that we collect before returning.  Otherwise, we never return
@@ -110,6 +120,7 @@ int tc_main(int argc, char *argv[])
   message("tc_main: nsamples: %d\n", CONFIG_EXAMPLES_TOUCHSCREEN_NSAMPLES);
 #endif
 
+#ifdef CONFIG_EXAMPLES_TOUCHSCREEN_ARCHINIT
   /* Initialization of the touchscreen hardware is performed by logic
    * external to this test.
    */
@@ -122,6 +133,7 @@ int tc_main(int argc, char *argv[])
       errval = 1;
       goto errout;
     }
+#endif
 
   /* Open the touchscreen device for reading */
 
@@ -153,6 +165,47 @@ int tc_main(int argc, char *argv[])
 
     msgflush();
 
+#ifdef CONFIG_EXAMPLES_TOUCHSCREEN_MOUSE
+    /* Read one sample */
+
+    ivdbg("Reading...\n");
+    nbytes = read(fd, &sample, sizeof(struct mouse_report_s));
+    ivdbg("Bytes read: %d\n", nbytes);
+
+    /* Handle unexpected return values */
+
+    if (nbytes < 0)
+      {
+        errval = errno;
+        if (errval != EINTR)
+          {
+            message("tc_main: read %s failed: %d\n",
+                    CONFIG_EXAMPLES_TOUCHSCREEN_DEVPATH, errval);
+            errval = 3;
+            goto errout_with_dev;
+          }
+
+        message("tc_main: Interrupted read...\n");
+      }
+    else if (nbytes != sizeof(struct mouse_report_s))
+      {
+        message("tc_main: Unexpected read size=%d, expected=%d, Ignoring\n",
+                nbytes, sizeof(struct mouse_report_s));
+      }
+
+    /* Print the sample data on successful return */
+
+    else
+      {
+        message("Sample     :\n");
+        message("   buttons : %02x\n", sample.buttons);
+        message("         x : %d\n",   sample.x);
+        message("         y : %d\n",   sample.y);
+#ifdef CONFIG_MOUSE_WHEEL
+        message("     wheel : %d\n",   sample.wheel);
+#endif
+      }
+#else
     /* Read one sample */
 
     ivdbg("Reading...\n");
@@ -177,7 +230,7 @@ int tc_main(int argc, char *argv[])
     else if (nbytes != sizeof(struct touch_sample_s))
       {
         message("tc_main: Unexpected read size=%d, expected=%d, Ignoring\n",
-                nbytes, sizeof(struct touch_sample_s));        
+                nbytes, sizeof(struct touch_sample_s));
       }
 
     /* Print the sample data on successful return */
@@ -195,13 +248,18 @@ int tc_main(int argc, char *argv[])
         message("         w : %d\n",   sample.point[0].w);
         message("  pressure : %d\n",   sample.point[0].pressure);
       }
+#endif
   }
 
 errout_with_dev:
   close(fd);
+
 errout_with_tc:
+#ifdef CONFIG_EXAMPLES_TOUCHSCREEN_ARCHINIT
   arch_tcuninitialize();
+
 errout:
+#endif
   message("Terminating!\n");
   msgflush();
   return errval;

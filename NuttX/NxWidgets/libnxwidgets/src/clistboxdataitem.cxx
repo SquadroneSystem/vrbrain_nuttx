@@ -70,11 +70,11 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <cstdint>
+#include <cstdbool>
 
 #include "cwidgetcontrol.hxx"
 #include "clistboxdataitem.hxx"

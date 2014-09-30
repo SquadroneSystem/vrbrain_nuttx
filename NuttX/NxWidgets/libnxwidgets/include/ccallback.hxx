@@ -58,11 +58,11 @@
 /****************************************************************************
  * Pre-Processor Definitions
  ****************************************************************************/
- 
+
 /****************************************************************************
  * Implementation Classes
  ****************************************************************************/
- 
+
 #if defined(__cplusplus)
 
 namespace NXWidgets
@@ -98,7 +98,7 @@ namespace NXWidgets
 #endif
 
     // Methods in the callback vtable
- 
+
     /**
      * Re-Draw Callback.  The redraw event is handled by CWidgetControl::redrawEvent.
      *
@@ -113,7 +113,7 @@ namespace NXWidgets
      * @param arg User provided argument (see nx_openwindow, nx_requestbg,
      * nxtk_openwindow, or nxtk_opentoolbar).
      */
-     
+
     static void redraw(NXHANDLE hwnd, FAR const struct nxgl_rect_s *rect,
                        bool bMore, FAR void *arg);
 
@@ -157,12 +157,12 @@ namespace NXWidgets
      * @param arg User provided argument (see nx_openwindow, nx_requestbg,
      * nxtk_openwindow, or nxtk_opentoolbar).
      */
-     
-#ifdef CONFIG_NX_MOUSE
+
+#ifdef CONFIG_NX_XYINPUT
     static void newMouseEvent(NXHANDLE hwnd,
                               FAR const struct nxgl_point_s *pos,
                               uint8_t buttons, FAR void *arg);
-#endif /* CONFIG_NX_MOUSE */
+#endif /* CONFIG_NX_XYINPUT */
 
     /**
      * New keyboard/keypad data is available for the window.  The new

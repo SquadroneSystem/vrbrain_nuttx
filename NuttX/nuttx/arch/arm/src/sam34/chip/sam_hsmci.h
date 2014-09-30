@@ -1,7 +1,7 @@
 /****************************************************************************************
  * arch/arm/src/sam34/chip/sam_hsmci.h
  *
- *   Copyright (C) 2009, 2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2009, 2013-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,7 @@
 #include <nuttx/config.h>
 
 #include "chip.h"
+#include "chip/sam_pdc.h"
 #include "chip/sam_memorymap.h"
 
 /****************************************************************************************
@@ -83,35 +84,48 @@
                                              /* 0x0100-0x0124: Reserved for PCD registers */
 #define SAM_HSMCI_FIFO_OFFSET         0x0200 /* 0x0200-0x3ffc FIFO Memory Aperture */
 
-/* HSMCI register adresses **************************************************************/
+/* HSMCI register addresses *************************************************************/
 
-#define SAM_HSMCI_CR                  (SAM_MCI_BASE+SAM_HSMCI_CR_OFFSET)
-#define SAM_HSMCI_MR                  (SAM_MCI_BASE+SAM_HSMCI_MR_OFFSET)
-#define SAM_HSMCI_DTOR                (SAM_MCI_BASE+SAM_HSMCI_DTOR_OFFSET)
-#define SAM_HSMCI_SDCR                (SAM_MCI_BASE+SAM_HSMCI_SDCR_OFFSET)
-#define SAM_HSMCI_ARGR                (SAM_MCI_BASE+SAM_HSMCI_ARGR_OFFSET)
-#define SAM_HSMCI_CMDR                (SAM_MCI_BASE+SAM_HSMCI_CMDR_OFFSET)
-#define SAM_HSMCI_BLKR                (SAM_MCI_BASE+SAM_HSMCI_BLKR_OFFSET)
-#define SAM_HSMCI_CSTOR               (SAM_MCI_BASE+SAM_HSMCI_CSTOR_OFFSET)
-#define SAM_HSMCI_RSPR0               (SAM_MCI_BASE+SAM_HSMCI_RSPR0_OFFSET)
-#define SAM_HSMCI_RSPR1               (SAM_MCI_BASE+SAM_HSMCI_RSPR1_OFFSET)
-#define SAM_HSMCI_RSPR2               (SAM_MCI_BASE+SAM_HSMCI_RSPR2_OFFSET)
-#define SAM_HSMCI_RSPR3               (SAM_MCI_BASE+SAM_HSMCI_RSPR3_OFFSET)
-#define SAM_HSMCI_RDR                 (SAM_MCI_BASE+SAM_HSMCI_RDR_OFFSET)
-#define SAM_HSMCI_TDR                 (SAM_MCI_BASE+SAM_HSMCI_TDR_OFFSET)
-#define SAM_HSMCI_SR                  (SAM_MCI_BASE+SAM_HSMCI_SR_OFFSET)
-#define SAM_HSMCI_IER                 (SAM_MCI_BASE+SAM_HSMCI_IER_OFFSET)
-#define SAM_HSMCI_IDR                 (SAM_MCI_BASE+SAM_HSMCI_IDR_OFFSET)
-#define SAM_HSMCI_IMR                 (SAM_MCI_BASE+SAM_HSMCI_IMR_OFFSET)
+#define SAM_HSMCI_CR                  (SAM_HSMCI_BASE+SAM_HSMCI_CR_OFFSET)
+#define SAM_HSMCI_MR                  (SAM_HSMCI_BASE+SAM_HSMCI_MR_OFFSET)
+#define SAM_HSMCI_DTOR                (SAM_HSMCI_BASE+SAM_HSMCI_DTOR_OFFSET)
+#define SAM_HSMCI_SDCR                (SAM_HSMCI_BASE+SAM_HSMCI_SDCR_OFFSET)
+#define SAM_HSMCI_ARGR                (SAM_HSMCI_BASE+SAM_HSMCI_ARGR_OFFSET)
+#define SAM_HSMCI_CMDR                (SAM_HSMCI_BASE+SAM_HSMCI_CMDR_OFFSET)
+#define SAM_HSMCI_BLKR                (SAM_HSMCI_BASE+SAM_HSMCI_BLKR_OFFSET)
+#define SAM_HSMCI_CSTOR               (SAM_HSMCI_BASE+SAM_HSMCI_CSTOR_OFFSET)
+#define SAM_HSMCI_RSPR0               (SAM_HSMCI_BASE+SAM_HSMCI_RSPR0_OFFSET)
+#define SAM_HSMCI_RSPR1               (SAM_HSMCI_BASE+SAM_HSMCI_RSPR1_OFFSET)
+#define SAM_HSMCI_RSPR2               (SAM_HSMCI_BASE+SAM_HSMCI_RSPR2_OFFSET)
+#define SAM_HSMCI_RSPR3               (SAM_HSMCI_BASE+SAM_HSMCI_RSPR3_OFFSET)
+#define SAM_HSMCI_RDR                 (SAM_HSMCI_BASE+SAM_HSMCI_RDR_OFFSET)
+#define SAM_HSMCI_TDR                 (SAM_HSMCI_BASE+SAM_HSMCI_TDR_OFFSET)
+#define SAM_HSMCI_SR                  (SAM_HSMCI_BASE+SAM_HSMCI_SR_OFFSET)
+#define SAM_HSMCI_IER                 (SAM_HSMCI_BASE+SAM_HSMCI_IER_OFFSET)
+#define SAM_HSMCI_IDR                 (SAM_HSMCI_BASE+SAM_HSMCI_IDR_OFFSET)
+#define SAM_HSMCI_IMR                 (SAM_HSMCI_BASE+SAM_HSMCI_IMR_OFFSET)
 
 #if defined(CONFIG_ARCH_CHIP_SAM3U)
-#  define SAM_HSMCI_DMA               (SAM_MCI_BASE+SAM_HSMCI_DMA_OFFSET)
+#  define SAM_HSMCI_DMA               (SAM_HSMCI_BASE+SAM_HSMCI_DMA_OFFSET)
 #endif
 
-#define SAM_HSMCI_CFG                 (SAM_MCI_BASE+SAM_HSMCI_CFG_OFFSET)
-#define SAM_HSMCI_WPMR                (SAM_MCI_BASE+SAM_HSMCI_WPMR_OFFSET)
-#define SAM_HSMCI_WPSR                (SAM_MCI_BASE+SAM_HSMCI_WPSR_OFFSET)
-#define SAM_HSMCI_FIFO                (SAM_MCI_BASE+SAM_HSMCI_FIFO_OFFSET)
+#define SAM_HSMCI_CFG                 (SAM_HSMCI_BASE+SAM_HSMCI_CFG_OFFSET)
+#define SAM_HSMCI_WPMR                (SAM_HSMCI_BASE+SAM_HSMCI_WPMR_OFFSET)
+#define SAM_HSMCI_WPSR                (SAM_HSMCI_BASE+SAM_HSMCI_WPSR_OFFSET)
+#define SAM_HSMCI_FIFO                (SAM_HSMCI_BASE+SAM_HSMCI_FIFO_OFFSET)
+
+#if (defined(CONFIG_ARCH_CHIP_SAM4S) && defined(CONFIG_SAM34_PDCA))
+#  define SAM_HSMCI_PDC_RPR           (SAM_HSMCI_BASE+SAM_PDC_RPR_OFFSET)
+#  define SAM_HSMCI_PDC_RCR           (SAM_HSMCI_BASE+SAM_PDC_RCR_OFFSET)
+#  define SAM_HSMCI_PDC_TPR           (SAM_HSMCI_BASE+SAM_PDC_TPR_OFFSET)
+#  define SAM_HSMCI_PDC_TCR           (SAM_HSMCI_BASE+SAM_PDC_TCR_OFFSET)
+#  define SAM_HSMCI_PDC_RNPR          (SAM_HSMCI_BASE+SAM_PDC_RNPR_OFFSET)
+#  define SAM_HSMCI_PDC_RNCR          (SAM_HSMCI_BASE+SAM_PDC_RNCR_OFFSET)
+#  define SAM_HSMCI_PDC_TNPR          (SAM_HSMCI_BASE+SAM_PDC_TNPR_OFFSET)
+#  define SAM_HSMCI_PDC_TNCR          (SAM_HSMCI_BASE+SAM_PDC_TNCR_OFFSET)
+#  define SAM_HSMCI_PDC_PTCR          (SAM_HSMCI_BASE+SAM_PDC_PTCR_OFFSET)
+#  define SAM_HSMCI_PDC_PTSR          (SAM_HSMCI_BASE+SAM_PDC_PTSR_OFFSET)
+#endif
 
 /* HSMCI register bit definitions *******************************************************/
 
@@ -127,15 +141,17 @@
 
 #define HSMCI_MR_CLKDIV_SHIFT         (0)       /* Bits 0-7: Clock Divider */
 #define HSMCI_MR_CLKDIV_MASK          (0xff << HSMCI_MR_CLKDIV_SHIFT)
+#  define HSMCI_MR_CLKDIV(n)          ((uint32_t)(n) << HSMCI_MR_CLKDIV_SHIFT)
 #define HSMCI_MR_PWSDIV_SHIFT         (8)       /* Bits 8-10: Power Saving Divider */
 #define HSMCI_MR_PWSDIV_MASK          (7 << HSMCI_MR_PWSDIV_SHIFT)
+#  define HSMCI_MR_PWSDIV(n)          ((uint32_t)(n) << HSMCI_MR_PWSDIV_SHIFT)
 #  define HSMCI_MR_PWSDIV_MAX         (7 << HSMCI_MR_PWSDIV_SHIFT)
 #define HSMCI_MR_RDPROOF              (1 << 11) /* Bit 11: Read Proof Enable */
 #define HSMCI_MR_WRPROOF              (1 << 12) /* Bit 12: Write Proof Enable */
 #define HSMCI_MR_FBYTE                (1 << 13) /* Bit 13: Force Byte Transfer */
 #define HSMCI_MR_PADV                 (1 << 14) /* Bit 14: Padding Value */
 
-#if defined(CONFIG_ARCH_CHIP_SAM4S)
+#if defined(CONFIG_ARCH_CHIP_SAM4S) || defined(CONFIG_ARCH_CHIP_SAM4E)
 #  define HSMCI_MR_PDCMODE            (1 << 15) /* Bit 15: PDC-oriented Mode */
 #endif
 
@@ -144,10 +160,15 @@
 #  define HSMCI_MR_BLKLEN_MASK        (0xffff << HSMCI_MR_BLKLEN_SHIFT)
 #endif
 
+#if defined(CONFIG_ARCH_CHIP_SAM4E)
+#  define HSMCI_MR_CLKODD             (1 << 16) /* Bit 16: Clock divider is odd */
+#endif
+
 /* HSMCI Data Timeout Register */
 
 #define HSMCI_DTOR_DTOCYC_SHIFT       (0)       /* Bits 0-3: Data Timeout Cycle Number */
 #define HSMCI_DTOR_DTOCYC_MASK        (15 << HSMCI_DTOR_DTOCYC_SHIFT)
+#  define HSMCI_DTOR_DTOCYC(n)        ((uint32_t)(n) << HSMCI_DTOR_DTOCYC_SHIFT)
 #  define HSMCI_DTOR_DTOCYC_MAX       (15 << HSMCI_DTOR_DTOCYC_SHIFT)
 #define HSMCI_DTOR_DTOMUL_SHIFT       (4)       /* Bits 4-6: Data Timeout Multiplier */
 #define HSMCI_DTOR_DTOMUL_MASK        (7 << HSMCI_DTOR_DTOMUL_SHIFT)
@@ -178,6 +199,7 @@
 
 #define HSMCI_CMDR_CMDNB_SHIFT        (0)       /* Bits 0-5: Command Number */
 #define HSMCI_CMDR_CMDNB_MASK         (63 << HSMCI_CMDR_CMDNB_SHIFT)
+#  define HSMCI_CMDR_CMDNB(n)         ((uint32_t)(n) << HSMCI_CMDR_CMDNB_SHIFT)
 #define HSMCI_CMDR_RSPTYP_SHIFT       (6)       /* Bits 6-7: Response Type */
 #define HSMCI_CMDR_RSPTYP_MASK        (3 << HSMCI_CMDR_RSPTYP_SHIFT)
 #  define HSMCI_CMDR_RSPTYP_NONE      (0 << HSMCI_CMDR_RSPTYP_SHIFT) /* No response */
@@ -223,13 +245,16 @@
 
 #define HSMCI_BLKR_BCNT_SHIFT         (0)       /* Bits 0-15: MMC/SDIO Block Count - SDIO Byte Count */
 #define HSMCI_BLKR_BCNT_MASK          (0xffff << HSMCI_BLKR_BCNT_SHIFT)
+#  define HSMCI_BLKR_BCNT(n)          ((uint32_t)(n) << HSMCI_BLKR_BCNT_SHIFT)
 #define HSMCI_BLKR_BLKLEN_SHIFT       (16)      /* Bits 16-31: Data Block Length */
 #define HSMCI_BLKR_BLKLEN_MASK        (0xffff << HSMCI_BLKR_BLKLEN_SHIFT)
+#  define HSMCI_BLKR_BLKLEN(n)        ((uint32_t)(n) << HSMCI_BLKR_BLKLEN_SHIFT)
 
 /* HSMCI Completion Signal Timeout Register */
 
 #define HSMCI_CSTOR_CSTOCYC_SHIFT     (0)       /* Bits 0-3: Completion Signal Timeout Cycle Number */
 #define HSMCI_CSTOR_CSTOCYC_MASK      (15 << HSMCI_CSTOR_CSTOCYC_SHIFT)
+#  define HSMCI_CSTOR_CSTOCYC(n)      ((uint32_t)(n) << HSMCI_CSTOR_CSTOCYC_SHIFT)
 #define HSMCI_CSTOR_CSTOMUL_SHIFT     (4)       /* Bits 4-6: Completion Signal Timeout Multiplier */
 #define HSMCI_CSTOR_CSTOMUL_MASK      (7 << HSMCI_CSTOR_CSTOMUL_SHIFT)
 #  define HSMCI_CSTOR_CSTOMUL_1       (0 << HSMCI_CSTOR_CSTOMUL_SHIFT)
@@ -256,7 +281,7 @@
 #define HSMCI_INT_DTIP                (1 << 4)  /* Bit 4:  Data Transfer in Progress */
 #define HSMCI_INT_NOTBUSY             (1 << 5)  /* Bit 6:  HSMCI Not Busy */
 
-#if defined(CONFIG_ARCH_CHIP_SAM4S)
+#if defined(CONFIG_ARCH_CHIP_SAM4S) || defined(CONFIG_ARCH_CHIP_SAM4E)
 #  define HSMCI_INT_ENDRX             (1 << 6)  /* Bit 6:  End of RX Buffer */
 #  define HSMCI_INT_ENDTX             (1 << 7)  /* Bit 7:  End of TX Buffer */
 #endif
@@ -265,7 +290,7 @@
 #define HSMCI_INT_SDIOWAIT            (1 << 12) /* Bit 12: SDIO Read Wait Operation Status */
 #define HSMCI_INT_CSRCV               (1 << 13) /* Bit 13: CE-ATA Completion Signal Received */
 
-#if defined(CONFIG_ARCH_CHIP_SAM4S)
+#if defined(CONFIG_ARCH_CHIP_SAM4S) || defined(CONFIG_ARCH_CHIP_SAM4E)
 #  define HSMCI_INT_RXBUFF            (1 << 14) /* Bit 14:  RXBUFF: RX Buffer Full */
 #  define HSMCI_INT_TXBUFE            (1 << 15) /* Bit 15:  TXBUFE: TX Buffer Empty */
 #endif

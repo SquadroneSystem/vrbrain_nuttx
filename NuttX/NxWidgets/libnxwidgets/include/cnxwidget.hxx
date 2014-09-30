@@ -74,7 +74,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <stdint.h>
@@ -95,11 +95,11 @@
 /****************************************************************************
  * Pre-Processor Definitions
  ****************************************************************************/
- 
+
 /****************************************************************************
  * Implementation Classes
  ****************************************************************************/
- 
+
 #if defined(__cplusplus)
 
 namespace NXWidgets
@@ -141,19 +141,18 @@ namespace NXWidgets
 
     typedef struct
     {
-      uint8_t clicked         : 1;       /**< True if the widget is currently clicked. */
-      uint8_t hasFocus        : 1;       /**< True if the widget has focus. */
-      uint8_t dragging        : 1;       /**< True if the widget is being dragged. */
-      uint8_t deleted         : 1;       /**< True if the widget has been deleted. */
-      uint8_t borderless      : 1;       /**< True if the widget is borderless. */
-      uint8_t draggable       : 1;       /**< True if the widget can be dragged. */
-      uint8_t drawingEnabled  : 1;       /**< True if the widget can be drawn. */
-      uint8_t enabled         : 1;       /**< True if the widget is enabled. */
-      uint8_t permeable       : 1;       /**< True if the widget's children can exceed its dimensions. */
-      uint8_t erased          : 1;       /**< True if the widget is currently erased from the frame buffer. */
-      uint8_t visibleRegionCacheInvalid : 1;  /**< True if the region cache is invalid. */
-      uint8_t hidden          : 1;       /**< True if the widget is hidden. */
-      uint8_t doubleClickable : 1;       /**< True if the widget can be double-clicked. */
+      uint8_t clicked         : 1;    /**< True if the widget is currently clicked. */
+      uint8_t hasFocus        : 1;    /**< True if the widget has focus. */
+      uint8_t dragging        : 1;    /**< True if the widget is being dragged. */
+      uint8_t deleted         : 1;    /**< True if the widget has been deleted. */
+      uint8_t borderless      : 1;    /**< True if the widget is borderless. */
+      uint8_t draggable       : 1;    /**< True if the widget can be dragged. */
+      uint8_t drawingEnabled  : 1;    /**< True if the widget can be drawn. */
+      uint8_t enabled         : 1;    /**< True if the widget is enabled. */
+      uint8_t permeable       : 1;    /**< True if the widget's children can exceed its dimensions. */
+      uint8_t erased          : 1;    /**< True if the widget is currently erased from the frame buffer. */
+      uint8_t hidden          : 1;    /**< True if the widget is hidden. */
+      uint8_t doubleClickable : 1;    /**< True if the widget can be double-clicked. */
     } Flags;
 
     /**
@@ -170,7 +169,7 @@ namespace NXWidgets
 
   protected:
     CWidgetControl *m_widgetControl;  /**< The controlling widget for the display */
-    CRect m_rect;                     /**< Rectange bounding the widget. */
+    CRect m_rect;                     /**< Rectangle bounding the widget. */
 
     // Dragging variables
 
@@ -192,7 +191,7 @@ namespace NXWidgets
     CWidgetEventHandlerList *m_widgetEventHandlers; /**< List of event handlers. */
 
     // Double-clicking
-    
+
     struct timespec m_lastClickTime;  /**< System timer when last clicked. */
     nxgl_coord_t m_lastClickX;        /**< X coordinate of last click. */
     nxgl_coord_t m_lastClickY;        /**< Y coordinate of last click. */
@@ -281,7 +280,7 @@ namespace NXWidgets
      */
 
     virtual inline void onClick(nxgl_coord_t x, nxgl_coord_t y) { }
-    
+
     /**
      * Called when the widget is double-clicked.  Override this when
      * creating new widgets if the widget should exhibit additional
@@ -305,7 +304,7 @@ namespace NXWidgets
      */
 
     virtual inline void onPreRelease(nxgl_coord_t x, nxgl_coord_t y) { }
-    
+
     /**
      * Called just after the widget is released; the widget will be in the
      * released stated.  Override this when creating new widgets if the
@@ -316,7 +315,7 @@ namespace NXWidgets
      */
 
     virtual inline void onRelease(nxgl_coord_t x, nxgl_coord_t y) { }
-    
+
     /**
      * Called when the widget is released outside of its boundaries.
      * Override this when creating new widgets if the widget should exhibit
@@ -327,7 +326,7 @@ namespace NXWidgets
      */
 
     virtual inline void onReleaseOutside(nxgl_coord_t x, nxgl_coord_t y) { }
-    
+
     /**
      * Called when the widget is dragged.  Override this when creating new
      * widgets if the widget should exhibit additional behaviour when it is
@@ -341,7 +340,7 @@ namespace NXWidgets
 
     virtual inline void onDrag(nxgl_coord_t x, nxgl_coord_t y,
                                nxgl_coord_t vX, nxgl_coord_t vY) { }
-    
+
     /**
      * Called when the widget starts being dragged.  Override this when
      * creating new widgets if the widget should exhibit additional
@@ -349,7 +348,7 @@ namespace NXWidgets
      */
 
     virtual inline void onDragStart(void) { }
-    
+
     /**
      * Called when the widget stops being dragged.  Override this when
      * creating new widgets if the widget should exhibit additional
@@ -357,7 +356,7 @@ namespace NXWidgets
      */
 
     virtual inline void onDragStop(void) { }
-    
+
     /**
      * Called when the widget gains focus.  Override this when creating new
      * widgets if the widget should exhibit additional behaviour when
@@ -365,7 +364,7 @@ namespace NXWidgets
      */
 
     virtual inline void onFocus(void) { }
-    
+
     /**
      * Called when the widget loses focus.  Override this when creating new
      * widgets if the widget should exhibit additional behaviour when
@@ -381,7 +380,7 @@ namespace NXWidgets
      */
 
     virtual inline void onEnable(void) { }
-    
+
     /**
      * Called when the widget is disabled.  Override this when creating new
      * widgets if the widget should exhibit additional behaviour when
@@ -389,7 +388,7 @@ namespace NXWidgets
      */
 
     virtual inline void onDisable(void) { }
-    
+
     /**
      * Called when the widget is resized.  Override this when creating new
      * widgets if the widget should exhibit additional behaviour when
@@ -478,7 +477,7 @@ namespace NXWidgets
     /**
      * Has the widget been marked for deletion?  This function recurses up the widget
      * hierarchy and only returns true if all of the widgets in the ancestor
-     * chain are not deleted.  
+     * chain are not deleted.
      *
      * Widgets marked for deletion are automatically deleted and should not be
      * interacted with.
@@ -798,11 +797,12 @@ namespace NXWidgets
 
     /**
      * Get the style used by this widget
-     * 
+     *
      * @return Const pointer to CWidgetStyle stored inside this widget.
      */
+
     inline const CWidgetStyle *getWidgetStyle() const { return &m_style; }
-    
+
     /**
      * Sets this widget's border state.
      *
@@ -865,6 +865,17 @@ namespace NXWidgets
     inline void removeWidgetEventHandler(CWidgetEventHandler* eventHandler)
     {
       m_widgetEventHandlers->removeWidgetEventHandler(eventHandler);
+    }
+
+   /**
+     * Return the number of registered event handlers
+     *
+     * @return The number of registered event handlers
+     */
+
+    inline int nWidgetEventHandlers(void) const
+    {
+      return m_widgetEventHandlers->size();
     }
 
     /**
@@ -1000,6 +1011,8 @@ namespace NXWidgets
      * Sets the font.
      *
      * @param font A pointer to the font to use.
+     *
+     * NOTE: This font is not deleted when the widget is destroyed!
      */
 
     virtual void setFont(CNxFont *font);

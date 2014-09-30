@@ -51,6 +51,8 @@
 #include <errno.h>
 #include <debug.h>
 
+#include <arpa/inet.h>
+
 #include "poll_internal.h"
 
 /****************************************************************************
@@ -145,7 +147,7 @@ void *poll_listener(pthread_addr_t pvarg)
         }
       else if (ret > NPOLLFDS)
         {
-          message("poll_listener: ERROR poll reported: %d\n");
+          message("poll_listener: ERROR poll reported: %d\n", errno);
         }
       else
         {
@@ -172,7 +174,7 @@ void *poll_listener(pthread_addr_t pvarg)
                  }
                else if (fds[i].revents != 0)
                 {
-                   message("poll_listener: ERROR unexpected revents[i]=%02x\n",
+                   message("poll_listener: ERROR unexpected revents[%d]=%02x\n",
                            i, fds[i].revents);
                  }
             }
@@ -249,7 +251,7 @@ void *poll_listener(pthread_addr_t pvarg)
             }
           while (nbytes > 0);
         }
- 
+
       /* Make sure that everything is displayed */
 
       msgflush();

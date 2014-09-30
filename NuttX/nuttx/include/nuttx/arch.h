@@ -1,7 +1,7 @@
 /****************************************************************************
  * include/nuttx/arch.h
  *
- *   Copyright (C) 2007-2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,61 @@
 
 #ifndef __INCLUDE_NUTTX_ARCH_H
 #define __INCLUDE_NUTTX_ARCH_H
+
+/* This header file contains function prototypes for the interfaces between
+ * (1) the nuttx core-code, (2) the microprocessor specific logic that
+ * resides under the arch/ sub-directory, and (3) the board-specific logic
+ * that resides under configs/
+ *
+ * Naming conventions:
+ *
+ * 1. Common Microprocessor Interfaces.
+ *
+ *    Any interface that is common across all microprocessors should be
+ *    prefixed with up_ and prototyped in this header file. These
+ *    definitions provide the common interface between NuttX and the
+ *    architecture-specific implementation in arch/
+ *
+ *    NOTE: up_ is supposed to stand for microprocessor; the u is like the
+ *    Greek letter micron: µ. So it would be µP which is a common shortening
+ *    of the word microprocessor.
+ *
+ * 2. Microprocessor-Specific Interfaces.
+ *
+ *    An interface which is unique to a certain microprocessor should be
+ *    prefixed with the name of the microprocessor, for example stm32_,
+ *    and be prototyped in some header file in the arch/ directories.
+ *
+ *    There is also a arch/<architecture>/include/<chip>/chip.h header file
+ *    that can be used to communicate other microprocessor-specific
+ *    information between the board logic and even application logic.
+ *    Application logic may, for example, need to know specific capabilities
+ *    of the chip.  Prototypes in that chip.h header file should follow the
+ *    microprocessor specific naming convention.
+ *
+ * 3. Common Board Interfaces.
+ *
+ *    Any interface that is common across all boards should be prefixed
+ *    with board_ and should be prototyped in this header file. These
+ *    board_ definitions provide the interface between the board-level
+ *    logic and the architecture-specific logic.
+ *
+ *    There is also a configs/<board>/include/board.h header file that
+ *    can be used to communicate other board-specific information between
+ *    the architecture logic and even application logic.  Any definitions
+ *    which are common between a single architecture and several boards
+ *    should go in this board.h header file; this file is reserved for
+ *    board-related definitions common to all architectures.
+ *
+ * 4. Board-Specific Interfaces.
+ *
+ *    Any interface which is unique to a board should be prefixed with
+ *    the board name, for example stm32f4discovery_. Sometimes the board
+ *    name is too long so stm32_ would be okay too. These should be
+ *    prototyped in configs/<board>/src/<board>.h and should not be used
+ *    outside of that board directory since board-specific definitions
+ *    have no meaning outside of the board directory.
+ */
 
 /****************************************************************************
  * Included Files
@@ -73,8 +128,8 @@ extern "C"
 #endif
 
 /****************************************************************************
- * These are standard interfaces that must be exported to the
- * scheduler from architecture-specific code.
+ * These are standard interfaces that must be exported to the base RTOS
+ * logic from architecture-specific code.
  ****************************************************************************/
 
 /****************************************************************************
@@ -103,7 +158,7 @@ void up_initialize(void);
  *   If CONFIG_BOARD_INITIALIZE is selected, then an additional
  *   initialization call will be performed in the boot-up sequence to a
  *   function called board_initialize().  board_initialize() will be
- *   called immediately after up_intiialize() is called and just before the
+ *   called immediately after up_initialize() is called and just before the
  *   initial application is started.  This additional initialization phase
  *   may be used, for example, to initialize board-specific device drivers.
  *
@@ -362,7 +417,7 @@ void up_release_pending(void);
  *
  * Description:
  *   Called when the priority of a running or
- *   ready-to-run task changes and the reprioritization will 
+ *   ready-to-run task changes and the reprioritization will
  *   cause a context switch.  Two cases:
  *
  *   1) The priority of the currently running task drops and the next
@@ -885,6 +940,246 @@ int up_prioritize_irq(int irq, int priority);
 #endif
 
 /****************************************************************************
+ * Tickless OS Support.
+ *
+ * When CONFIG_SCHED_TICKLESS is enabled, all support for timer interrupts
+ * is suppressed and the platform specific code is expected to provide the
+ * following custom functions.
+ *
+ *   void up_timer_initialize(void): Initializes the timer facilities.  Called
+ *     early in the intialization sequence (by up_intialize()).
+ *   int up_timer_gettime(FAR struct timespec *ts):  Returns the current
+ *     time from the platform specific time source.
+ *
+ * The tickless option can be supported either via a simple interval timer
+ * (plus elapsed time) or via an alarm.  The interval timer allows programming
+ * events to occur after an interval.  With the alarm, you can set a time in
+ * the future and get an event when that alarm goes off.
+ *
+ *   int up_alarm_cancel(void):  Cancel the alarm.
+ *   int up_alarm_start(FAR const struct timespec *ts): Enable (or re-anable
+ *     the alarm.
+ * #else
+ *   int up_timer_cancel(void):  Cancels the interval timer.
+ *   int up_timer_start(FAR const struct timespec *ts): Start (or re-starts)
+ *     the interval timer.
+ * #endif
+ *
+ * The RTOS will provide the following interfaces for use by the platform-
+ * specific interval timer implementation:
+ *
+ * #ifdef CONFIG_SCHED_TICKLESS_ALARM
+ *   void sched_alarm_expiration(FAR const struct timespec *ts):  Called
+ *     by the platform-specific logic when the alarm expires.
+ * #else
+ *   void sched_timer_expiration(void):  Called by the platform-specific
+ *     logic when the interval timer expires.
+ * #endif
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: up_timer_initialize
+ *
+ * Description:
+ *   Initializes all platform-specific timer facilities.  This function is
+ *   called early in the initialization sequence by up_intialize().
+ *   On return, the current up-time should be available from
+ *   up_timer_gettime() and the interval timer is ready for use (but not
+ *   actively timing).
+ *
+ *   Provided by platform-specific code and called from the architecture-
+ *   specific logic.
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Returned Value:
+ *   None
+ *
+ * Assumptions:
+ *   Called early in the initialization sequence before any special
+ *   concurrency protections are required.
+ *
+ ****************************************************************************/
+
+#if 0 /* Prototyped in up_internal.h in all cases. */
+void up_timer_initialize(void);
+#endif
+
+/****************************************************************************
+ * Name: up_timer_gettime
+ *
+ * Description:
+ *   Return the elapsed time since power-up (or, more correctly, since
+ *   up_timer_initialize() was called).  This function is functionally
+ *   equivalent to:
+ *
+ *      int clock_gettime(clockid_t clockid, FAR struct timespec *ts);
+ *
+ *   when clockid is CLOCK_MONOTONIC.
+ *
+ *   This function provides the basis for reporting the current time and
+ *   also is used to eliminate error build-up from small errors in interval
+ *   time calculations.
+ *
+ *   Provided by platform-specific code and called from the RTOS base code.
+ *
+ * Input Parameters:
+ *   ts - Provides the location in which to return the up-time.
+ *
+ * Returned Value:
+ *   Zero (OK) is returned on success; a negated errno value is returned on
+ *   any failure.
+ *
+ * Assumptions:
+ *   Called from the the normal tasking context.  The implementation must
+ *   provide whatever mutual exclusion is necessary for correct operation.
+ *   This can include disabling interrupts in order to assure atomic register
+ *   operations.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_SCHED_TICKLESS
+int up_timer_gettime(FAR struct timespec *ts);
+#endif
+
+/****************************************************************************
+ * Name: up_alarm_cancel
+ *
+ * Description:
+ *   Cancel the alarm and return the time of cancellation of the alarm.
+ *   These two steps need to be as nearly atomic as possible.
+ *   sched_alarm_expiration() will not be called unless the alarm is
+ *   restarted with up_alarm_start().
+ *
+ *   If, as a race condition, the alarm has already expired when this
+ *   function is called, then time returned is the current time.
+ *
+ *   NOTE: This function may execute at a high rate with no timer running (as
+ *   when pre-emption is enabled and disabled).
+ *
+ *   Provided by platform-specific code and called from the RTOS base code.
+ *
+ * Input Parameters:
+ *   ts - Location to return the expiration time.  The current time should
+ *        returned if the alarm is not active.  ts may be NULL in which
+ *        case the time is not returned.
+ *
+ * Returned Value:
+ *   Zero (OK) is returned on success.  A call to up_alarm_cancel() when
+ *   the timer is not active should also return success; a negated errno
+ *   value is returned on any failure.
+ *
+ * Assumptions:
+ *   May be called from interrupt level handling or from the normal tasking
+ *   level.  Interrupts may need to be disabled internally to assure
+ *   non-reentrancy.
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_SCHED_TICKLESS) && defined(CONFIG_SCHED_TICKLESS_ALARM)
+int up_alarm_cancel(FAR struct timespec *ts);
+#endif
+
+/****************************************************************************
+ * Name: up_alarm_start
+ *
+ * Description:
+ *   Start the alarm.  sched_alarm_expiration() will be called when the
+ *   alarm occurs (unless up_alaram_cancel is called to stop it).
+ *
+ *   Provided by platform-specific code and called from the RTOS base code.
+ *
+ * Input Parameters:
+ *   ts - The time in the future at the alarm is expected to occur.  When
+ *        the alarm occurs the timer logic will call sched_alarm_expiration().
+ *
+ * Returned Value:
+ *   Zero (OK) is returned on success; a negated errno value is returned on
+ *   any failure.
+ *
+ * Assumptions:
+ *   May be called from interrupt level handling or from the normal tasking
+ *   level.  Interrupts may need to be disabled internally to assure
+ *   non-reentrancy.
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_SCHED_TICKLESS) && defined(CONFIG_SCHED_TICKLESS_ALARM)
+int up_alarm_start(FAR const struct timespec *ts);
+#endif
+
+/****************************************************************************
+ * Name: up_timer_cancel
+ *
+ * Description:
+ *   Cancel the interval timer and return the time remaining on the timer.
+ *   These two steps need to be as nearly atomic as possible.
+ *   sched_timer_expiration() will not be called unless the timer is
+ *   restarted with up_timer_start().
+ *
+ *   If, as a race condition, the timer has already expired when this
+ *   function is called, then that pending interrupt must be cleared so
+ *   that up_timer_start() and the remaining time of zero should be
+ *   returned.
+ *
+ *   NOTE: This function may execute at a high rate with no timer running (as
+ *   when pre-emption is enabled and disabled).
+ *
+ *   Provided by platform-specific code and called from the RTOS base code.
+ *
+ * Input Parameters:
+ *   ts - Location to return the remaining time.  Zero should be returned
+ *        if the timer is not active.  ts may be zero in which case the
+ *        time remaining is not returned.
+ *
+ * Returned Value:
+ *   Zero (OK) is returned on success.  A call to up_timer_cancel() when
+ *   the timer is not active should also return success; a negated errno
+ *   value is returned on any failure.
+ *
+ * Assumptions:
+ *   May be called from interrupt level handling or from the normal tasking
+ *   level.  Interrupts may need to be disabled internally to assure
+ *   non-reentrancy.
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_SCHED_TICKLESS) && !defined(CONFIG_SCHED_TICKLESS_ALARM)
+int up_timer_cancel(FAR struct timespec *ts);
+#endif
+
+/****************************************************************************
+ * Name: up_timer_start
+ *
+ * Description:
+ *   Start the interval timer.  sched_timer_expiration() will be called at
+ *   the completion of the timeout (unless up_timer_cancel is called to stop
+ *   the timing.
+ *
+ *   Provided by platform-specific code and called from the RTOS base code.
+ *
+ * Input Parameters:
+ *   ts - Provides the time interval until sched_timer_expiration() is
+ *        called.
+ *
+ * Returned Value:
+ *   Zero (OK) is returned on success; a negated errno value is returned on
+ *   any failure.
+ *
+ * Assumptions:
+ *   May be called from interrupt level handling or from the normal tasking
+ *   level.  Interrupts may need to be disabled internally to assure
+ *   non-reentrancy.
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_SCHED_TICKLESS) && !defined(CONFIG_SCHED_TICKLESS_ALARM)
+int up_timer_start(FAR const struct timespec *ts);
+#endif
+
+/****************************************************************************
  * Name: up_romgetc
  *
  * Description:
@@ -956,23 +1251,95 @@ void up_cxxinitialize(void);
 #endif
 
 /****************************************************************************
- * These are standard interfaces that are exported by the OS
- * for use by the architecture specific logic
+ * These are standard interfaces that are exported by the OS for use by the
+ * architecture specific logic
  ****************************************************************************/
 
 /****************************************************************************
  * Name: sched_process_timer
  *
  * Description:
- *   This function handles system timer events.
- *   The timer interrupt logic itself is implemented in the
- *   architecture specific code, but must call the following OS
- *   function periodically -- the calling interval must be
- *   MSEC_PER_TICK.
+ *   This function handles system timer events (only when
+ *   CONFIG_SCHED_TICKLESS is *not* defined).  The timer interrupt logic
+ *   itself is implemented in the architecture specific code, but must call
+ *   the following OS function periodically -- the calling interval must
+ *   be MSEC_PER_TICK.
  *
  ****************************************************************************/
 
+#ifndef CONFIG_SCHED_TICKLESS
 void sched_process_timer(void);
+#endif
+
+/****************************************************************************
+ * Name:  sched_timer_expiration
+ *
+ * Description:
+ *   if CONFIG_SCHED_TICKLESS is defined, then this function is provided by
+ *   the RTOS base code and called from platform-specific code when the
+ *   interval timer used to implement the tick-less OS expires.
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Returned Value:
+ *   None
+ *
+ * Assumptions/Limitations:
+ *   Base code implementation assumes that this function is called from
+ *   interrupt handling logic with interrupts disabled.
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_SCHED_TICKLESS) && !defined(CONFIG_SCHED_TICKLESS_ALARM)
+void sched_timer_expiration(void);
+#endif
+
+/****************************************************************************
+ * Name:  sched_alarm_expiration
+ *
+ * Description:
+ *   if CONFIG_SCHED_TICKLESS is defined, then this function is provided by
+ *   the RTOS base code and called from platform-specific code when the
+ *   alarm used to implement the tick-less OS expires.
+ *
+ * Input Parameters:
+ *   ts - The time that the alarm expired
+ *
+ * Returned Value:
+ *   None
+ *
+ * Assumptions/Limitations:
+ *   Base code implementation assumes that this function is called from
+ *   interrupt handling logic with interrupts disabled.
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_SCHED_TICKLESS) && defined(CONFIG_SCHED_TICKLESS_ALARM)
+void sched_alarm_expiration(FAR const struct *ts);
+#endif
+
+/************************************************************************
+ * Name: sched_process_cpuload
+ *
+ * Description:
+ *   Collect data that can be used for CPU load measurements.
+ *
+ * Inputs:
+ *   None
+ *
+ * Return Value:
+ *   None
+ *
+ * Assumptions/Limitations:
+ *   This function is called from a timer interrupt handler with all
+ *   interrupts disabled.
+ *
+ ************************************************************************/
+
+#if defined(CONFIG_SCHED_CPULOAD) && defined(CONFIG_SCHED_CPULOAD_EXTCLK)
+void weak_function sched_process_cpuload(void);
+#endif
 
 /****************************************************************************
  * Name: irq_dispatch
@@ -987,16 +1354,44 @@ void sched_process_timer(void);
 void irq_dispatch(int irq, FAR void *context);
 
 /****************************************************************************
+ * Name: up_check_stack and friends
+ *
+ * Description:
+ *   Determine (approximately) how much stack has been used be searching the
+ *   stack memory for a high water mark.  That is, the deepest level of the
+ *   stack that clobbered some recognizable marker in the stack memory.
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Returned value:
+ *   The estimated amount of stack space used.
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_DEBUG) && defined(CONFIG_DEBUG_STACK)
+struct tcb_s;
+size_t  up_check_tcbstack(FAR struct tcb_s *tcb);
+ssize_t up_check_tcbstack_remain(FAR struct tcb_s *tcb);
+size_t  up_check_stack(void);
+ssize_t up_check_stack_remain(void);
+#if CONFIG_ARCH_INTERRUPTSTACK > 3
+size_t  up_check_intstack(void);
+size_t  up_check_intstack_remain(void);
+#endif
+#endif
+
+/****************************************************************************
  * Board-specific button interfaces exported by the board-specific logic
  ****************************************************************************/
 
 /****************************************************************************
- * Name: up_buttoninit
+ * Name: board_button_initialize
  *
  * Description:
- *   up_buttoninit() must be called to initialize button resources.  After
- *   that, up_buttons() may be called to collect the current state of all
- *   buttons or up_irqbutton() may be called to register button interrupt
+ *   board_button_initialize() must be called to initialize button resources.
+ *   After that, board_buttons() may be called to collect the current state of
+ *   all buttons or board_button_irq() may be called to register button interrupt
  *   handlers.
  *
  *   NOTE: This interface may or may not be supported by board-specific
@@ -1006,32 +1401,32 @@ void irq_dispatch(int irq, FAR void *context);
  ****************************************************************************/
 
 #ifdef CONFIG_ARCH_BUTTONS
-void up_buttoninit(void);
+void board_button_initialize(void);
 #endif
 
 /****************************************************************************
- * Name: up_buttons
+ * Name: board_buttons
  *
  * Description:
- *   After up_buttoninit() has been called, up_buttons() may be called to
- *   collect the state of all buttons.  up_buttons() returns an 8-bit bit set
- *   with each bit associated with a button.  A bit set to "1" means that the
- *   button is depressed; a bit set to "0" means that the button is released.
- *   The correspondence of the each button bit and physical buttons is board-
- *   specific.
+ *   After board_button_initialize() has been called, board_buttons() may be
+ *   called to collect the state of all buttons.  board_buttons() returns an
+ *   8-bit bit set with each bit associated with a button.  A bit set to
+ *   "1" means that the button is depressed; a bit set to "0" means that
+ *   the button is released.  The correspondence of the each button bit
+ *   and physical buttons is board-specific.
  *
  *   NOTE: This interface may or may not be supported by board-specific
- *   logic.  If the board supports button interfaces, then CONFIG_ARCH_BUTTONS
- *   will be defined
+ *   logic.  If the board supports button interfaces, then
+ *   CONFIG_ARCH_BUTTONS will be defined
  *
  ****************************************************************************/
 
 #ifdef CONFIG_ARCH_BUTTONS
-uint8_t up_buttons(void);
+uint8_t board_buttons(void);
 #endif
 
 /****************************************************************************
- * Name: up_irqbutton
+ * Name: board_button_irq
  *
  * Description:
  *   This function may be called to register an interrupt handler that will
@@ -1048,7 +1443,7 @@ uint8_t up_buttons(void);
  ****************************************************************************/
 
 #ifdef CONFIG_ARCH_IRQBUTTONS
-xcpt_t up_irqbutton(int id, xcpt_t irqhandler);
+xcpt_t board_button_irq(int id, xcpt_t irqhandler);
 #endif
 
 /************************************************************************************
@@ -1086,6 +1481,26 @@ void relays_powermodes(uint32_t relays_stat);
  ****************************************************************************/
 
 int up_putc(int ch);
+
+/****************************************************************************
+ * Name: up_getc
+ *
+ * Description:
+ *   Get one character on the console
+ *
+ ****************************************************************************/
+
+int up_getc(void);
+
+/****************************************************************************
+ * Name: up_puts
+ *
+ * Description:
+ *   Output a string on the console
+ *
+ ****************************************************************************/
+
+void up_puts(FAR const char *str);
 
 #ifdef __cplusplus
 }

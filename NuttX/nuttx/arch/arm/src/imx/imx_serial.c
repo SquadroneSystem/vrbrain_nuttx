@@ -58,7 +58,6 @@
 #include "chip.h"
 #include "up_arch.h"
 #include "imx_gpio.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 #ifdef USE_SERIALDRIVER
@@ -136,6 +135,9 @@ static const struct uart_ops_s g_uart_ops =
   .receive        = up_receive,
   .rxint          = up_rxint,
   .rxavailable    = up_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
   .send           = up_send,
   .txint          = up_txint,
   .txready        = up_txready,
@@ -514,7 +516,7 @@ static int up_setup(struct uart_dev_s *dev)
   if (priv->hwfc)
     {
       ucr2 |= UART_UCR2_IRTS;
- 
+
       /* CTS controled by Rx FIFO */
 
       ucr2 |= UART_UCR2_CTSC;
@@ -533,7 +535,7 @@ static int up_setup(struct uart_dev_s *dev)
 
   up_serialout(priv, UART_UCR2, ucr2);
 
-  /* Set the baud.  
+  /* Set the baud.
    *
    *   baud * 16 / REFFREQ = NUM/DEN
    *   UBIR    = NUM-1;
@@ -628,7 +630,7 @@ static int up_setup(struct uart_dev_s *dev)
   /* Set the TX trigger level to interrupt when the TxFIFO has 2 or fewer characters.
    * Set the RX trigger level to interrupt when the RxFIFO has 1 character.
    */
- 
+
   regval |= ((2 << UART_UFCR_TXTL_SHIFT) | (1 << UART_UFCR_RXTL_SHIFT));
   up_serialout(priv, UART_UFCR, regval);
 
@@ -803,7 +805,7 @@ static inline struct uart_dev_s *up_mapirq(int irq)
         break;
     }
   return dev;
-} 
+}
 
 /****************************************************************************
  * Name: up_interrupt (and front-ends)
@@ -832,7 +834,7 @@ static int up_interrupt(int irq, void *context)
    * until we have been looping for a long time.
    */
 
-  for(;;)
+  for (;;)
     {
       /* Get the current UART status and check for loop
        * termination conditions
@@ -841,7 +843,7 @@ static int up_interrupt(int irq, void *context)
       usr1 = up_serialin(priv, UART_USR1);
       usr1 &= (UART_USR1_RRDY | UART_USR1_TRDY);
 
-      if (usr1 == 0 || passes > 256) 
+      if (usr1 == 0 || passes > 256)
         {
           return OK;
         }
@@ -879,8 +881,10 @@ static int up_interrupt(int irq, void *context)
 
 static int up_ioctl(struct file *filep, int cmd, unsigned long arg)
 {
+#ifdef CONFIG_SERIAL_TIOCSERGSTRUCT
   struct inode      *inode = filep->f_inode;
   struct uart_dev_s *dev   = inode->i_private;
+#endif
   int                ret   = OK;
 
   switch (cmd)
@@ -969,7 +973,7 @@ static void up_rxint(struct uart_dev_s *dev, bool enable)
 static bool up_rxavailable(struct uart_dev_s *dev)
 {
   struct up_dev_s *priv = (struct up_dev_s*)dev->priv;
-  
+
   /* Return true is data is ready in the Rx FIFO */
 
   return ((up_serialin(priv, UART_USR2) & UART_USR2_RDR) != 0);
@@ -1060,7 +1064,7 @@ static bool up_txempty(struct uart_dev_s *dev)
  * Name: up_serialinit
  *
  * Description:
- *   Performs the low level UART initialization early in 
+ *   Performs the low level UART initialization early in
  *   debug so that the serial console will be available
  *   during bootup.  This must be called before up_serialinit.
  *

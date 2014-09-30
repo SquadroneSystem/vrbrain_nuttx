@@ -48,7 +48,6 @@
 #include <arch/irq.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
 #include "nvic.h"
 #include "up_internal.h"
 
@@ -61,7 +60,7 @@
  */
 
 #ifdef CONFIG_DEBUG_HARDFAULT
-# define hfdbg(format, arg...) lldbg(format, ##arg)
+# define hfdbg(format, ...) lldbg(format, ##__VA_ARGS__)
 #else
 # define hfdbg(x...)
 #endif
@@ -144,7 +143,7 @@ int up_hardfault(int irq, FAR void *context)
 
   /* Dump some hard fault info */
 
-  hfdbg("\nHard Fault:\n");
+  hfdbg("Hard Fault:\n");
   hfdbg("  IRQ: %d regs: %p\n", irq, regs);
   hfdbg("  BASEPRI: %08x PRIMASK: %08x IPSR: %08x CONTROL: %08x\n",
         getbasepri(), getprimask(), getipsr(), getcontrol());

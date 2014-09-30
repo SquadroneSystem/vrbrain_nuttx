@@ -1,7 +1,7 @@
 /************************************************************************************
  * arch/arm/src/stm32/chip/stm32_dac.h
  *
- *   Copyright (C) 2011, 2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2011, 2013-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,7 @@
 #define STM32_DAC_DHR12L1_OFFSET  0x000c /* DAC channel1 12-bit left aligned data holding register */
 #define STM32_DAC_DHR8R1_OFFSET   0x0010 /* DAC channel1 8-bit right aligned data holding register */
 #define STM32_DAC_DHR12R2_OFFSET  0x0014 /* DAC channel2 12-bit right aligned data holding register */
-#define STM32_DAC_DHR12L_OFFSET   0x0018 /* DAC channel2 12-bit left aligned data holding register */
+#define STM32_DAC_DHR12L2_OFFSET  0x0018 /* DAC channel2 12-bit left aligned data holding register */
 #define STM32_DAC_DHR8R2_OFFSET   0x001c /* DAC channel2 8-bit right-aligned data holding register */
 #define STM32_DAC_DHR12RD_OFFSET  0x0020 /* Dual DAC 12-bit right-aligned data holding register */
 #define STM32_DAC_DHR12LD_OFFSET  0x0024 /* DUAL DAC 12-bit left aligned data holding register */
@@ -72,7 +72,7 @@
 #define STM32_DAC_DHR12L1         (STM32_DAC_BASE+STM32_DAC_DHR12L1_OFFSET)
 #define STM32_DAC_DHR8R1          (STM32_DAC_BASE+STM32_DAC_DHR8R1_OFFSET)
 #define STM32_DAC_DHR12R2         (STM32_DAC_BASE+STM32_DAC_DHR12R2_OFFSET)
-#define STM32_DAC_DHR12L          (STM32_DAC_BASE+STM32_DAC_DHR12L_OFFSET)
+#define STM32_DAC_DHR12L2         (STM32_DAC_BASE+STM32_DAC_DHR12L2_OFFSET)
 #define STM32_DAC_DHR8R2          (STM32_DAC_BASE+STM32_DAC_DHR8R2_OFFSET)
 #define STM32_DAC_DHR12RD         (STM32_DAC_BASE+STM32_DAC_DHR12RD_OFFSET)
 #define STM32_DAC_DHR12LD         (STM32_DAC_BASE+STM32_DAC_DHR12LD_OFFSET)
@@ -103,7 +103,7 @@
 #  define DAC_CR_TSEL_TIM4       (5 << DAC_CR_TSEL_SHIFT) /* Timer 4 TRGO event */
 #  define DAC_CR_TSEL_EXT9       (6 << DAC_CR_TSEL_SHIFT) /* External line9 */
 #  define DAC_CR_TSEL_SW         (7 << DAC_CR_TSEL_SHIFT) /* Software trigger */
-#define DAC_CR_WAVE_SHIFT        (6)       /* Bits 6-7: DAC channel noise/triangle wave generation  */enable
+#define DAC_CR_WAVE_SHIFT        (6)       /* Bits 6-7: DAC channel noise/triangle wave generation  */
 #define DAC_CR_WAVE_MASK         (3 << DAC_CR_WAVE_SHIFT)
 #  define DAC_CR_WAVE_DISABLED   (0 << DAC_CR_WAVE_SHIFT) /* Wave generation disabled */
 #  define DAC_CR_WAVE_NOISE      (1 << DAC_CR_WAVE_SHIFT) /* Noise wave generation enabled */

@@ -1,7 +1,7 @@
 /****************************************************************************
  * arch/arm/src/c5471/c5471_ethernet.c
  *
- *   Copyright (C) 2007, 2009-2010 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007, 2009-2010, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Based one a C5471 Linux driver and released under this BSD license with
@@ -54,13 +54,13 @@
 #include <wdog.h>
 #include <errno.h>
 
+#include <arpa/inet.h>
+#include <net/ethernet.h>
+
 #include <nuttx/irq.h>
 #include <nuttx/arch.h>
-
-#include <net/ethernet.h>
-#include <nuttx/net/uip/uip.h>
-#include <nuttx/net/uip/uip-arp.h>
-#include <nuttx/net/uip/uip-arch.h>
+#include <nuttx/net/arp.h>
+#include <nuttx/net/netdev.h>
 
 #include "chip.h"
 #include "up_arch.h"
@@ -83,32 +83,21 @@
  * Default is disabled.
  */
 
-/* CONFIG_C5471_ETHERNET_PHY may be set to one of the following values to
- * select the PHY (or left undefined if there is no PHY)
- */
-
-#ifndef ETHERNET_PHY_LU3X31T_T64
-# define ETHERNET_PHY_LU3X31T_T64 1
-#endif
-#ifndef ETHERNET_PHY_AC101L
-# define ETHERNET_PHY_AC101L 2
-#endif
-
 /* Mode of operation defaults to AUTONEGOTIATION */
 
-#if defined(CONFIG_NET_C5471_AUTONEGOTIATION)
-# undef CONFIG_NET_C5471_BASET100
-# undef CONFIG_NET_C5471_BASET10
-#elif defined(CONFIG_NET_C5471_BASET100)
-# undef CONFIG_NET_C5471_AUTONEGOTIATION
-# undef CONFIG_NET_C5471_BASET10
-#elif defined(CONFIG_NET_C5471_BASET10)
-# undef CONFIG_NET_C5471_AUTONEGOTIATION
-# undef CONFIG_NET_C5471_BASET100
+#if defined(CONFIG_C5471_AUTONEGOTIATION)
+# undef CONFIG_C5471_BASET100
+# undef CONFIG_C5471_BASET10
+#elif defined(CONFIG_C5471_BASET100)
+# undef CONFIG_C5471_AUTONEGOTIATION
+# undef CONFIG_C5471_BASET10
+#elif defined(CONFIG_C5471_BASET10)
+# undef CONFIG_C5471_AUTONEGOTIATION
+# undef CONFIG_C5471_BASET100
 #else
-# define CONFIG_NET_C5471_AUTONEGOTIATION 1
-# undef CONFIG_NET_C5471_BASET100
-# undef CONFIG_NET_C5471_BASET10
+# define CONFIG_C5471_AUTONEGOTIATION 1
+# undef CONFIG_C5471_BASET100
+# undef CONFIG_C5471_BASET10
 #endif
 
 /* This should be disabled unless you are performing very low level debug */
@@ -281,7 +270,7 @@
 
 /* This is a helper pointer for accessing the contents of the Ethernet header */
 
-#define BUF ((struct uip_eth_hdr *)c5471->c_dev.d_buf)
+#define BUF ((struct eth_hdr_s *)c5471->c_dev.d_buf)
 
 /****************************************************************************
  * Private Types
@@ -341,7 +330,7 @@ struct c5471_driver_s
 
   /* This holds the information visible to uIP/NuttX */
 
-  struct uip_driver_s c_dev;  /* Interface understood by uIP */
+  struct net_driver_s c_dev;  /* Interface understood by uIP */
 };
 
 /****************************************************************************
@@ -370,7 +359,7 @@ static inline void c5471_incrxcpu(struct c5471_driver_s *c5471);
 /* Common TX logic */
 
 static int  c5471_transmit(struct c5471_driver_s *c5471);
-static int  c5471_uiptxpoll(struct uip_driver_s *dev);
+static int  c5471_txpoll(struct net_driver_s *dev);
 
 /* Interrupt handling */
 
@@ -391,12 +380,12 @@ static void c5471_txtimeout(int argc, uint32_t arg, ...);
 
 /* NuttX callback functions */
 
-static int c5471_ifup(struct uip_driver_s *dev);
-static int c5471_ifdown(struct uip_driver_s *dev);
-static int c5471_txavail(struct uip_driver_s *dev);
+static int c5471_ifup(struct net_driver_s *dev);
+static int c5471_ifdown(struct net_driver_s *dev);
+static int c5471_txavail(struct net_driver_s *dev);
 #ifdef CONFIG_NET_IGMP
-static int c5471_addmac(struct uip_driver_s *dev, FAR const uint8_t *mac);
-static int c5471_rmmac(struct uip_driver_s *dev, FAR const uint8_t *mac);
+static int c5471_addmac(struct net_driver_s *dev, FAR const uint8_t *mac);
+static int c5471_rmmac(struct net_driver_s *dev, FAR const uint8_t *mac);
 #endif
 
 /* Initialization functions */
@@ -424,7 +413,7 @@ static inline void c5471_dumpbuffer(const char *msg, const uint8_t *buffer, unsi
   /* CONFIG_DEBUG, CONFIG_DEBUG_VERBOSE, and CONFIG_DEBUG_NET have to be
    * defined or the following does nothing.
    */
-    
+
   nvdbgdumpbuffer(msg, buffer, nbytes);
 }
 #else
@@ -708,7 +697,7 @@ static int c5471_mdread (int adr, int reg)
  *
  ****************************************************************************/
 
-#if (CONFIG_C5471_ETHERNET_PHY == ETHERNET_PHY_LU3X31T_T64)
+#if defined(CONFIG_C5471_PHY_LU3X31T_T64)
 static int c5471_phyinit (void)
 {
   int phyid;
@@ -734,7 +723,7 @@ static int c5471_phyinit (void)
 
   /* Next, request a chip reset */
 
-  c5471_mdwrite(0, MD_PHY_CONTROL_REG, 0x8000); 
+  c5471_mdwrite(0, MD_PHY_CONTROL_REG, 0x8000);
   while (c5471_mdread(0, MD_PHY_CONTROL_REG) & 0x8000)
     {
       /* wait for chip reset to complete */
@@ -751,24 +740,24 @@ static int c5471_phyinit (void)
 
   /* Next, Set desired network rate, 10BaseT, 100BaseT, or auto. */
 
-#ifdef CONFIG_NET_C5471_AUTONEGOTIATION
+#ifdef CONFIG_C5471_AUTONEGOTIATION
   ndbg("Setting PHY Transceiver for Autonegotiation\n");
   c5471_mdwrite(0, MD_PHY_CONTROL_REG, MODE_AUTONEG);
-#endif 
-#ifdef CONFIG_NET_C5471_BASET100
+#endif
+#ifdef CONFIG_C5471_BASET100
   ndbg("Setting PHY Transceiver for 100BaseT FullDuplex\n");
   c5471_mdwrite(0, MD_PHY_CONTROL_REG, MODE_100MBIT_FULLDUP);
-#endif 
-#ifdef CONFIG_NET_C5471_BASET10
+#endif
+#ifdef CONFIG_C5471_BASET10
   ndbg("Setting PHY Transceiver for 10BaseT FullDuplex\n");
   c5471_mdwrite(0, MD_PHY_CONTROL_REG, MODE_10MBIT_FULLDUP);
-#endif 
+#endif
 
   status = c5471_mdread(0, MD_PHY_CTRL_STAT_REG);
   return status;
 }
 
-#elif (CONFIG_C5471_ETHERNET_PHY == ETHERNET_PHY_AC101L)
+#elif defined(CONFIG_C5471_PHY_AC101L)
 
 static int c5471_phyinit (void)
 {
@@ -787,11 +776,7 @@ static int c5471_phyinit (void)
 
 #else
 #  define c5471_phyinit()
-#  if defined(CONFIG_C5471_ETHERNET_PHY)
-#    error "CONFIG_C5471_ETHERNET_PHY value not recognized"
-#  else
-#    warning "CONFIG_C5471_ETHERNET_PHY not defined -- assumed NO PHY"
-#  endif
+#  warning "Assuming no PHY"
 #endif
 
 /****************************************************************************
@@ -859,7 +844,7 @@ static inline void c5471_incrxcpu(struct c5471_driver_s *c5471)
 
 static int c5471_transmit(struct c5471_driver_s *c5471)
 {
-  struct uip_driver_s *dev = &c5471->c_dev;
+  struct net_driver_s *dev = &c5471->c_dev;
   volatile uint16_t *packetmem;
   uint16_t framelen;
   bool bfirstframe;
@@ -969,11 +954,11 @@ static int c5471_transmit(struct c5471_driver_s *c5471)
 }
 
 /****************************************************************************
- * Function: c5471_uiptxpoll
+ * Function: c5471_txpoll
  *
  * Description:
  *   The transmitter is available, check if uIP has any outgoing packets ready
- *   to send.  This is a callback from uip_poll().  uip_poll() may be called:
+ *   to send.  This is a callback from devif_poll().  devif_poll() may be called:
  *
  *   1. When the preceding TX packet send is complete,
  *   2. When the preceding TX packet send timesout and the interface is reset
@@ -989,7 +974,7 @@ static int c5471_transmit(struct c5471_driver_s *c5471)
  *
  ****************************************************************************/
 
-static int c5471_uiptxpoll(struct uip_driver_s *dev)
+static int c5471_txpoll(struct net_driver_s *dev)
 {
   struct c5471_driver_s *c5471 = (struct c5471_driver_s *)dev->d_private;
 
@@ -999,7 +984,7 @@ static int c5471_uiptxpoll(struct uip_driver_s *dev)
 
   if (c5471->c_dev.d_len > 0)
     {
-      uip_arp_out(&c5471->c_dev);
+      arp_out(&c5471->c_dev);
       c5471_transmit(c5471);
 
       /* Check if the ESM has let go of the RX descriptor giving us access
@@ -1141,7 +1126,7 @@ static void c5471_rxstatus(struct c5471_driver_s *c5471)
 
 static void c5471_receive(struct c5471_driver_s *c5471)
 {
-  struct uip_driver_s *dev = &c5471->c_dev;
+  struct net_driver_s *dev = &c5471->c_dev;
   uint16_t *packetmem;
   bool bmore = true;
   int packetlen = 0;
@@ -1248,13 +1233,13 @@ static void c5471_receive(struct c5471_driver_s *c5471)
       /* We only accept IP packets of the configured type and ARP packets */
 
 #ifdef CONFIG_NET_IPv6
-      if (BUF->type == HTONS(UIP_ETHTYPE_IP6))
+      if (BUF->type == HTONS(ETHTYPE_IP6))
 #else
-      if (BUF->type == HTONS(UIP_ETHTYPE_IP))
+      if (BUF->type == HTONS(ETHTYPE_IP))
 #endif
         {
-          uip_arp_ipin(dev);
-          uip_input(dev);
+          arp_ipin(dev);
+          devif_input(dev);
 
           /* If the above function invocation resulted in data that should be
            * sent out on the network, the field  d_len will set to a value > 0.
@@ -1265,13 +1250,13 @@ static void c5471_receive(struct c5471_driver_s *c5471)
           if (dev->d_len > 0 &&
              (EIM_TXDESC_OWN_HOST & getreg32(c5471->c_rxcpudesc)) == 0)
             {
-              uip_arp_out(dev);
+              arp_out(dev);
               c5471_transmit(c5471);
             }
         }
-      else if (BUF->type == HTONS(UIP_ETHTYPE_ARP))
+      else if (BUF->type == HTONS(ETHTYPE_ARP))
         {
-          uip_arp_arpin(dev);
+          arp_arpin(dev);
 
           /* If the above function invocation resulted in data that should be
            * sent out on the network, the field  d_len will set to a value > 0.
@@ -1418,7 +1403,7 @@ static void c5471_txdone(struct c5471_driver_s *c5471)
 
   /* Then poll uIP for new XMIT data */
 
-  (void)uip_poll(&c5471->c_dev, c5471_uiptxpoll);
+  (void)devif_poll(&c5471->c_dev, c5471_txpoll);
 }
 
 /****************************************************************************
@@ -1494,7 +1479,7 @@ static int c5471_interrupt(int irq, FAR void *context)
       c5471_txdone(c5471);
     }
 
-  /* Enable Ethernet interrupts (perhaps excluding the TX done interrupt if 
+  /* Enable Ethernet interrupts (perhaps excluding the TX done interrupt if
    * there are no pending transmissions.
    */
 
@@ -1537,7 +1522,7 @@ static void c5471_txtimeout(int argc, uint32_t arg, ...)
 
   /* Then poll uIP for new XMIT data */
 
-  (void)uip_poll(&c5471->c_dev, c5471_uiptxpoll);
+  (void)devif_poll(&c5471->c_dev, c5471_txpoll);
 }
 
 /****************************************************************************
@@ -1569,7 +1554,7 @@ static void c5471_polltimer(int argc, uint32_t arg, ...)
     {
       /* If so, update TCP timing states and poll uIP for new XMIT data */
 
-      (void)uip_timer(&c5471->c_dev, c5471_uiptxpoll, C5471_POLLHSEC);
+      (void)devif_timer(&c5471->c_dev, c5471_txpoll, C5471_POLLHSEC);
     }
 
   /* Setup the watchdog poll timer again */
@@ -1582,7 +1567,7 @@ static void c5471_polltimer(int argc, uint32_t arg, ...)
  *
  * Description:
  *   NuttX Callback: Bring up the Ethernet interface when an IP address is
- *   provided 
+ *   provided
  *
  * Parameters:
  *   dev  - Reference to the NuttX driver state structure
@@ -1595,7 +1580,7 @@ static void c5471_polltimer(int argc, uint32_t arg, ...)
  *
  ****************************************************************************/
 
-static int c5471_ifup(struct uip_driver_s *dev)
+static int c5471_ifup(struct net_driver_s *dev)
 {
   struct c5471_driver_s *c5471 = (struct c5471_driver_s *)dev->d_private;
   volatile uint32_t clearbits;
@@ -1655,7 +1640,7 @@ static int c5471_ifup(struct uip_driver_s *dev)
  *
  ****************************************************************************/
 
-static int c5471_ifdown(struct uip_driver_s *dev)
+static int c5471_ifdown(struct net_driver_s *dev)
 {
   struct c5471_driver_s *c5471 = (struct c5471_driver_s *)dev->d_private;
   irqstate_t flags;
@@ -1695,7 +1680,7 @@ static int c5471_ifdown(struct uip_driver_s *dev)
  * Function: c5471_txavail
  *
  * Description:
- *   Driver callback invoked when new TX data is available.  This is a 
+ *   Driver callback invoked when new TX data is available.  This is a
  *   stimulus perform an out-of-cycle poll and, thereby, reduce the TX
  *   latency.
  *
@@ -1710,7 +1695,7 @@ static int c5471_ifdown(struct uip_driver_s *dev)
  *
  ****************************************************************************/
 
-static int c5471_txavail(struct uip_driver_s *dev)
+static int c5471_txavail(struct net_driver_s *dev)
 {
   struct c5471_driver_s *c5471 = (struct c5471_driver_s *)dev->d_private;
   irqstate_t flags;
@@ -1730,7 +1715,7 @@ static int c5471_txavail(struct uip_driver_s *dev)
        {
           /* If so, then poll uIP for new XMIT data */
 
-          (void)uip_poll(&c5471->c_dev, c5471_uiptxpoll);
+          (void)devif_poll(&c5471->c_dev, c5471_txpoll);
        }
     }
 
@@ -1747,7 +1732,7 @@ static int c5471_txavail(struct uip_driver_s *dev)
  *
  * Parameters:
  *   dev  - Reference to the NuttX driver state structure
- *   mac  - The MAC address to be added 
+ *   mac  - The MAC address to be added
  *
  * Returned Value:
  *   None
@@ -1757,7 +1742,7 @@ static int c5471_txavail(struct uip_driver_s *dev)
  ****************************************************************************/
 
 #ifdef CONFIG_NET_IGMP
-static int c5471_addmac(struct uip_driver_s *dev, FAR const uint8_t *mac)
+static int c5471_addmac(struct net_driver_s *dev, FAR const uint8_t *mac)
 {
   FAR struct c5471_driver_s *priv = (FAR struct c5471_driver_s *)dev->d_private;
 
@@ -1777,7 +1762,7 @@ static int c5471_addmac(struct uip_driver_s *dev, FAR const uint8_t *mac)
  *
  * Parameters:
  *   dev  - Reference to the NuttX driver state structure
- *   mac  - The MAC address to be removed 
+ *   mac  - The MAC address to be removed
  *
  * Returned Value:
  *   None
@@ -1787,7 +1772,7 @@ static int c5471_addmac(struct uip_driver_s *dev, FAR const uint8_t *mac)
  ****************************************************************************/
 
 #ifdef CONFIG_NET_IGMP
-static int c5471_rmmac(struct uip_driver_s *dev, FAR const uint8_t *mac)
+static int c5471_rmmac(struct net_driver_s *dev, FAR const uint8_t *mac)
 {
   FAR struct c5471_driver_s *priv = (FAR struct c5471_driver_s *)dev->d_private;
 
@@ -1988,7 +1973,7 @@ static void c5471_eimconfig(struct c5471_driver_s *c5471)
 //  putreg32(EIM_FILTER_LOGICAL|EIM_FILTER_UNICAST|EIM_FILTER_MULTICAST|
 //           EIM_FILTER_BROADCAST, EIM_CPU_FILTER);
   putreg32(EIM_FILTER_UNICAST|EIM_FILTER_MULTICAST|EIM_FILTER_BROADCAST, EIM_CPU_FILTER);
-#endif 
+#endif
 
   /* Disable all Ethernet interrupts */
 
@@ -1999,16 +1984,16 @@ static void c5471_eimconfig(struct c5471_driver_s *c5471)
 #if 1
   putreg32(EIM_CTRL_ENET0_EN|EIM_CTRL_RXENET0_EN|EIM_CTRL_TXENET0_EN|
            EIM_CTRL_RXCPU_EN|EIM_CTRL_TXCPU_EN, EIM_CTRL);
-#else 
+#else
   putreg32(EIM_CTRL_ENET0_EN|EIM_CTRL_ENET0_FLW|EIM_CTRL_RXENET0_EN|
            EIM_CTRL_TXENET0_EN|EIM_CTRL_RXCPU_EN|EIM_CTRL_TXCPU_EN, EIM_CTRL);
 #endif
 
-#if 1 
+#if 1
   putreg32(0x00000000, EIM_MFVHI);
 #else
   putreg32(0x0000ff00, EIM_MFVHI);
-#endif 
+#endif
 
   putreg32(0x00000000, EIM_MFVLO);
   putreg32(0x00000000, EIM_MFMHI);
@@ -2022,16 +2007,16 @@ static void c5471_eimconfig(struct c5471_driver_s *c5471)
   putreg32(ENET_MODE_RJCT_SFE|ENET_MODE_MWIDTH|ENET_MODE_FULLDUPLEX, ENET0_MODE);
 #else
   putreg32(ENET_MODE_RJCT_SFE|ENET_MODE_MWIDTH|ENET_MODE_HALFDUPLEX, ENET0_MODE);
-#endif 
+#endif
 
   putreg32(0x00000000, ENET0_BOFFSEED);
   putreg32(0x00000000, ENET0_FLWPAUSE);
   putreg32(0x00000000, ENET0_FLWCONTROL);
   putreg32(0x00000000, ENET0_VTYPE);
 
-#if 0 
+#if 0
   putreg32(ENET_ADR_BROADCAST|ENET_ADR_PROMISCUOUS, ENET0_ADRMODE_EN);
-#else 
+#else
   /* The CPU port is not PROMISCUOUS, it wants a no-promiscuous address
    * match yet the SWITCH receives packets from the PROMISCUOUS ENET0
    * which routes all packets for filter matching at the CPU port which
@@ -2041,7 +2026,7 @@ static void c5471_eimconfig(struct c5471_driver_s *c5471)
    */
 
   putreg32(ENET_ADR_PROMISCUOUS, ENET0_ADRMODE_EN);
-#endif 
+#endif
 
   putreg32(0x00000000, ENET0_DRP);
   up_mdelay(500);
@@ -2056,7 +2041,7 @@ static void c5471_eimconfig(struct c5471_driver_s *c5471)
 
 static void c5471_reset(struct c5471_driver_s *c5471)
 {
-#if (CONFIG_C5471_ETHERNET_PHY == ETHERNET_PHY_LU3X31T_T64)
+#if defined(CONFIG_C5471_PHY_LU3X31T_T64)
   ndbg("EIM reset\n");
   c5471_eimreset(c5471);
 #endif
@@ -2081,7 +2066,7 @@ static void c5471_reset(struct c5471_driver_s *c5471)
 
 static void c5471_macassign(struct c5471_driver_s *c5471)
 {
-  struct uip_driver_s *dev = &c5471->c_dev;
+  struct net_driver_s *dev = &c5471->c_dev;
   uint8_t *mptr = dev->d_mac.ether_addr_octet;
   register uint32_t tmp;
 
@@ -2108,7 +2093,7 @@ static void c5471_macassign(struct c5471_driver_s *c5471)
   putreg32(getreg32(EIM_CPU_DALO), ENET0_LARLO);
 
 #else
-  /* ENET MAC assignment not needed for its PROMISCUOUS mode */ 
+  /* ENET MAC assignment not needed for its PROMISCUOUS mode */
 
   putreg32(0x00000000, ENET0_PARHI);
   putreg32(0x00000000, ENET0_PARLO);

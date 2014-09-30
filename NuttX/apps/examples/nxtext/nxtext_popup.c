@@ -73,7 +73,7 @@ static void nxpu_position(NXWINDOW hwnd, FAR const struct nxgl_size_s *size,
                           FAR const struct nxgl_point_s *pos,
                           FAR const struct nxgl_rect_s *bounds,
                           FAR void *arg);
-#ifdef CONFIG_NX_MOUSE
+#ifdef CONFIG_NX_XYINPUT
 static void nxpu_mousein(NXWINDOW hwnd, FAR const struct nxgl_point_s *pos,
                          uint8_t buttons, FAR void *arg);
 #endif
@@ -93,7 +93,7 @@ static const struct nx_callback_s g_pucb =
 {
   nxpu_redraw,   /* redraw */
   nxpu_position  /* position */
-#ifdef CONFIG_NX_MOUSE
+#ifdef CONFIG_NX_XYINPUT
   , nxpu_mousein /* mousein */
 #endif
 #ifdef CONFIG_NX_KBD
@@ -137,7 +137,7 @@ static fb_coord_t nxpu_randpos(fb_coord_t value)
     {
       ndx = 0;
     }
- 
+
   return (fb_coord_t)(((uint32_t)value * (uint32_t)rand8) >> 8);
 }
 
@@ -246,7 +246,7 @@ static void nxpu_position(NXWINDOW hwnd, FAR const struct nxgl_size_s *size,
  * Name: nxpu_mousein
  ****************************************************************************/
 
-#ifdef CONFIG_NX_MOUSE
+#ifdef CONFIG_NX_XYINPUT
 static void nxpu_mousein(NXWINDOW hwnd, FAR const struct nxgl_point_s *pos,
                          uint8_t buttons, FAR void *arg)
 {
@@ -364,7 +364,7 @@ NXWINDOW nxpu_open(void)
 
   /* Set the position for the pop-up window */
 
-  message("nxpu_open: Set pop-up postion to (%d,%d)\n", pt.x, pt.y);
+  message("nxpu_open: Set pop-up position to (%d,%d)\n", pt.x, pt.y);
   ret = nxpu_setposition(hwnd, &pt);
   if (ret < 0)
     {

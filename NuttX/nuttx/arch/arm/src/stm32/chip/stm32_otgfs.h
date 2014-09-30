@@ -1,7 +1,7 @@
 /****************************************************************************************************
  * arch/arm/src/stm32/chip/stm32_otgfs.h
  *
- *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,6 +58,13 @@
 #define OTGFS_PID_DATA1                 (2)
 #define OTGFS_PID_MDATA                 (3) /* Non-control */
 #define OTGFS_PID_SETUP                 (3) /* Control */
+
+/* If OTGFS2 is defined (FS mode of the HS module), then remap the OTGFS base address */
+
+#ifdef CONFIG_STM32_OTGFS2
+#  undef STM32_OTGFS_BASE
+#  define STM32_OTGFS_BASE  STM32_OTGHS_BASE
+#endif
 
 /* Register Offsets *********************************************************************************/
 /* Core global control and status registers */
@@ -153,7 +160,7 @@
 #define STM32_OTGFS_DVBUSPULSE_OFFSET   0x082c /* Device VBUS pulsing time register */
 #define STM32_OTGFS_DIEPEMPMSK_OFFSET   0x0834 /* Device IN endpoint FIFO empty interrupt mask register */
 
-#define STM32_OTGFS_DIEP_OFFSET(n)      (0x0900 + ((n) << 5)) 
+#define STM32_OTGFS_DIEP_OFFSET(n)      (0x0900 + ((n) << 5))
 #define STM32_OTGFS_DIEPCTL_EPOFFSET    0x0000 /* Device endpoint control register */
 #define STM32_OTGFS_DIEPINT_EPOFFSET    0x0008 /* Device endpoint interrupt register */
 #define STM32_OTGFS_DIEPTSIZ_EPOFFSET   0x0010 /* Device IN endpoint transfer size register */
@@ -478,7 +485,8 @@
 #define OTGFS_GINT_IEP                  (1 << 18) /* Bit 18: IN endpoint interrupt */
 #define OTGFS_GINT_OEP                  (1 << 19) /* Bit 19: OUT endpoint interrupt */
 #define OTGFS_GINT_IISOIXFR             (1 << 20) /* Bit 20: Incomplete isochronous IN transfer */
-#define OTGFS_GINT_IISOOXFR             (1 << 21) /* Bit 21: Incomplete isochronous OUT transfer */
+#define OTGFS_GINT_IISOOXFR             (1 << 21) /* Bit 21: Incomplete isochronous OUT transfer (device) */
+#define OTGFS_GINT_IPXFR                (1 << 21) /* Bit 21: Incomplete periodic transfer (host) */
                                                   /* Bits 22-23: Reserved, must be kept at reset value */
 #define OTGFS_GINT_HPRT                 (1 << 24) /* Bit 24: Host port interrupt */
 #define OTGFS_GINT_HC                   (1 << 25) /* Bit 25: Host channels interrupt */

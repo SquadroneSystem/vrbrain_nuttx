@@ -7,6 +7,7 @@ config DEV_LOWCONSOLE
 	bool "Low-level console support"
 	default n
 	depends on ARCH_LOWPUTC
+	depends on DEV_CONSOLE
 	---help---
 		Use the simple, low-level, write-only serial console driver (minimal support)
 
@@ -39,6 +40,7 @@ config 16550_UART0_BAUD
 config 16550_UART0_PARITY
 	int "16550 UART0 parity"
 	default 0
+	range 0 2
 	---help---
 		16550 UART0 parity.  0=None, 1=Odd, 2=Even.  Default: None
 
@@ -103,6 +105,7 @@ config 16550_UART1_BAUD
 config 16550_UART1_PARITY
 	int "16550 UART1 parity"
 	default 0
+	range 0 2
 	---help---
 		16550 UART1 parity.  0=None, 1=Odd, 2=Even.  Default: None
 
@@ -167,6 +170,7 @@ config 16550_UART2_BAUD
 config 16550_UART2_PARITY
 	int "16550 UART2 parity"
 	default 0
+	range 0 2
 	---help---
 		16550 UART2 parity.  0=None, 1=Odd, 2=Even.  Default: None
 
@@ -231,6 +235,7 @@ config 16550_UART3_BAUD
 config 16550_UART3_PARITY
 	int "16550 UART3 parity"
 	default 0
+	range 0 2
 	---help---
 		16550 UART3 parity.  0=None, 1=Odd, 2=Even.  Default: None
 
@@ -277,6 +282,7 @@ endif
 choice
 	prompt "16550 Serial Console"
 	default 16550_NO_SERIAL_CONSOLE
+	depends on DEV_CONSOLE
 
 config 16550_UART0_SERIAL_CONSOLE
 	bool "16550 UART0 serial console"
@@ -304,7 +310,7 @@ config 16550_SUPRESS_CONFIG
 	default n
 	---help---
 		This option is useful, for example, if you are using a bootloader
-		that configures the 16550_UART.  In that case, you may want to 
+		that configures the 16550_UART.  In that case, you may want to
 		just leave the existing console configuration in place.  Default: n
 
 config 16550_REGINCR
@@ -333,52 +339,164 @@ endif
 #
 
 config ARCH_HAVE_UART
-       bool
+	bool
+	default n
+	select MCU_SERIAL
+
 config ARCH_HAVE_UART0
-       bool
+	bool
+	default n
+	select MCU_SERIAL
+
 config ARCH_HAVE_UART1
-       bool
+	bool
+	default n
+	select MCU_SERIAL
+
 config ARCH_HAVE_UART2
-       bool
+	bool
+	default n
+	select MCU_SERIAL
+
 config ARCH_HAVE_UART3
-       bool
+	bool
+	default n
+	select MCU_SERIAL
+
 config ARCH_HAVE_UART4
-       bool
+	bool
+	default n
+	select MCU_SERIAL
+
 config ARCH_HAVE_UART5
-       bool
+	bool
+	default n
+	select MCU_SERIAL
+
 config ARCH_HAVE_UART6
-       bool
+	bool
+	default n
+	select MCU_SERIAL
+
 config ARCH_HAVE_UART7
-       bool
+	bool
+	default n
+	select MCU_SERIAL
+
 config ARCH_HAVE_UART8
-       bool
+	bool
+	default n
+	select MCU_SERIAL
+
+config ARCH_HAVE_SCI0
+	bool
+	default n
+	select MCU_SERIAL
+
+config ARCH_HAVE_SCI1
+	bool
+	default n
+	select MCU_SERIAL
 
 config ARCH_HAVE_USART0
-       bool
+	bool
+	default n
+
 config ARCH_HAVE_USART1
-       bool
+	bool
+	default n
+
 config ARCH_HAVE_USART2
-       bool
+	bool
+	default n
+
 config ARCH_HAVE_USART3
-       bool
+	bool
+	default n
+
 config ARCH_HAVE_USART4
-       bool
+	bool
+	default n
+
 config ARCH_HAVE_USART5
-       bool
+	bool
+	default n
+
 config ARCH_HAVE_USART6
-       bool
+	bool
+	default n
+
 config ARCH_HAVE_USART7
-       bool
+	bool
+	default n
+
 config ARCH_HAVE_USART8
-       bool
+	bool
+	default n
+
+#
+# USARTn configuration.  Is the USART configured to behave like a UART?
+#
+
+comment "USART Configuration"
+
+config USART0_ISUART
+	bool "USART0 is a UART"
+	default y
+	depends on ARCH_HAVE_USART0
+	select MCU_SERIAL
+
+config USART1_ISUART
+	bool "USART1 is a UART"
+	default y
+	depends on ARCH_HAVE_USART1
+	select MCU_SERIAL
+
+config USART2_ISUART
+	bool "USART2 is a UART"
+	default y
+	depends on ARCH_HAVE_USART2
+	select MCU_SERIAL
+
+config USART3_ISUART
+	bool "USART3 is a UART"
+	default y
+	depends on ARCH_HAVE_USART3
+	select MCU_SERIAL
+
+config USART4_ISUART
+	bool "USART4 is a UART"
+	default y
+	depends on ARCH_HAVE_USART4
+	select MCU_SERIAL
+
+config USART5_ISUART
+	bool "USART5 is a UART"
+	default y
+	depends on ARCH_HAVE_USART5
+	select MCU_SERIAL
+
+config USART6_ISUART
+	bool "USART6 is a UART"
+	default y
+	depends on ARCH_HAVE_USART6
+	select MCU_SERIAL
+
+config USART7_ISUART
+	bool "USART7 is a UART"
+	default y
+	depends on ARCH_HAVE_USART7
+	select MCU_SERIAL
+
+config USART8_ISUART
+	bool "USART8 is a UART"
+	default y
+	depends on ARCH_HAVE_USART8
+	select MCU_SERIAL
 
 config MCU_SERIAL
 	bool
-	default y if ARCH_HAVE_UART || ARCH_HAVE_UART0 || ARCH_HAVE_USART0 || \
-	ARCH_HAVE_UART1 || ARCH_HAVE_USART1 || ARCH_HAVE_UART2 || ARCH_HAVE_USART2 || \
-	ARCH_HAVE_UART3 || ARCH_HAVE_USART3 || ARCH_HAVE_UART4 || ARCH_HAVE_USART4 || \
-	ARCH_HAVE_UART5 || ARCH_HAVE_USART5 || ARCH_HAVE_UART6 || ARCH_HAVE_USART6 || \
-	ARCH_HAVE_UART7 || ARCH_HAVE_USART7 || ARCH_HAVE_UART8 || ARCH_HAVE_USART8
+	default n
 
 #
 # Standard serial driver configuration
@@ -411,15 +529,15 @@ config SERIAL_TIOCSERGSTRUCT
 		supports the TIOCSERGSTRUCT ioctl, and (2) this option is selected, then
 		support for the TIOCSERGSTRUCT will be enabled.
 
-
 #
-# U[S]ARTn_XYZ settings for MCU serial drivers
+# Serial console selection
 #
 
 choice
 	prompt "Serial console"
 	depends on MCU_SERIAL
 	default NO_SERIAL_CONSOLE
+	depends on DEV_CONSOLE
 
 config UART_SERIAL_CONSOLE
 	bool "UART"
@@ -431,7 +549,7 @@ config UART0_SERIAL_CONSOLE
 
 config USART0_SERIAL_CONSOLE
 	bool "USART0"
-	depends on ARCH_HAVE_USART0
+	depends on USART0_ISUART
 
 config UART1_SERIAL_CONSOLE
 	bool "UART1"
@@ -439,7 +557,7 @@ config UART1_SERIAL_CONSOLE
 
 config USART1_SERIAL_CONSOLE
 	bool "USART1"
-	depends on ARCH_HAVE_USART1
+	depends on USART1_ISUART
 
 config UART2_SERIAL_CONSOLE
 	bool "UART2"
@@ -447,7 +565,7 @@ config UART2_SERIAL_CONSOLE
 
 config USART2_SERIAL_CONSOLE
 	bool "USART2"
-	depends on ARCH_HAVE_USART2
+	depends on USART2_ISUART
 
 config UART3_SERIAL_CONSOLE
 	bool "UART3"
@@ -463,7 +581,7 @@ config UART4_SERIAL_CONSOLE
 
 config USART4_SERIAL_CONSOLE
 	bool "USART4"
-	depends on ARCH_HAVE_USART4
+	depends on USART4_ISUART
 
 config UART5_SERIAL_CONSOLE
 	bool "UART5"
@@ -471,7 +589,7 @@ config UART5_SERIAL_CONSOLE
 
 config USART5_SERIAL_CONSOLE
 	bool "USART5"
-	depends on ARCH_HAVE_USART5
+	depends on USART5_ISUART
 
 config UART6_SERIAL_CONSOLE
 	bool "UART6"
@@ -479,7 +597,7 @@ config UART6_SERIAL_CONSOLE
 
 config USART6_SERIAL_CONSOLE
 	bool "USART6"
-	depends on ARCH_HAVE_USART6
+	depends on USART6_ISUART
 
 config UART7_SERIAL_CONSOLE
 	bool "UART7"
@@ -487,7 +605,7 @@ config UART7_SERIAL_CONSOLE
 
 config USART7_SERIAL_CONSOLE
 	bool "USART7"
-	depends on ARCH_HAVE_USART7
+	depends on USART7_ISUART
 
 config UART8_SERIAL_CONSOLE
 	bool "UART8"
@@ -495,12 +613,24 @@ config UART8_SERIAL_CONSOLE
 
 config USART8_SERIAL_CONSOLE
 	bool "USART8"
-	depends on ARCH_HAVE_USART8
+	depends on USART8_ISUART
+
+config SCI0_SERIAL_CONSOLE
+	bool "SCI0"
+	depends on ARCH_HAVE_SCI0
+
+config SCI1_SERIAL_CONSOLE
+	bool "SCI1"
+	depends on ARCH_HAVE_SCI1
 
 config NO_SERIAL_CONSOLE
 	bool "No serial console"
 
 endchoice
+
+#
+# U[S]ARTn_XYZ settings for MCU serial drivers
+#
 
 menu "UART Configuration"
 	depends on ARCH_HAVE_UART
@@ -534,6 +664,7 @@ config UART_BITS
 config UART_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -590,6 +721,7 @@ config UART0_BITS
 
 config UART0_PARITY
 	int "Parity setting"
+	range 0 2
 	default 0
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
@@ -617,7 +749,7 @@ config UART0_OFLOWCONTROL
 endmenu
 
 menu "USART0 Configuration"
-	depends on ARCH_HAVE_USART0
+	depends on USART0_ISUART
 
 config USART0_RXBUFSIZE
 	int "Receive buffer size"
@@ -648,6 +780,7 @@ config USART0_BITS
 config USART0_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -705,6 +838,7 @@ config UART1_BITS
 config UART1_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -731,7 +865,7 @@ config UART1_OFLOWCONTROL
 endmenu
 
 menu "USART1 Configuration"
-	depends on ARCH_HAVE_USART1
+	depends on USART1_ISUART
 
 config USART1_RXBUFSIZE
 	int "Receive buffer size"
@@ -762,6 +896,7 @@ config USART1_BITS
 config USART1_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -819,6 +954,7 @@ config UART2_BITS
 config UART2_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -845,7 +981,7 @@ config UART2_OFLOWCONTROL
 endmenu
 
 menu "USART2 Configuration"
-	depends on ARCH_HAVE_USART2
+	depends on USART2_ISUART
 
 config USART2_RXBUFSIZE
 	int "Receive buffer size"
@@ -876,6 +1012,7 @@ config USART2_BITS
 config USART2_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -933,6 +1070,7 @@ config UART3_BITS
 config UART3_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -959,7 +1097,7 @@ config UART3_OFLOWCONTROL
 endmenu
 
 menu "USART3 Configuration"
-	depends on ARCH_HAVE_USART3
+	depends on USART3_ISUART
 
 config USART3_RXBUFSIZE
 	int "Receive buffer size"
@@ -990,6 +1128,7 @@ config USART3_BITS
 config USART3_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -1047,6 +1186,7 @@ config UART4_BITS
 config UART4_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -1073,7 +1213,7 @@ config UART4_OFLOWCONTROL
 endmenu
 
 menu "USART4 Configuration"
-	depends on ARCH_HAVE_USART4
+	depends on USART4_ISUART
 
 config USART4_RXBUFSIZE
 	int "Receive buffer size"
@@ -1104,6 +1244,7 @@ config USART4_BITS
 config USART4_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -1161,6 +1302,7 @@ config UART5_BITS
 config UART5_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -1187,7 +1329,7 @@ config UART5_OFLOWCONTROL
 endmenu
 
 menu "USART5 Configuration"
-	depends on ARCH_HAVE_USART5
+	depends on USART5_ISUART
 
 config USART5_RXBUFSIZE
 	int "Receive buffer size"
@@ -1218,6 +1360,7 @@ config USART5_BITS
 config USART5_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -1244,7 +1387,7 @@ config USART5_OFLOWCONTROL
 endmenu
 
 menu "USART6 Configuration"
-	depends on ARCH_HAVE_USART6
+	depends on USART6_ISUART
 
 config USART6_RXBUFSIZE
 	int "Receive buffer size"
@@ -1275,6 +1418,7 @@ config USART6_BITS
 config USART6_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -1332,6 +1476,7 @@ config UART6_BITS
 config UART6_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -1358,7 +1503,7 @@ config UART6_OFLOWCONTROL
 endmenu
 
 menu "USART7 Configuration"
-	depends on ARCH_HAVE_USART7
+	depends on USART7_ISUART
 
 config USART7_RXBUFSIZE
 	int "Receive buffer size"
@@ -1389,6 +1534,7 @@ config USART7_BITS
 config USART7_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -1446,6 +1592,7 @@ config UART7_BITS
 config UART7_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -1472,7 +1619,7 @@ config UART7_OFLOWCONTROL
 endmenu
 
 menu "USART8 Configuration"
-	depends on ARCH_HAVE_USART8
+	depends on USART8_ISUART
 
 config USART8_RXBUFSIZE
 	int "Receive buffer size"
@@ -1503,6 +1650,7 @@ config USART8_BITS
 config USART8_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -1560,6 +1708,7 @@ config UART8_BITS
 config UART8_PARITY
 	int "Parity setting"
 	default 0
+	range 0 2
 	---help---
 		0=no parity, 1=odd parity, 2=even parity
 
@@ -1584,6 +1733,94 @@ config UART8_OFLOWCONTROL
 		Enable UART8 CTS flow control
 
 endmenu
+
+menu "SCI0 Configuration"
+	depends on ARCH_HAVE_SCI0
+
+config SCI0_RXBUFSIZE
+	int "SCI0 receive buffer size"
+	default 256
+	---help---
+		Characters are buffered as they are received. This specifies
+		the size of the receive buffer.
+
+config SCI0_TXBUFSIZE
+	int "SCI0 transmit buffer size"
+	default 256
+	---help---
+		Characters are buffered before being sent.  This specifies
+		the size of the transmit buffer.
+
+config SCI0_BAUD
+	int "SCI0 BAUD rate"
+	default 115200
+	---help---
+		The configured BAUD of the SCI.
+
+config SCI0_BITS
+	int "SCI0 character size"
+	default 8
+	---help---
+		The number of bits.  Must be either 7 or 8.
+
+config SCI0_PARITY
+	int "Parity setting"
+	default 0
+	range 0 2
+	---help---
+		0=no parity, 1=odd parity, 2=even parity
+
+config SCI0_2STOP
+	int "SCI0 use 2 stop bits"
+	default 0
+	---help---
+		1=Two stop bits
+
+endmenu # SCI0 Configuration
+
+menu "SCI1 Configuration"
+	depends on ARCH_HAVE_SCI1
+
+config SCI1_RXBUFSIZE
+	int "SCI1 receive buffer size"
+	default 256
+	---help---
+		Characters are buffered as they are received. This specifies
+		the size of the receive buffer.
+
+config SCI1_TXBUFSIZE
+	int "SCI1 transmit buffer size"
+	default 256
+	---help---
+		Characters are buffered before being sent.  This specifies
+		the size of the transmit buffer.
+
+config SCI1_BAUD
+	int "SCI1 BAUD rate"
+	default 115200
+	---help---
+		The configured BAUD of the SCI.
+
+config SCI1_BITS
+	int "SCI1 character size"
+	default 8
+	---help---
+		The number of bits.  Must be either 7 or 8.
+
+config SCI1_PARITY
+	int "Parity setting"
+	default 0
+	range 0 2
+	---help---
+		0=no parity, 1=odd parity, 2=even parity
+
+config SCI1_2STOP
+	int "SCI1 use 2 stop bits"
+	default 0
+	---help---
+		1=Two stop bits
+
+endmenu # SCI1 Configuration
 
 config SERIAL_IFLOWCONTROL
 	bool

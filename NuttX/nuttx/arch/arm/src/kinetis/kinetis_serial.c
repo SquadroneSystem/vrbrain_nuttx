@@ -56,7 +56,6 @@
 
 #include "up_arch.h"
 #include "up_internal.h"
-#include "os_internal.h"
 
 #include "kinetis_config.h"
 #include "chip.h"
@@ -108,6 +107,7 @@
 #elif defined(CONFIG_UART5_SERIAL_CONSOLE)
 #    define CONSOLE_DEV         g_uart5port /* UART5 is console */
 #    define TTYS5_DEV           g_uart5port /* UART5 is ttyS0 */
+#    define UART5_ASSIGNED      1
 #else
 #  undef CONSOLE_DEV                        /* No console */
 #  if defined(CONFIG_KINETIS_UART0)
@@ -279,6 +279,9 @@ static const struct uart_ops_s g_uart_ops =
   .receive        = up_receive,
   .rxint          = up_rxint,
   .rxavailable    = up_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
   .send           = up_send,
   .txint          = up_txint,
   .txready        = up_txready,
@@ -619,12 +622,15 @@ static int up_setup(struct uart_dev_s *dev)
 
   up_restoreuartint(priv, 0);
 
+#ifdef CONFIG_ARCH_IRQPRIO
   /* Set up the interrupt priority */
 
   up_prioritize_irq(priv->irqs, priv->irqprio);
 #ifdef CONFIG_DEBUG
   up_prioritize_irq(priv->irqe, priv->irqprio);
 #endif
+#endif
+
   return OK;
 }
 
@@ -706,7 +712,7 @@ static int up_attach(struct uart_dev_s *dev)
 static void up_detach(struct uart_dev_s *dev)
 {
   struct up_dev_s *priv = (struct up_dev_s*)dev->priv;
-  
+
   /* Disable interrupts */
 
   up_restoreuartint(priv, 0);
@@ -900,8 +906,8 @@ static int up_interrupts(int irq, void *context)
       if (count > 0)
 #else
       /* Check if the receive data register is full (RDRF).  NOTE:  If
-       * FIFOS are enabled, this does not mean that the the FIFO is full,
-       * rather, it means that the the number of bytes in the RX FIFO has
+       * FIFOS are enabled, this does not mean that the FIFO is full,
+       * rather, it means that the number of bytes in the RX FIFO has
        * exceeded the watermark setting.  There may actually be RX data
        * available!
        *
@@ -929,8 +935,8 @@ static int up_interrupts(int irq, void *context)
 #  error "Missing logic"
 #else
       /* Check if the transmit data register is "empty."  NOTE:  If FIFOS
-       * are enabled, this does not mean that the the FIFO is empty, rather,
-       * it means that the the number of bytes in the TX FIFO is below the
+       * are enabled, this does not mean that the FIFO is empty, rather,
+       * it means that the number of bytes in the TX FIFO is below the
        * watermark setting.  There could actually be space for additional TX
        * data.
        *
@@ -1090,8 +1096,8 @@ static bool up_rxavailable(struct uart_dev_s *dev)
   return count > 0;
 #else
   /* Return true if the receive data register is full (RDRF).  NOTE:  If
-   * FIFOS are enabled, this does not mean that the the FIFO is full,
-   * rather, it means that the the number of bytes in the RX FIFO has
+   * FIFOS are enabled, this does not mean that the FIFO is full,
+   * rather, it means that the number of bytes in the RX FIFO has
    * exceeded the watermark setting.  There may actually be RX data
    * available!
    */
@@ -1175,8 +1181,8 @@ static bool up_txready(struct uart_dev_s *dev)
 #  error "Missing logic"
 #else
   /* Return true if the transmit data register is "empty."  NOTE:  If
-   * FIFOS are enabled, this does not mean that the the FIFO is empty,
-   * rather, it means that the the number of bytes in the TX FIFO is
+   * FIFOS are enabled, this does not mean that the FIFO is empty,
+   * rather, it means that the number of bytes in the TX FIFO is
    * below the watermark setting.  There may actually be space for
    * additional TX data.
    */

@@ -48,7 +48,6 @@
 #include <arch/irq.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
 #include "up_internal.h"
 #include "m9s12_internal.h"
 
@@ -87,7 +86,7 @@ void up_irqinitialize(void)
   /* Initialize logic to support a second level of interrupt decoding for
    * GPIO pins.
    */
- 
+
 #ifdef CONFIG_GPIO_IRQ
   hcs12_gpioirqinitialize();
 #endif

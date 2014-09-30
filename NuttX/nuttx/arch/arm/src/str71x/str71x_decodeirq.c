@@ -49,7 +49,6 @@
 
 #include "chip.h"
 #include "up_arch.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 /********************************************************************************
@@ -80,7 +79,7 @@
  * up_decodeirq()
  *
  * Description:
- *   Read the IRQ number from the IVR register.  During intialization, the IVR
+ *   Read the IRQ number from the IVR register.  During initialization, the IVR
  *   register was set to zero.  Each SIR[n] register was programmed to contain
  *   the IRQ number.  At IRQ processing time (when this function run), the IVR
  *   should contain the desired IRQ number.
@@ -90,7 +89,7 @@
 void up_decodeirq(uint32_t *regs)
 {
 #ifdef CONFIG_SUPPRESS_INTERRUPTS
-  up_ledon(LED_INIRQ);
+  board_led_on(LED_INIRQ);
   lowsyslog("Unexpected IRQ\n");
   current_regs = regs;
   PANIC();
@@ -101,7 +100,7 @@ void up_decodeirq(uint32_t *regs)
    * info from CIC register without the setup).
    */
 
-  up_ledon(LED_INIRQ);
+  board_led_on(LED_INIRQ);
   irq = getreg32(STR71X_EIC_IVR);
 
   /* Verify that the resulting IRQ number is valid */
@@ -142,6 +141,6 @@ void up_decodeirq(uint32_t *regs)
       PANIC(); /* Normally never happens */
     }
 #endif
-  up_ledoff(LED_INIRQ);
+  board_led_off(LED_INIRQ);
 #endif
 }

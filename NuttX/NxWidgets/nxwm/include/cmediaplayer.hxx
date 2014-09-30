@@ -2,7 +2,9 @@
  * NxWidgets/nxwm/include/cmediaplayer.hxx
  *
  *   Copyright (C) 2013 Ken Pettit. All rights reserved.
+ *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Ken Pettit <pettitkd@gmail.com>
+ *           Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,16 +41,19 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <sys/types.h>
 #include <nuttx/nx/nxtk.h>
 #include <nuttx/nx/nxconsole.h>
 
-#include "cimage.hxx"
-#include "clabel.hxx"
 #include "cnxfont.hxx"
+#include "cimage.hxx"
+#include "cstickyimage.hxx"
+#include "clabel.hxx"
+#include "clistbox.hxx"
+#include "clistboxdataitem.hxx"
 #include "cglyphsliderhorizontal.hxx"
 
 #include "iapplication.hxx"
@@ -80,18 +85,90 @@ namespace NxWM
   {
   private:
     /**
+     * This enumeration identifies the state of the media player
+     *
+     *                         State Transition Table
+     * ---------+----------+----------+----------+----------+----------+----------+
+     *          |   FILE   |   FILE   |          |          |   FAST   |          |
+     * STATE    | SELECTED |DESELECTED|   PLAY   |   PAUSE  |  FORWARD |  REWIND  |
+     * ---------+----------+----------+----------+----------+----------+----------+
+     * STOPPED  |  STAGED  |    X     |     X    |     X    |    X     |    X     |
+     * STAGED   |  STAGED  | STOPPED  |  PLAYING |     X    |    X     |    X     |
+     * PLAYING  |    X     |    X     |     X    |  PAUSED  |FFORWARD2 | REWIND2  |
+     * PAUSED   |  STAGED  | STOPPED  |  PLAYING |     X    |FFORWARD1 | REWIND1  |
+     * FFORWARD1|    X     |    X     |  PAUSED  |     X    |FFORWARD1 | REWIND1  |
+     * REWIND1  |    X     |    X     |  PAUSED  |     X    |FFORWARD1 | REWIND1  |
+     * FFORWARD2|    X     |    X     |     X    |  PLAYING | PLAYING  | REWIND1  |
+     * REWIND2  |    X     |    X     |     X    |  PLAYING |FFORWARD1 | PLAYING  |
+     * ---------+----------+----------+----------+----------+----------+----------+
+     *
+     * Configuration Dependencies.  States in the above state transition table may
+     * not be supported if any of the following features are excluded from the
+     * configuration:
+     *
+     *   CONFIG_AUDIO_EXCLUDE_STOP
+     *   CONFIG_AUDIO_EXCLUDE_PAUSE_RESUME
+     *   CONFIG_AUDIO_EXCLUDE_VOLUME
+     *   CONFIG_AUDIO_EXCLUDE_FFORWARD
+     *   CONFIG_AUDIO_EXCLUDE_REWIND
+     */
+
+    enum EMediaPlayerState
+    {
+      MPLAYER_STOPPED = 0,                 /**< No media file has been selected */
+      MPLAYER_STAGED,                      /**< Media file selected, not playing */
+      MPLAYER_PLAYING,                     /**< Playing a media file */
+      MPLAYER_PAUSED,                      /**< Playing a media file but paused */
+      MPLAYER_FFORWARD,                    /**< Fast forwarding through a media file */
+      MPLAYER_FREWIND,                     /**< Rewinding a media file */
+    };
+
+    /**
+     * Describes the state of an image touch.  Some image touch cannot be
+     * processed until the image contact is lost.  This enumeration arms and
+     * manages those cases.
+     */
+
+    enum EPendingRelease
+    {
+      PENDING_NONE = 0,                    /**< Nothing is pending */
+      PENDING_PLAY_RELEASE,                /**< Expect play image to be released */
+      PENDING_PAUSE_RELEASE                /**< Expect pause image to be released */
+    };
+
+    /**
      * The structure defines a pending operation.
      */
 
     struct SPendingOperation
     {
-      int64_t value;       /**< Accumulated value */
-      uint8_t operation;   /**< Identifies the operations */
+      int64_t value;                       /**< Accumulated value */
+      uint8_t operation;                   /**< Identifies the operations */
     };
 
     /**
      * Media player state data.
      */
+
+    FAR struct nxplayer_s   *m_player;     /**< NxPlayer handle */
+    enum EMediaPlayerState   m_state;      /**< Media player current state */
+    enum EMediaPlayerState   m_prevState;  /**< Media player previous state */
+    enum EPendingRelease     m_pending;    /**< Pending image release event */
+    NXWidgets::CNxString     m_filePath;   /**< The full path to the selected file */
+    int                      m_fileIndex;  /**< Last selected text box selection */
+    bool                     m_fileReady;  /**< True: Ready to play */
+#ifndef CONFIG_AUDIO_EXCLUDE_VOLUME
+    uint8_t                  m_level;      /**< Current volume level, range 0-100 */
+#endif
+#if !defined(CONFIG_AUDIO_EXCLUDE_FFORWARD) || !defined(CONFIG_AUDIO_EXCLUDE_REWIND)
+    uint8_t                  m_subSample;  /**< Current FFFORWARD subsampling index */
+#endif
+
+    /**
+     * Media player geometry.
+     */
+
+    struct nxgl_size_s       m_windowSize; /**< The size of the media player window */
 
     /**
      * Cached constructor parameters.
@@ -104,38 +181,88 @@ namespace NxWM
      * Widgets
      */
 
-    NXWidgets::CLabel       *m_text;       /**< Some text in the app for now */
+    NXWidgets::CListBox     *m_listbox;    /**< List box containing media files selections */
     NXWidgets::CNxFont      *m_font;       /**< The font used in the media player */
-    NXWidgets::CImage       *m_rew;        /**< Rewind control */
-    NXWidgets::CImage       *m_playPause;  /**< Play/Pause control */
-    NXWidgets::CImage       *m_fwd;        /**< Forward control */
+    NXWidgets::CImage       *m_play;       /**< Play control */
+    NXWidgets::CImage       *m_pause;      /**< Pause control */
+    NXWidgets::CStickyImage *m_rewind;     /**< Rewind control */
+    NXWidgets::CStickyImage *m_fforward;   /**< Fast forward control */
     NXWidgets::CGlyphSliderHorizontal *m_volume; /**< Volume control */
+#if !defined(CONFIG_AUDIO_EXCLUDE_FFORWARD) || !defined(CONFIG_AUDIO_EXCLUDE_REWIND)
+    NXWidgets::CLabel       *m_speed;      /**< FForward/rewind speed */
+#endif
 
     /**
-     * Calculator geometry.  This stuff does not really have to be retained
-     * in memory.  If you are pinched for memory, get rid of these.
+     * Bitmaps
+     *
+     * These are retained only so that they can be released when the media
+     * is closed player
      */
 
-    struct nxgl_size_s       m_windowSize; /**< The size of the calculator window */
-    struct nxgl_size_s       m_textSize;   /**< The size of the calculator textbox */
-    struct nxgl_point_s      m_textPos;    /**< The position of the calculator textbox */
+    NXWidgets::CRlePaletteBitmap *m_playBitmap;     /**< Bitmap for the play control */
+    NXWidgets::CRlePaletteBitmap *m_pauseBitmap;    /**< Bitmap for the pause control */
+    NXWidgets::CRlePaletteBitmap *m_rewindBitmap;   /**< Bitmap for the rewind control */
+    NXWidgets::CRlePaletteBitmap *m_fforwardBitmap; /**< Bitmap for the fast forward control */
+    NXWidgets::CRlePaletteBitmap *m_volumeBitmap;   /**< Volume control grip bitmap */
 
     /**
-    * Select the geometry of the media player given the current window size.
-    * Only called as part of construction.
-    */
+     * Get the full media file path and make ready for playing.  Called
+     * after a file has been selected from the list box.
+     */
 
-   inline void setGeometry(void);
+    bool getMediaFile(const NXWidgets::CListBoxDataItem *item);
 
     /**
-     * Create the Media Player conrols.  Only start as part of the applicaiton
+     * Get the full media file path and make ready for playing.  Called
+     * after a file has been selected from the list box.
+     */
+
+    bool openMediaFile(const NXWidgets::CListBoxDataItem *item);
+
+    /**
+     * Stop playing the current file.  Called when a new media file is selected,
+     * when a media file is de-selected, or when destroying the media player
+     * instance.
+     */
+
+    void stopPlaying(void);
+
+    /**
+     * Select the geometry of the media player given the current window size.
+     * Only called as part of construction.
+     */
+
+    inline void setGeometry(void);
+
+    /**
+     * Load media files into the list box.
+     */
+
+    inline bool showMediaFiles(FAR const char *mediaPath);
+
+#ifdef CONFIG_NXPLAYER_INCLUDE_PREFERRED_DEVICE
+    /**
+     * Set the preferred audio device for playback
+     */
+
+    inline bool setDevice(FAR const char *devPath);
+#endif
+
+    /**
+     * Configure the NxPlayer.
+     */
+
+   inline bool configureNxPlayer(void);
+
+    /**
+     * Create the Media Player controls.  Only start as part of the application
      * start method.
      */
 
    inline bool createPlayer(void);
 
     /**
-     * Called when the window minimize button is pressed.
+     * Called when the window minimize image is pressed.
      */
 
     void minimize(void);
@@ -147,13 +274,75 @@ namespace NxWM
     void close(void);
 
     /**
-     * Handle a widget action event.  For CImage, this is a button pre-
-     * release event.
+     * Redraw all widgets.  Called from redraw() and also on any state
+     * change.
+     *
+     * @param state The new state to enter.
+     */
+
+    void redrawWidgets(void);
+
+    /**
+     * Transition to a new media player state.
+     *
+     * @param state The new state to enter.
+     */
+
+    void setMediaPlayerState(enum EMediaPlayerState state);
+
+#ifndef CONFIG_AUDIO_EXCLUDE_VOLUME
+    /**
+     * Set the new volume level based on the position of the volume slider.
+     */
+
+    void setVolumeLevel(void);
+#endif
+
+    /**
+     * Check if a new file has been selected (or de-selected) in the list box
+     */
+
+    inline void checkFileSelection(void);
+
+#if !defined(CONFIG_AUDIO_EXCLUDE_FFORWARD) || !defined(CONFIG_AUDIO_EXCLUDE_REWIND)
+    /**
+     * Update fast forward/rewind speed indicator.  Called on each state
+     * change and after each change in the speed of motion.
+     */
+
+    void updateMotionIndicator(void);
+#endif
+
+    /**
+     * Handle a widget action event.  For this application, that means image
+     * pre-release events.
      *
      * @param e The event data.
      */
 
     void handleActionEvent(const NXWidgets::CWidgetEventArgs &e);
+
+    /**
+     * Handle a widget release event.  Only the play and pause image release
+     * are of interest.
+     */
+
+    void handleReleaseEvent(const NXWidgets::CWidgetEventArgs &e);
+
+    /**
+     * Handle a widget release event when the widget WAS dragged outside of
+     * its original bounding box.  Only the play and pause image release
+     * are of interest.
+     */
+
+    void handleReleaseOutsideEvent(const NXWidgets::CWidgetEventArgs &e);
+
+    /**
+     * Handle value changes.  This will get events when there is a change in the
+     * volume level or a file is selected or deselected.
+     */
+
+    void handleValueChangeEvent(const NXWidgets::CWidgetEventArgs &e);
 
   public:
     /**

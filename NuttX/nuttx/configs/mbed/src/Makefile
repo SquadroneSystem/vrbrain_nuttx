@@ -37,13 +37,18 @@
 
 CFLAGS		+= -I$(TOPDIR)/sched
 
-ASRCS		= 
-CSRCS		= up_boot.c up_leds.c 
+ASRCS		=
+CSRCS		= up_boot.c up_leds.c up_adc.c up_dac.c up_pwm.c
+
 ifeq ($(CONFIG_NSH_ARCHINIT),y)
 CSRCS		+= up_nsh.c
 endif
 ifeq ($(CONFIG_USBMSC),y)
 CSRCS		+= up_usbmsc.c
+endif
+
+ifeq ($(CONFIG_EXAMPLES_HIDKBD),y)
+CSRCS		+= up_hidkbd.c
 endif
 
 AOBJS		= $(ASRCS:.S=$(OBJEXT))

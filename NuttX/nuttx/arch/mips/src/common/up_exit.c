@@ -45,12 +45,13 @@
 #include <debug.h>
 #include <nuttx/arch.h>
 
-#include "os_internal.h"
-#include "up_internal.h"
-
 #ifdef CONFIG_DUMP_ON_EXIT
 #include <nuttx/fs/fs.h>
 #endif
+
+#include "task/task.h"
+#include "sched/sched.h"
+#include "up_internal.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -106,14 +107,14 @@ static void _up_dumponexit(FAR struct tcb_s *tcb, FAR void *arg)
   for (i = 0; i < CONFIG_NFILE_STREAMS; i++)
     {
       struct file_struct *filep = &streamlist->sl_streams[i];
-      if (filep->fs_filedes >= 0)
+      if (filep->fs_fd >= 0)
         {
 #if CONFIG_STDIO_BUFFER_SIZE > 0
           sdbg("      fd=%d nbytes=%d\n",
-               filep->fs_filedes,
+               filep->fs_fd,
                filep->fs_bufpos - filep->fs_bufstart);
 #else
-          sdbg("      fd=%d\n", filep->fs_filedes);
+          sdbg("      fd=%d\n", filep->fs_fd);
 #endif
         }
     }
@@ -146,7 +147,7 @@ void _exit(int status)
 
   (void)irqsave();
 
-  slldbg("TCB=%p exitting\n", g_readytorun.head);
+  slldbg("TCB=%p exiting\n", g_readytorun.head);
 
 #if defined(CONFIG_DUMP_ON_EXIT) && defined(CONFIG_DEBUG)
   slldbg("Other tasks:\n");

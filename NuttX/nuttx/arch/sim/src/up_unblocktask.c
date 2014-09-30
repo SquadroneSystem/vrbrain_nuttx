@@ -43,8 +43,8 @@
 #include <debug.h>
 #include <nuttx/arch.h>
 
-#include "clock_internal.h"
-#include "os_internal.h"
+#include "clock/clock.h"
+#include "sched/sched.h"
 #include "up_internal.h"
 
 /****************************************************************************
@@ -99,7 +99,7 @@ void up_unblock_task(struct tcb_s *tcb)
    */
 
 #if CONFIG_RR_INTERVAL > 0
-  tcb->timeslice = CONFIG_RR_INTERVAL / MSEC_PER_TICK;
+  tcb->timeslice = MSEC2TICK(CONFIG_RR_INTERVAL);
 #endif
 
   /* Add the task in the correct location in the prioritized
@@ -109,7 +109,7 @@ void up_unblock_task(struct tcb_s *tcb)
   if (sched_addreadytorun(tcb))
     {
       /* The currently active task has changed! Copy the exception context
-       * into the TCB of the task that was previously active.  if 
+       * into the TCB of the task that was previously active.  if
        * up_setjmp returns a non-zero value, then this is really the
        * previously running task restarting!
        */

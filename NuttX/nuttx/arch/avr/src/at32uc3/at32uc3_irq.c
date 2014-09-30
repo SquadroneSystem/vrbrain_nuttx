@@ -50,7 +50,6 @@
 #include <arch/irq.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
 #include "up_internal.h"
 #include "at32uc3_internal.h"
 
@@ -268,6 +267,7 @@ int up_prioritize_irq(int irq, int priority)
           return OK;
         }
     }
+
   return -EINVAL;
 }
 #endif

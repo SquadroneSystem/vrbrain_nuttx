@@ -58,7 +58,7 @@
 #include <wdog.h>
 #include <nuttx/wqueue.h>
 
-#include <nuttx/spi.h>
+#include <nuttx/spi/spi.h>
 #include <nuttx/clock.h>
 #include <nuttx/input/ads7843e.h>
 
@@ -100,7 +100,7 @@
 
 /* Poll the pen position while the pen is down at this rate (50MS): */
 
-#define ADS7843E_WDOG_DELAY  ((50 + (MSEC_PER_TICK-1))/ MSEC_PER_TICK)
+#define ADS7843E_WDOG_DELAY       MSEC2TICK(50)
 
 /********************************************************************************************
  * Public Types
@@ -108,7 +108,7 @@
 
 /* This describes the state of one contact */
 
-enum ads7843e_contact_3
+enum ads7843e_contact_e
 {
   CONTACT_NONE = 0,                    /* No contact */
   CONTACT_DOWN,                        /* First contact */

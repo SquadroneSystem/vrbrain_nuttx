@@ -119,7 +119,7 @@ Using OpenOCD and GDB with an FT2232 JTAG emulator
 
     I have been using the on-board FT2232 JTAG/SWD/SWO interface.  OpenOCD
     requires a configuration file.  I keep the one I used last here:
-    
+
       configs/lm3s6965-ek/tools/lm3s6965-ek.cfg
 
     However, the "correct" configuration script to use with OpenOCD may
@@ -135,7 +135,7 @@ Using OpenOCD and GDB with an FT2232 JTAG emulator
     There is also a script on the tools/ directory that I use to start
     the OpenOCD daemon on my system called oocd.sh.  That script will
     probably require some modifications to work in another environment:
-  
+
     - Possibly the value of OPENOCD_PATH and TARGET_PATH
     - It assumes that the correct script to use is the one at
       configs/lm3s6965-ek/tools/lm3s6965-ek.cfg
@@ -170,11 +170,11 @@ Using OpenOCD and GDB with an FT2232 JTAG emulator
        .config file).
     2. The MCU must be halted prior to loading code using 'mon reset'
        as described below.
- 
+
     OpenOCD will support several special 'monitor' commands.  These
     GDB commands will send comments to the OpenOCD monitor.  Here
     are a couple that you will need to use:
-  
+
      (gdb) monitor reset
      (gdb) monitor halt
 
@@ -206,12 +206,12 @@ GNU Toolchain Options
   the CodeSourcery or devkitARM, you simply need to add one of the following
   configuration options to your .config (or defconfig) file:
 
-    CONFIG_LM_CODESOURCERYW=y   : CodeSourcery under Windows
-    CONFIG_LM_CODESOURCERYL=y   : CodeSourcery under Linux
-    CONFIG_LM_DEVKITARM=y       : devkitARM under Windows
-    CONFIG_LM_BUILDROOT=y       : NuttX buildroot under Linux or Cygwin (default)
+    CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYW=y   : CodeSourcery under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYL=y   : CodeSourcery under Linux
+    CONFIG_ARMV7M_TOOLCHAIN_DEVKITARM=y       : devkitARM under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y       : NuttX buildroot under Linux or Cygwin (default)
 
-  If you are not using CONFIG_LM_BUILDROOT, then you may also have to modify
+  If you are not using CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT, then you may also have to modify
   the PATH in the setenv.h file if your make cannot find the tools.
 
   NOTE: the CodeSourcery (for Windows) and devkitARM are Windows native toolchains.
@@ -260,7 +260,7 @@ IDEs
 
   NuttX is built using command-line make.  It can be used with an IDE, but some
   effort will be required to create the project.
-  
+
   Makefile Build
   --------------
   Under Eclipse, it is pretty easy to set up an "empty makefile project" and
@@ -283,7 +283,7 @@ IDEs
      on the command line.
 
   Startup files will probably cause you some headaches.  The NuttX startup file
-  is arch/arm/src/lm/lm_vectors.S.
+  is arch/arm/src/tiva/tiva_vectors.S.
 
 NuttX EABI "buildroot" Toolchain
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -355,7 +355,7 @@ NXFLAT Toolchain
   tools -- just the NXFLAT tools.  The buildroot with the NXFLAT tools can
   be downloaded from the NuttX SourceForge download site
   (https://sourceforge.net/projects/nuttx/files/).
- 
+
   This GNU toolchain builds and executes in the Linux or Cygwin environment.
 
   1. You must have already configured Nuttx in <some-dir>/nuttx.
@@ -395,7 +395,7 @@ USB Device Controller Functions
 
   Debugging with JTAG/SWD
 
-    The FT2232 USB device performs JTAG/SWD serial operations under the control 
+    The FT2232 USB device performs JTAG/SWD serial operations under the control
     of the debugger or the Luminary Flash Programmer.  It also operate as an
     In-Circuit Debugger Interface (ICDI), allowing debugging of any external
     target board.  Debugging modes:
@@ -459,17 +459,13 @@ Stellaris LM3S6965 Evaluation Kit Configuration Options
     CONFIG_ENDIAN_BIG - define if big endian (default is little
        endian)
 
-    CONFIG_DRAM_SIZE - Describes the installed DRAM (SRAM in this case):
+    CONFIG_RAM_SIZE - Describes the installed DRAM (SRAM in this case):
 
-       CONFIG_DRAM_SIZE=0x00010000 (64Kb)
+       CONFIG_RAM_SIZE=0x00010000 (64Kb)
 
-    CONFIG_DRAM_START - The start address of installed DRAM
+    CONFIG_RAM_START - The start address of installed DRAM
 
-       CONFIG_DRAM_START=0x20000000
-
-    CONFIG_ARCH_IRQPRIO - The LM3S6965 supports interrupt prioritization
-
-       CONFIG_ARCH_IRQPRIO=y
+       CONFIG_RAM_START=0x20000000
 
     CONFIG_ARCH_LEDS - Use LEDs to show state. Unique to boards that
        have LEDs
@@ -495,16 +491,16 @@ Stellaris LM3S6965 Evaluation Kit Configuration Options
   Additional interrupt support can be disabled if desired to reduce memory
   footprint.
 
-    CONFIG_LM_DISABLE_GPIOA_IRQS=n
-    CONFIG_LM_DISABLE_GPIOB_IRQS=n
-    CONFIG_LM_DISABLE_GPIOC_IRQS=n
-    CONFIG_LM_DISABLE_GPIOD_IRQS=n
-    CONFIG_LM_DISABLE_GPIOE_IRQS=n
-    CONFIG_LM_DISABLE_GPIOF_IRQS=n
-    CONFIG_LM_DISABLE_GPIOG_IRQS=n
-    CONFIG_LM_DISABLE_GPIOH_IRQS=n
-    CONFIG_LM_DISABLE_GPIOJ_IRQS=y
- 
+    CONFIG_TIVA_DISABLE_GPIOA_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOB_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOC_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOD_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOE_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOF_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOG_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOH_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOJ_IRQS=y
+
   LM3S6965 specific device driver settings
 
     CONFIG_UARTn_SERIAL_CONSOLE - selects the UARTn for the
@@ -528,18 +524,18 @@ Stellaris LM3S6965 Evaluation Kit Configuration Options
       value is large, then larger values of this setting may cause
       Rx FIFO overrun errors.  Default: half of the Tx FIFO size (4).
 
-    CONFIG_LM_ETHERNET - This must be set (along with CONFIG_NET)
+    CONFIG_TIVA_ETHERNET - This must be set (along with CONFIG_NET)
       to build the Stellaris Ethernet driver
-    CONFIG_LM_ETHLEDS - Enable to use Ethernet LEDs on the board.
-    CONFIG_LM_BOARDMAC - If the board-specific logic can provide
-      a MAC address (via lm_ethernetmac()), then this should be selected.
-    CONFIG_LM_ETHHDUPLEX - Set to force half duplex operation
-    CONFIG_LM_ETHNOAUTOCRC - Set to suppress auto-CRC generation
-    CONFIG_LM_ETHNOPAD - Set to suppress Tx padding
-    CONFIG_LM_MULTICAST - Set to enable multicast frames
-    CONFIG_LM_PROMISCUOUS - Set to enable promiscuous mode
-    CONFIG_LM_BADCRC - Set to enable bad CRC rejection.
-    CONFIG_LM_DUMPPACKET - Dump each packet received/sent to the console.
+    CONFIG_TIVA_ETHLEDS - Enable to use Ethernet LEDs on the board.
+    CONFIG_TIVA_BOARDMAC - If the board-specific logic can provide
+      a MAC address (via tiva_ethernetmac()), then this should be selected.
+    CONFIG_TIVA_ETHHDUPLEX - Set to force half duplex operation
+    CONFIG_TIVA_ETHNOAUTOCRC - Set to suppress auto-CRC generation
+    CONFIG_TIVA_ETHNOPAD - Set to suppress Tx padding
+    CONFIG_TIVA_MULTICAST - Set to enable multicast frames
+    CONFIG_TIVA_PROMISCUOUS - Set to enable promiscuous mode
+    CONFIG_TIVA_BADCRC - Set to enable bad CRC rejection.
+    CONFIG_TIVA_DUMPPACKET - Dump each packet received/sent to the console.
 
 Configurations
 ^^^^^^^^^^^^^^
@@ -614,26 +610,6 @@ Where <subdir> is one of the following:
   nx:
     And example using the NuttX graphics system (NX).  This example
     uses the P14201 OLED driver.
-
-    NOTES:
-    1. This configuration uses the mconf-based configuration tool.  To
-       change this configuration using that tool, you should:
-
-       a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
-          and misc/tools/
-
-       b. Execute 'make menuconfig' in nuttx/ in order to start the
-          reconfiguration process.
-
-    2. Default platform/toolchain:
-
-       CONFIG_HOST_LINUX=y                 : Linux (Cygwin under Windows okay too).
-       CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y : Buildroot (arm-nuttx-elf-gcc)
-       CONFIG_RAW_BINARY=y                 : Output formats: ELF and raw binary
-
-  ostest:
-    This configuration directory, performs a simple OS test using
-    examples/ostest.
 
     NOTES:
     1. This configuration uses the mconf-based configuration tool.  To

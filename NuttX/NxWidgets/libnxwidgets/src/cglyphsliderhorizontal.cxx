@@ -1,9 +1,9 @@
-
 /****************************************************************************
  * NxWidgets/libnxwidgets/src/cglyphsliderhorizontal.cxx
  *
  *   Copyright (C) 2013 Ken Pettit. All rights reserved.
  *   Author: Ken Pettit <pettitkd@gmail.com>
+ *           Gregory Nutt <gnutt@nuttx.org> (updates to Ken's fundamental work)
  *
  *   Based on and copied from csliderhorizontal.cxx written by Gregory Nutt
  *
@@ -76,9 +76,10 @@
 
 #include <nuttx/config.h>
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <cstdint>
+#include <cstdbool>
 
+#include "ibitmap.hxx"
 #include "cwidgetcontrol.hxx"
 #include "cglyphsliderhorizontal.hxx"
 #include "cglyphsliderhorizontalgrip.hxx"
@@ -98,64 +99,84 @@ using namespace NXWidgets;
 /**
  * Constructor.
  *
- * @param pWidgetControl The controlling widget for the display
+ * @param control The widget control instance for the window.
  * @param x The x coordinate of the slider, relative to its parent.
  * @param y The y coordinate of the slider, relative to its parent.
  * @param width The width of the slider.
- * @param height The height of the slider.
+ * @param thickness The thickness of the slider.
+ * @param gripBitmap The slider grip image
+ * @param fillColor The color to use when filling the grip
+ * @param fill True: The grip will be filled with fillColor
  */
 
-CGlyphSliderHorizontal::CGlyphSliderHorizontal(CWidgetControl * pWidgetControl, 
-        nxgl_coord_t x, nxgl_coord_t y, 
-        nxgl_coord_t width, nxgl_coord_t height, 
-        IBitmap * pGripBitmap, 
-        nxwidget_pixel_t fillColor, bool fill)
-:CNxWidget(pWidgetControl, x, y, width, height, WIDGET_DRAGGABLE)
+CGlyphSliderHorizontal::CGlyphSliderHorizontal(CWidgetControl *control,
+                           nxgl_coord_t x, nxgl_coord_t y, nxgl_coord_t width,
+                           nxgl_coord_t thickness, IBitmap *gripBitmap,
+                           nxwidget_pixel_t fillColor, bool fill)
+:CNxWidget(control, x, y, width, thickness, WIDGET_DRAGGABLE)
 {
-  m_minimumValue = 0;
-  m_maximumValue = 0;
-  m_contentSize = 0;
-  m_value = 0;
-  m_minimumGripWidth = 10;
-  m_pageSize = 1;
-  m_fillColor = fillColor;
-  m_fill = fill;
-  m_barThickness = 8;
+  // Initialize state data
 
-  m_flags.permeable = false;
-  m_flags.borderless = false;
+  m_minimumValue          = 0;
+  m_maximumValue          = 0;
+  m_contentSize           = 0;
+  m_value                 = 0;
+  m_minimumGripWidth      = 10;
+  m_pageSize              = 1;
+  m_fillColor             = fillColor;
+  m_fill                  = fill;
+  m_barThickness          = thickness;
+
+  // Correct the height of the widget.  The widget height was initially set
+  // to the thickness of the grip.  But the grip image is normally a little
+  // taller than the slider is thick.
+  //
+  // Do use the resize method here; we are not ready for the resize events.
+
+  nxgl_coord_t gripHeight = gripBitmap->getHeight() + 4;
+  if (gripHeight > thickness)
+    {
+      // Reset the widget height to the height of the grip image
+
+      m_rect.setHeight(gripHeight);
+    }
+
+  // Set widget attributes
+
+  m_flags.permeable       = false;
+  m_flags.borderless      = false;
   m_flags.doubleClickable = false;
 
-  // Create grip
+  // Set the "gutter" width
 
   CRect rect;
   getClientRect(rect);
-  m_gutterWidth = rect.getWidth();
+  m_gutterWidth           = rect.getWidth();
 
-  // Create grip
+  // Create the grip
 
-  m_grip = new CGlyphSliderHorizontalGrip(pWidgetControl, x, y,
-                                          width, height, pGripBitmap);
+  m_grip = new CGlyphSliderHorizontalGrip(control, x, y,
+                                          gripBitmap->getWidth() + 4,
+                                          gripHeight, gripBitmap);
   m_grip->setBorderless(true);
   m_grip->addWidgetEventHandler(this);
   addWidget(m_grip);
 }
 
 /**
- * Set the value that of the slider.  This will reposition
- * and redraw the grip.
+ * Set the value of the slider.  This will reposition and redraw the grip.
  *
  * @param value The new value.
  */
 
-void CGlyphSliderHorizontal::setValue(const nxgl_coord_t value)
+void CGlyphSliderHorizontal::setValue(const int value)
 {
-  setValueWithBitshift((int32_t) value << 16);
+  setValueWithBitshift((int32_t)value << 16);
 }
 
 /**
  * Set the value that of the slider.  This will reposition and redraw
- * the grip.  The supplied value should be bitshifted left 16 places.
+ * the grip.  The supplied value should be shifted left 16 places.
  * This ensures greater accuracy than the standard setValue() method if
  * the slider is being used as a scrollbar.
  *
@@ -215,7 +236,7 @@ void CGlyphSliderHorizontal::handleDragEvent(const CWidgetEventArgs & e)
 {
   // Handle grip events
 
-  if ((e.getSource() == m_grip) && (e.getSource() != NULL))
+  if (e.getSource() == m_grip && e.getSource() != NULL)
     {
       int32_t newValue = getGripValue() >> 16;
 
@@ -260,7 +281,7 @@ nxgl_coord_t CGlyphSliderHorizontal::getMinimumStep(void) const
  * Get the maximum possible value that the slider can represent.  Useful when
  * using the slider as a scrollbar, as the height of the grip prevents the full
  * range of values being accessed (intentionally).
- * The returned value is bitshfted left 16 places for more accuracy in fixed-point
+ * The returned value is shifted left 16 places for more accuracy in fixed-point
  * calculations.
  *
  * @return The maximum possible value that the slider can represent.
@@ -389,11 +410,11 @@ void CGlyphSliderHorizontal::drawBorder(CGraphicsPort * port)
       nxwidget_pixel_t shadow;
 
       y1 = getY() + (getHeight() >> 1) - (m_barThickness >> 1);
-      y2 = getY() + (getHeight() >> 1) + m_barThickness - 
+      y2 = getY() + (getHeight() >> 1) + m_barThickness -
           (m_barThickness >> 1) - 1;
 
       // To the Left of the grip.  Only draw if the icon isn't covering the
-      // edge of the bar 
+      // edge of the bar
 
       width = gripX - x - halfGripWidth;
       if (width > 0)
@@ -416,7 +437,7 @@ void CGlyphSliderHorizontal::drawBorder(CGraphicsPort * port)
         }
 
       // To the Right of the grip
-      // Only draw if the icon isn't covering the edge of the bar 
+      // Only draw if the icon isn't covering the edge of the bar
 
       width = getWidth() - (gripX - x + gripWidth) - 1 - halfGripWidth;
       if (width > 0)
@@ -434,7 +455,7 @@ void CGlyphSliderHorizontal::drawBorder(CGraphicsPort * port)
 
       if (gripX > x + halfGripWidth)
         {
-          port->drawVertLine(x + halfGripWidth, y1, m_barThickness, 
+          port->drawVertLine(x + halfGripWidth, y1, m_barThickness,
                 getShineEdgeColor());
         }
 
@@ -442,7 +463,7 @@ void CGlyphSliderHorizontal::drawBorder(CGraphicsPort * port)
 
       if (gripX + gripWidth < x + getWidth() - 1 - halfGripWidth)
         {
-          port->drawVertLine(x + getWidth() - 1 - halfGripWidth, 
+          port->drawVertLine(x + getWidth() - 1 - halfGripWidth,
                 y1, m_barThickness, getShadowEdgeColor());
         }
     }
@@ -499,5 +520,6 @@ void CGlyphSliderHorizontal::onClick(nxgl_coord_t x, nxgl_coord_t y)
 
       setValueWithBitshift(m_value - (m_pageSize << 16));
     }
+
   redraw();
 }

@@ -43,9 +43,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <netinet/in.h>
 #include <netinet/ether.h>
-#include <nuttx/net/uip/uipopt.h>
-#include <nuttx/net/uip/uip-arch.h>
+
+#include <nuttx/net/netconfig.h>
+#include <nuttx/net/netdev.h>
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -81,7 +83,7 @@
  *    dangerous to reference global variables in the callback function.
  */
 
-/* static */ int netdev_callback(FAR struct uip_driver_s *dev, void *arg)
+/* static */ int netdev_callback(FAR struct net_driver_s *dev, void *arg)
 {
   struct in_addr addr;
 

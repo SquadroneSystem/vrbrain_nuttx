@@ -51,7 +51,7 @@
 
 #include "up_arch.h"
 #include "up_internal.h"
-#include "os_internal.h"
+#include "sched/sched.h"
 #include "chip.h"
 #include "stm32_dma.h"
 #include "stm32.h"
@@ -492,9 +492,11 @@ void weak_function up_dmainitialize(void)
 
       up_enable_irq(dmast->irq);
 
-      /* Set the interrrupt priority */
+#ifdef CONFIG_ARCH_IRQPRIO
+      /* Set the interrupt priority */
 
       up_prioritize_irq(dmast->irq, CONFIG_DMA_PRI);
+#endif
     }
 }
 
@@ -520,7 +522,7 @@ void weak_function up_dmainitialize(void)
  *
  * Input parameter:
  *   dmamap - Identifies the stream/channel resource. For the STM32 F4, this
- *     is a bit-encoded  value as provided by the the DMAMAP_* definitions
+ *     is a bit-encoded  value as provided by the DMAMAP_* definitions
  *     in chip/stm32f40xxx_dma.h
  *
  * Returned Value:
@@ -871,17 +873,17 @@ bool stm32_dmacapable(uint32_t maddr, uint32_t count, uint32_t ccr)
   dmavdbg("stm32_dmacapable: 0x%08x/%u 0x%08x\n", maddr, count, ccr);
 
   /* Verify that the address conforms to the memory transfer size.
-   * Transfers to/from memory performed by the DMA controller are 
+   * Transfers to/from memory performed by the DMA controller are
    * required to be aligned to their size.
    *
    * See ST RM0090 rev4, section 9.3.11
    *
-   * Compute mend inline to avoid a possible non-constant integer 
+   * Compute mend inline to avoid a possible non-constant integer
    * multiply.
    */
 
   switch (ccr & DMA_SCR_MSIZE_MASK)
-    { 
+    {
       case DMA_SCR_MSIZE_8BITS:
         transfer_size = 1;
         mend = maddr + count - 1;
@@ -903,7 +905,7 @@ bool stm32_dmacapable(uint32_t maddr, uint32_t count, uint32_t ccr)
     }
 
   if ((maddr & (transfer_size - 1)) != 0)
-    { 
+    {
       dmavdbg("stm32_dmacapable: transfer unaligned\n");
       return false;
     }
@@ -912,9 +914,8 @@ bool stm32_dmacapable(uint32_t maddr, uint32_t count, uint32_t ccr)
 
   if ((maddr / 1024) != (mend / 1024))
     {
-
       /* The transfer as a whole crosses a 1KiB boundary.
-       * Verify that no burst does by asserting that the address 
+       * Verify that no burst does by asserting that the address
        * is aligned to the burst length.
        */
 
@@ -964,10 +965,12 @@ bool stm32_dmacapable(uint32_t maddr, uint32_t count, uint32_t ccr)
       case STM32_FSMC_BANK4:
       case STM32_SRAM_BASE:
         /* All RAM is supported */
+
         break;
 
       case STM32_CODE_BASE:
         /* Everything except the CCM ram is supported */
+
         if (maddr >= STM32_CCMRAM_BASE &&
             (maddr - STM32_CCMRAM_BASE) < 65536)
           {
@@ -978,6 +981,7 @@ bool stm32_dmacapable(uint32_t maddr, uint32_t count, uint32_t ccr)
 
       default:
         /* Everything else is unsupported by DMA */
+
         dmavdbg("stm32_dmacapable: transfer targets unknown/unsupported region\n");
         return false;
     }

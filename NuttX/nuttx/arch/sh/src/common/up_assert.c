@@ -1,7 +1,7 @@
 /****************************************************************************
  * arch/sh/src/common/up_assert.c
  *
- *   Copyright (C) 2008-2009, 2012-2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2012-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,16 +46,24 @@
 
 #include <nuttx/irq.h>
 #include <nuttx/arch.h>
+#include <nuttx/usb/usbdev_trace.h>
+
+#include <nuttx/usb/usbdev_trace.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
+#include "sched/sched.h"
 #include "up_internal.h"
 
 /****************************************************************************
  * Definitions
  ****************************************************************************/
+/* USB trace dumping */
 
-/* Output debug info if stack dump is selected -- even if 
+#ifndef CONFIG_USBDEV_TRACE
+#  undef CONFIG_ARCH_USBDUMP
+#endif
+
+/* Output debug info if stack dump is selected -- even if
  * debug is not selected.
  */
 
@@ -84,12 +92,12 @@ static void _up_assert(int errorcode)
   if (current_regs || ((struct tcb_s*)g_readytorun.head)->pid == 0)
     {
        (void)irqsave();
-        for(;;)
+        for (;;)
           {
 #ifdef CONFIG_ARCH_LEDS
-            up_ledon(LED_PANIC);
+            board_led_on(LED_PANIC);
             up_mdelay(250);
-            up_ledoff(LED_PANIC);
+            board_led_off(LED_PANIC);
             up_mdelay(250);
 #endif
           }
@@ -99,6 +107,18 @@ static void _up_assert(int errorcode)
       exit(errorcode);
     }
 }
+
+/****************************************************************************
+ * Name: assert_tracecallback
+ ****************************************************************************/
+
+#ifdef CONFIG_ARCH_USBDUMP
+static int assert_tracecallback(struct usbtrace_s *trace, void *arg)
+{
+  usbtrace_trprintf((trprintf_t)lowsyslog, trace->event, trace->value);
+  return 0;
+}
+#endif
 
 /****************************************************************************
  * Public Functions
@@ -114,7 +134,7 @@ void up_assert(const uint8_t *filename, int lineno)
   struct tcb_s *rtcb = (struct tcb_s*)g_readytorun.head;
 #endif
 
-  up_ledon(LED_ASSERTION);
+  board_led_on(LED_ASSERTION);
 
 #if CONFIG_TASK_NAME_SIZE > 0
   lldbg("Assertion failed at file:%s line: %d task: %s\n",
@@ -125,5 +145,12 @@ void up_assert(const uint8_t *filename, int lineno)
 #endif
 
   up_dumpstate();
+
+#ifdef CONFIG_ARCH_USBDUMP
+  /* Dump USB trace data */
+
+  (void)usbtrace_enumerate(assert_tracecallback, NULL);
+#endif
+
   _up_assert(EXIT_FAILURE);
 }

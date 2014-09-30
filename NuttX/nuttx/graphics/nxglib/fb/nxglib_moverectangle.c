@@ -41,7 +41,7 @@
 
 #include <stdint.h>
 
-#include <nuttx/fb.h>
+#include <nuttx/video/fb.h>
 #include <nuttx/nx/nxglib.h>
 
 #include "nxglib_bitblit.h"
@@ -189,7 +189,7 @@ void NXGL_FUNCNAME(nxgl_moverectangle,NXGLIB_SUFFIX)
 
   /* Case 1:  Is the destination position above the displayed position?
    * If the destination position is less then then the src address, then the
-   * destination is offset to a postion below (and or to the left) of the
+   * destination is offset to a position below (and or to the left) of the
    * source in framebuffer memory.
    */
 

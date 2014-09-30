@@ -156,11 +156,11 @@
 /* Delays ***************************************************************************/
 /* All values will be increased by one system timer tick (probably 10MS). */
 
-#define TC_PENUP_POLL_TICKS   (70 / MSEC_PER_TICK) /* IDLE polling rate: 100 MSec */
-#define TC_PENDOWN_POLL_TICKS (40 / MSEC_PER_TICK) /* Active polling rate: 60 MSec */
-#define TC_DEBOUNCE_TICKS     (16 / MSEC_PER_TICK) /* Delay before re-sampling: 30 MSec */
-#define TC_SAMPLE_TICKS       (4 / MSEC_PER_TICK)  /* Delay for A/D sampling: 4 MSec */
-#define TC_SETTLE_TICKS       (10 / MSEC_PER_TICK) /* Delay for A/D settling: 4 MSec */
+#define TC_PENUP_POLL_TICKS   MSEC2TICK(70)  /* IDLE polling rate: 70 MSec */
+#define TC_PENDOWN_POLL_TICKS MSEC2TICK(40)  /* Active polling rate: 40 MSec */
+#define TC_DEBOUNCE_TICKS     MSEC2TICK(16)  /* Delay before re-sampling: 16 MSec */
+#define TC_SAMPLE_TICKS       MSEC2TICK(4)   /* Delay for A/D sampling: 4 MSec */
+#define TC_SETTLE_TICKS       MSECT2TICK(10) /* Delay for A/D settling: 10 MSec */
 #define TC_RESAMPLE_TICKS     TC_SAMPLE_TICKS
 
 /************************************************************************************
@@ -266,7 +266,7 @@ static int tc_poll(FAR struct file *filep, struct pollfd *fds, bool setup);
  * Private Data
  ****************************************************************************/
 
-/* This the the vtable that supports the character driver interface */
+/* This the vtable that supports the character driver interface */
 
 static const struct file_operations tc_fops =
 {
@@ -723,7 +723,7 @@ static int tc_waitsample(FAR struct tc_dev_s *priv,
         }
     }
 
-  /* Re-acquire the the semaphore that manages mutually exclusive access to
+  /* Re-acquire the semaphore that manages mutually exclusive access to
    * the device structure.  We may have to wait here.  But we have our sample.
    * Interrupts and pre-emption will be re-enabled while we wait.
    */

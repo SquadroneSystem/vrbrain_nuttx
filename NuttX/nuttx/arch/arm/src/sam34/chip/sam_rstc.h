@@ -1,8 +1,8 @@
 /****************************************************************************************
  * arch/arm/src/sam34/chip/sam_rstc.h
- * Reset Controller (RSTC) definitions for the SAM3U and SAM4S
+ * Reset Controller (RSTC) definitions for the SAM3U, SAM4E, and SAM4S
  *
- *   Copyright (C) 2009, 2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2009, 2013-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,13 +56,23 @@
 #define SAM_RSTC_SR_OFFSET      0x04 /* Status Register */
 #define SAM_RSTC_MR_OFFSET      0x08 /* Mode Register  */
 
-/* RSTC register adresses ***************************************************************/
+#if defined(CONFIG_ARCH_CHIP_SAM4CM)
+#  define SAM_RSTC_CPMR_OFFSET  0x0c /* Coprocessor Mode Register */
+#endif
+
+/* RSTC register addresses **************************************************************/
 
 #define SAM_RSTC_CR             (SAM_RSTC_BASE+SAM_RSTC_CR_OFFSET)
 #define SAM_RSTC_SR             (SAM_RSTC_BASE+SAM_RSTC_SR_OFFSET)
 #define SAM_RSTC_MR             (SAM_RSTC_BASE+SAM_RSTC_MR_OFFSET)
 
+#if defined(CONFIG_ARCH_CHIP_SAM4CM)
+#  define SAM_RSTC_CPMR         (SAM_RSTC_BASE+SAM_RSTC_CPMR_OFFSET)
+#endif
+
 /* RSTC register bit definitions ********************************************************/
+
+/* Reset Controller Control Register */
 
 #define RSTC_CR_PROCRST         (1 << 0)  /* Bit 0:  Processor Reset */
 #define RSTC_CR_PERRST          (1 << 2)  /* Bit 2:  Peripheral Reset */
@@ -70,6 +80,8 @@
 #define RSTC_CR_KEY_SHIFT       (24)      /* Bits 24-31:  Password */
 #define RSTC_CR_KEY_MASK        (0xff << RSTC_CR_KEY_SHIFT)
 #  define RSTC_CR_KEY           (0xa5 << RSTC_CR_KEY_SHIFT)
+
+/* Reset Controller Status Register */
 
 #define RSTC_SR_URSTS           (1 << 0)  /* Bit 0:  User Reset Status */
 #define RSTC_SR_RSTTYP_SHIFT    (8)       /* Bits 8-10:  Reset Type */
@@ -82,13 +94,24 @@
 #define RSTC_SR_NRSTL           (1 << 16) /* Bit 16:  NRST Pin Level */
 #define RSTC_SR_SRCMP           (1 << 17) /* Bit 17:  Software Reset Command in Progress */
 
+/* Reset Controller Mode Register */
+
 #define RSTC_MR_URSTEN          (1 << 0)  /* Bit 0:  User Reset Enable */
 #define RSTC_MR_URSTIEN         (1 << 4)  /* Bit 4:  User Reset Interrupt Enable */
 #define RSTC_MR_ERSTL_SHIFT     (8)       /* Bits 8-11:  External Reset Length */
 #define RSTC_MR_ERSTL_MASK      (15 << RSTC_MR_ERSTL_SHIFT)
+#  define RSTC_MR_ERSTL(n)      ((uint32_t)(n) << RSTC_MR_ERSTL_SHIFT)
 #define RSTC_MR_KEY_SHIFT       (24)      /* Bits 24-31:  Password */
 #define RSTC_MR_KEY_MASK        (0xff << RSTC_CR_KEY_SHIFT)
 #  define RSTC_MR_KEY           (0xa5 << RSTC_CR_KEY_SHIFT)
+
+#if defined(CONFIG_ARCH_CHIP_SAM4CM)
+/* Coprocessor Mode Register */
+
+#  define RSTC_CPMR_CPROCEN     (1 << 0)  /* Coprocessor (second processor) Enable */
+#  define RSTC_CPMR_CPEREN      (1 << 4)  /* Coprocessor Peripheral Enable */
+#  define RSTC_CPMR_CPKEY       (0x5a << 24) /* Key */
+#endif
 
 /****************************************************************************************
  * Public Types

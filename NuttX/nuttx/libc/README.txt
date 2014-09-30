@@ -25,6 +25,7 @@ The files in the libc/ directory are organized (mostly) according which file
 in the include/ directory provides the prototype for library functions.  So
 we have:
 
+  audio     - This part of the audio system: nuttx/audio/audio.h
   libgen    - libgen.h
   fixedmath - fixedmath.h
   math      - math.h
@@ -44,14 +45,14 @@ There is also a misc/ subdirectory that contains various internal functions
 and interfaces from header files that are too few to warrant their own sub-
 directory:
 
- misc       - Nonstandard "glue" logic, debug.h, crc32.h, dirent.h
+  misc      - Nonstandard "glue" logic, debug.h, crc32.h, dirent.h
 
 Library Database
 ================
 
 Information about functions available in the NuttX C library information is
 maintained in a database.  That "database" is implemented as a simple comma-
-separated-value file, lib.csv.  Most spreadsheets programs will accept this
+separated-value file, libc.csv.  Most spreadsheets programs will accept this
 format and can be used to maintain the library database.
 
 This library database will (eventually) be used to generate symbol library
@@ -69,7 +70,7 @@ Each type field has a format as follows:
 
   type name:
         For all simpler types
-  formal type | actual type: 
+  formal type | actual type:
         For array types where the form of the formal (eg. int parm[2])
         differs from the type of actual passed parameter (eg. int*).  This
         is necessary because you cannot do simple casts to array types.
@@ -77,7 +78,7 @@ Each type field has a format as follows:
         A similar situation exists for unions.  For example, the formal
         parameter type union sigval -- You cannot cast a uintptr_t to
         a union sigval, but you can cast to the type of one of the union
-        member types when passing the actual paramter.  Similarly, we
+        member types when passing the actual parameter.  Similarly, we
         cannot cast a union sigval to a uinptr_t either.  Rather, we need
         to cast a specific union member fieldname to uintptr_t.
 

@@ -49,13 +49,15 @@
 #include <debug.h>
 
 #include <net/if.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <netinet/ether.h>
 
-#include <nuttx/net/uip/uip-arp.h>
-#include <apps/netutils/uiplib.h>
+#include <nuttx/net/arp.h>
+#include <apps/netutils/netlib.h>
 #include <apps/netutils/thttpd.h>
 
-#include <nuttx/ramdisk.h>
+#include <nuttx/fs/ramdisk.h>
 #include <nuttx/binfmt/binfmt.h>
 #include <nuttx/binfmt/nxflat.h>
 #ifdef CONFIG_NET_SLIP
@@ -200,24 +202,24 @@ int thttp_main(int argc, char *argv[])
   mac[3] = 0xad;
   mac[4] = 0xbe;
   mac[5] = 0xef;
-  uip_setmacaddr(NET_DEVNAME, mac);
+  netlib_setmacaddr(NET_DEVNAME, mac);
 #endif
 
   /* Set up our host address */
 
   message("Setup network addresses\n");
   addr.s_addr = HTONL(CONFIG_THTTPD_IPADDR);
-  uip_sethostaddr(NET_DEVNAME, &addr);
+  netlib_sethostaddr(NET_DEVNAME, &addr);
 
   /* Set up the default router address */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_THTTPD_DRIPADDR);
-  uip_setdraddr(NET_DEVNAME, &addr);
+  netlib_setdraddr(NET_DEVNAME, &addr);
 
   /* Setup the subnet mask */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_THTTPD_NETMASK);
-  uip_setnetmask(NET_DEVNAME, &addr);
+  netlib_setnetmask(NET_DEVNAME, &addr);
 
   /* Initialize the NXFLAT binary loader */
 

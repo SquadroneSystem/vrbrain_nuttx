@@ -150,7 +150,6 @@ static void lib_dtoa(FAR struct lib_outstream_s *obj, int fmt, int prec,
                      uint8_t flags, double value)
 {
   FAR char *digits;     /* String returned by __dtoa */
-  FAR char *digalloc;   /* Copy of digits to be freed after usage */
   FAR char *rve;        /* Points to the end of the return value */
   int  expt;            /* Integer value of exponent */
   int  numlen;          /* Actual number of digits returned by cvt */
@@ -160,7 +159,7 @@ static void lib_dtoa(FAR struct lib_outstream_s *obj, int fmt, int prec,
 
   /* Special handling for NaN and Infinity */
 
-  if (isnan(value)) 
+  if (isnan(value))
     {
       lib_dtoa_string(obj, "NaN");
       return;
@@ -168,7 +167,7 @@ static void lib_dtoa(FAR struct lib_outstream_s *obj, int fmt, int prec,
 
   if (isinf(value))
     {
-      if (value < 0.0d)
+      if (value < 0.0)
         {
           obj->put(obj, '-');
         }
@@ -188,7 +187,6 @@ static void lib_dtoa(FAR struct lib_outstream_s *obj, int fmt, int prec,
   /* Perform the conversion */
 
   digits   = __dtoa(value, 3, prec, &expt, &dsgn, &rve);
-  digalloc = digits;
   numlen   = rve - digits;
 
   if (IS_NEGATE(flags))
@@ -318,7 +316,7 @@ static void lib_dtoa(FAR struct lib_outstream_s *obj, int fmt, int prec,
           digits++;
         }
 
-      /* Decremnt to get the number of trailing zeroes to print */
+      /* Decrement to get the number of trailing zeroes to print */
 
       prec -= nchars;
     }
@@ -326,18 +324,8 @@ static void lib_dtoa(FAR struct lib_outstream_s *obj, int fmt, int prec,
   /* Finally, print any trailing zeroes */
 
   zeroes(obj, prec);
-
-  /* Is this memory supposed to be freed or not? */
-
-#if 0
-  if (digalloc)
-    {
-      lib_free(digalloc);
-    }
-#endif
 }
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
-

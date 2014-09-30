@@ -46,7 +46,7 @@
 #include <nuttx/arch.h>
 #include <arch/board/board.h>
 
-#include "clock_internal.h"
+#include "clock/clock.h"
 #include "up_internal.h"
 #include "up_arch.h"
 
@@ -151,7 +151,7 @@ int up_timerisr(int irq, uint32_t *regs)
 }
 
 /****************************************************************************
- * Function:  up_timerinit
+ * Function:  up_timer_initialize
  *
  * Description:
  *   This function is called during start-up to initialize
@@ -159,7 +159,7 @@ int up_timerisr(int irq, uint32_t *regs)
  *
  ****************************************************************************/
 
-void up_timerinit(void)
+void up_timer_initialize(void)
 {
   uint8_t reg8;
 
@@ -193,9 +193,11 @@ void up_timerinit(void)
 
   putreg8(SH1_ITUTIER_IMIEA, SH1_ITU0_TIER);
 
+#ifdef CONFIG_ARCH_IRQPRIO
   /* Set the interrupt priority */
 
   up_prioritize_irq(SH1_SYSTIMER_IRQ, 7);  /* Set ITU priority midway */
+#endif
 
   /* Start the timer */
 

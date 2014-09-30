@@ -1,7 +1,7 @@
 /********************************************************************************
  * include/time.h
  *
- *   Copyright (C) 2007-2011 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2011, 2013-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,37 +49,41 @@
  * Pre-processor Definitions
  ********************************************************************************/
 
-/* Clock tick of the system (frequency Hz).  
+/* Clock tick of the system (frequency Hz).
  *
  * NOTE: This symbolic name CLK_TCK has been removed from the standard.  It is
  * replaced with CLOCKS_PER_SEC.  Both are defined here.
  *
  * The default value is 100Hz, but this default setting can be overridden by
- * defining the clock interval in milliseconds as CONFIG_MSEC_PER_TICK in the
+ * defining the clock interval in microseconds as CONFIG_USEC_PER_TICK in the
  * board configuration file.
  */
 
-#ifdef CONFIG_MSEC_PER_TICK
-# define CLK_TCK           (1000/CONFIG_MSEC_PER_TICK)
-# define CLOCKS_PER_SEC    (1000/CONFIG_MSEC_PER_TICK)
+#ifdef CONFIG_USEC_PER_TICK
+# define CLK_TCK           (1000000/CONFIG_USEC_PER_TICK)
+# define CLOCKS_PER_SEC    (1000000/CONFIG_USEC_PER_TICK)
 #else
 # define CLK_TCK           (100)
 # define CLOCKS_PER_SEC    (100)
 #endif
 
-/* CLOCK_REALTIME refers to the standard time source.  For most implementations,
- * the standard time source is the system timer interrupt.  However, if the
- * platform supports an RTC, then the standard time source will be the RTC
- * for the clock_gettime() and clock_settime() interfaces (the system timer
- * is still the time source for all of the interfaces).
+/* CLOCK_REALTIME refers to the standard time source.  For most
+ * implementations, the standard time source is the system timer interrupt.
+ * However, if the platform supports an RTC, then the standard time source
+ * will be the RTC for the clock_gettime() and clock_settime() interfaces
+ * (the system timer is still the time source for all of the interfaces).
+ *
+ * CLOCK_REALTIME represents the machine's best-guess as to the current
+ * wall-clock, time-of-day time. This means that CLOCK_REALTIME can jump
+ * forward and backward as the system time-of-day clock is changed.
  */
 
 #define CLOCK_REALTIME     0
 
 /* If an RTC is supported, then the non-standard CLOCK_ACTIVETIME is also
- * supported to manage time based on the system timer interrupt separately from
- * the RTC.  This may be necessary, for example, in certain cases where the
- * system timer interrupt has been stopped in low power modes.
+ * supported to manage time based on the system timer interrupt separately
+ * from the RTC.  This may be necessary, for example, in certain cases where
+ * the system timer interrupt has been stopped in low power modes.
  *
  * CLOCK_ACTIVETIME is only recognized by clock_gettime() and clock_settime().
  */
@@ -90,17 +94,28 @@
 #  define CLOCK_ACTIVETIME CLOCK_REALTIME
 #endif
 
+/* Clock that cannot be set and represents monotonic time since some
+ * unspecified starting point. It is not affected by changes in the
+ * system time-of-day clock.
+ */
+
+#ifdef CONFIG_CLOCK_MONOTONIC
+#  define CLOCK_MONOTONIC  2
+#endif
+
 /* This is a flag that may be passed to the timer_settime() function */
 
 #define TIMER_ABSTIME      1
 
+#ifndef CONFIG_LIBC_LOCALTIME
 /* Local time is the same as gmtime in this implementation */
 
 #define localtime(c)       gmtime(c)
 #define localtime_r(c,r)   gmtime_r(c,r)
+#endif
 
 /********************************************************************************
- * Global Type Declarations
+ * Public Types
  ********************************************************************************/
 
 typedef uint32_t  time_t;         /* Holds time in seconds */
@@ -127,7 +142,7 @@ struct tm
   int tm_mday;    /* day of the month (1-31) */
   int tm_mon;     /* month (0-11) */
   int tm_year;    /* years since 1900 */
-#if 0 /* not supported */
+#ifdef CONFIG_LIBC_LOCALTIME
   int tm_wday;    /* day of the week (0-6) */
   int tm_yday;    /* day of the year (0-365) */
   int tm_isdst;   /* non-0 if daylight savings time is in effect */
@@ -147,13 +162,13 @@ struct itimerspec
 struct sigevent;
 
 /********************************************************************************
- * Global Variables
+ * Public Data
  ********************************************************************************/
 
 /* extern char *tznames[]; not supported */
 
 /********************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ********************************************************************************/
 
 #undef EXTERN
@@ -164,25 +179,30 @@ extern "C" {
 #define EXTERN extern
 #endif
 
-EXTERN clock_t clock(void);
+clock_t clock(void);
 
-EXTERN int clock_settime(clockid_t clockid, const struct timespec *tp);
-EXTERN int clock_gettime(clockid_t clockid, struct timespec *tp);
-EXTERN int clock_getres(clockid_t clockid, struct timespec *res);
+int clock_settime(clockid_t clockid, FAR const struct timespec *tp);
+int clock_gettime(clockid_t clockid, FAR struct timespec *tp);
+int clock_getres(clockid_t clockid, FAR struct timespec *res);
 
-EXTERN time_t mktime(const struct tm *tp);
-EXTERN FAR struct tm *gmtime(FAR const time_t *timer);
-EXTERN FAR struct tm *gmtime_r(FAR const time_t *timer, FAR struct tm *result);
-EXTERN size_t strftime(char *s, size_t max, const char *format, const struct tm *tm);
+time_t mktime(FAR struct tm *tp);
+FAR struct tm *gmtime(FAR const time_t *timer);
+FAR struct tm *gmtime_r(FAR const time_t *timer, FAR struct tm *result);
+size_t strftime(char *s, size_t max, FAR const char *format,
+                FAR const struct tm *tm);
 
-EXTERN time_t time(time_t *tloc);
+time_t time(FAR time_t *tloc);
 
-EXTERN int timer_create(clockid_t clockid, FAR struct sigevent *evp, FAR timer_t *timerid);
-EXTERN int timer_delete(timer_t timerid);
-EXTERN int timer_settime(timer_t timerid, int flags, FAR const struct itimerspec *value,
-                         FAR struct itimerspec *ovalue);
-EXTERN int timer_gettime(timer_t timerid, FAR struct itimerspec *value);
-EXTERN int timer_getoverrun(timer_t timerid);
+int timer_create(clockid_t clockid, FAR struct sigevent *evp,
+                 FAR timer_t *timerid);
+int timer_delete(timer_t timerid);
+int timer_settime(timer_t timerid, int flags,
+                  FAR const struct itimerspec *value,
+                  FAR struct itimerspec *ovalue);
+int timer_gettime(timer_t timerid, FAR struct itimerspec *value);
+int timer_getoverrun(timer_t timerid);
+
+int nanosleep(FAR const struct timespec *rqtp, FAR struct timespec *rmtp);
 
 #undef EXTERN
 #if defined(__cplusplus)

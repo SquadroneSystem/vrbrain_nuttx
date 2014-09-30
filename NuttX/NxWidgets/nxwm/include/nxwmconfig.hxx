@@ -1,7 +1,7 @@
 /****************************************************************************
  * NxWidgets/nxwm/include/nxwmconfig.hxx
  *
- *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <nuttx/input/touchscreen.h>
@@ -85,10 +85,11 @@
 #endif
 
 /**
- * NxConsole support is (probably) required
+ * NxConsole support is (probably) required if CONFIG_NXWM_NXCONSOLE is
+ * selected
  */
 
-#ifndef CONFIG_NXCONSOLE
+#if defined(CONFIG_NXWM_NXCONSOLE) && !defined(CONFIG_NXCONSOLE)
 #  warning "NxConsole support may be needed (CONFIG_NXCONSOLE)"
 #endif
 
@@ -116,13 +117,13 @@
  *
  * CONFIG_NXWM_DEFAULT_BACKGROUNDCOLOR - Normal background color.  Default:
  *    MKRGB(148,189,215)
- * CONFIG_NXWM_DEFAULT_SELECTEDBACKGROUNDCOLOR - Select background color. 
+ * CONFIG_NXWM_DEFAULT_SELECTEDBACKGROUNDCOLOR - Select background color.
  *    Default:  MKRGB(206,227,241)
  * CONFIG_NXWM_DEFAULT_SHINEEDGECOLOR - Color of the bright edge of a border.
  *    Default: MKRGB(255,255,255)
  * CONFIG_NXWM_DEFAULT_SHADOWEDGECOLOR - Color of the shadowed edge of a border.
  *    Default: MKRGB(0,0,0)
- * CONFIG_NXWM_DEFAULT_FONTCOLOR - Default fong color.  Default:
+ * CONFIG_NXWM_DEFAULT_FONTCOLOR - Default font color.  Default:
  *    MKRGB(0,0,0)
  * CONFIG_NXWM_TRANSPARENT_COLOR - The "transparent" color.  Default:
  *    MKRGB(0,0,0)
@@ -172,7 +173,7 @@
 #  define CONFIG_NXWM_TRANSPARENT_COLOR  MKRGB(0,0,0)
 #endif
 
-/* Task Bar Configuation  ***************************************************/
+/* Task Bar Configuration  **************************************************/
 /**
  * Horizontal and vertical spacing of icons in the task bar.
  *
@@ -187,7 +188,8 @@
  * CONFIG_NXWM_TASKBAR_RIGHT - Task bar is on the right side of the display
  *
  * CONFIG_NXWM_TASKBAR_WIDTH - Task bar thickness (either vertical or
- *   horizontal).  Default: 25 + 2*spacing
+ *   horizontal).  Default: 25 + 2*spacing unless large icons are selected. 
+ *   Then the default is 50 + 2*spacing.
  */
 
 /**
@@ -223,6 +225,29 @@
 #  define CONFIG_NXWM_TASKBAR_TOP 1
 #endif
 
+// Taskbar ICON scaling
+
+#if defined(CONFIG_NXWM_TASKBAR_ICONSCALE)
+#  ifndef CONFIG_NXWM_TASKBAR_ICONWIDTH
+#    error Scaling requires CONFIG_NXWM_TASKBAR_ICONWIDTH
+#    define CONFIG_NXWM_TASKBAR_ICONWIDTH  50
+#  endif
+#  ifndef CONFIG_NXWM_TASKBAR_ICONHEIGHT
+#    error Scaling requires CONFIG_NXWM_TASKBAR_ICONHEIGHT
+#    define CONFIG_NXWM_TASKBAR_ICONHEIGHT 42
+#  endif
+#elif defined(CONFIG_NXWM_LARGE_ICONS)
+#  undef CONFIG_NXWM_TASKBAR_ICONWIDTH
+#  define CONFIG_NXWM_TASKBAR_ICONWIDTH  50
+#  undef CONFIG_NXWM_TASKBAR_ICONHEIGHT
+#  define CONFIG_NXWM_TASKBAR_ICONHEIGHT 42
+#else
+#  undef CONFIG_NXWM_TASKBAR_ICONWIDTH
+#  define CONFIG_NXWM_TASKBAR_ICONWIDTH  25
+#  undef CONFIG_NXWM_TASKBAR_ICONHEIGHT
+#  define CONFIG_NXWM_TASKBAR_ICONHEIGHT 21
+#endif
+
 /**
  * At present, all icons are 25 pixels in "width" and, hence require a
  * task bar of at least that size.
@@ -230,31 +255,41 @@
 
 #ifndef CONFIG_NXWM_TASKBAR_WIDTH
 #  if defined(CONFIG_NXWM_TASKBAR_TOP) || defined(CONFIG_NXWM_TASKBAR_BOTTOM)
-#    define CONFIG_NXWM_TASKBAR_WIDTH (25+2*CONFIG_NXWM_TASKBAR_HSPACING)
+#    define CONFIG_NXWM_TASKBAR_WIDTH \
+       (CONFIG_NXWM_TASKBAR_ICONWIDTH+2*CONFIG_NXWM_TASKBAR_HSPACING)
 #  else
-#    define CONFIG_NXWM_TASKBAR_WIDTH (25+2*CONFIG_NXWM_TASKBAR_VSPACING)
+#    define CONFIG_NXWM_TASKBAR_WIDTH \
+       (CONFIG_NXWM_TASKBAR_ICONWIDTH+2*CONFIG_NXWM_TASKBAR_VSPACING)
 #  endif
 #endif
 
 /* Tool Bar Configuration ***************************************************/
 /**
  * CONFIG_NXWM_TOOLBAR_HEIGHT.  The height of the tool bar in each
- *   application window. At present, all icons are 21 pixels in height and,
- *   hence require a task bar of at least that size.
+ *   application window. At present, all icons are 21 or 42 pixels in height
+ *   (depending on the setting of CONFIG_NXWM_LARGE_ICONS) and, hence require
+ *   a task bar of at least that size.
  */
 
 #ifndef CONFIG_NXWM_TOOLBAR_HEIGHT
-#    define CONFIG_NXWM_TOOLBAR_HEIGHT (21+2*CONFIG_NXWM_TASKBAR_HSPACING)
+#    define CONFIG_NXWM_TOOLBAR_HEIGHT \
+       (CONFIG_NXWM_TASKBAR_ICONHEIGHT + 2*CONFIG_NXWM_TASKBAR_HSPACING)
+#endif
+
+/* CONFIG_NXWM_TOOLBAR_FONTID overrides the default NxWM font selection */
+
+#ifndef CONFIG_NXWM_TOOLBAR_FONTID
+#  define CONFIG_NXWM_TOOLBAR_FONTID  CONFIG_NXWM_DEFAULT_FONTID
 #endif
 
 /* Background Image **********************************************************/
 /**
  * CONFIG_NXWM_BACKGROUND_IMAGE - The name of the image to use in the
- *   background window.  Default:NXWidgets::g_nuttxBitmap
+ *   background window.  Default:NXWidgets::g_nuttxBitmap160x160
  */
 
 #ifndef CONFIG_NXWM_BACKGROUND_IMAGE
-#  define CONFIG_NXWM_BACKGROUND_IMAGE NXWidgets::g_nuttxBitmap
+#  define CONFIG_NXWM_BACKGROUND_IMAGE NXWidgets::g_nuttxBitmap160x160
 #endif
 
 /* Start Window Configuration ***********************************************/
@@ -265,10 +300,10 @@
  * CONFIG_NXWM_STARTWINDOW_HSPACING - Horizontal spacing.  Default: 4 rows
  * CONFIG_NXWM_STARTWINDOW_ICON - The glyph to use as the start window icon
  * CONFIG_NXWM_STARTWINDOW_MQNAME - The well known name of the message queue
- *   Used to communicated from CWindowMessenger to the start window thread. 
+ *   Used to communicated from CWindowMessenger to the start window thread.
  *   Default: "/dev/nxwm"
  * CONFIG_NXWM_STARTWINDOW_MXMSGS - The maximum number of messages to queue
- *   before blocking.  Defualt 32
+ *   before blocking.  Default 32
  * CONFIG_NXWM_STARTWINDOW_MXMPRIO - The message priority. Default: 42.
  * CONFIG_NXWM_STARTWINDOW_PRIO - Priority of the StartWindoW task.  Default:
  *   SCHED_PRIORITY_DEFAULT.  NOTE:  This priority should be less than
@@ -348,37 +383,39 @@
  * CONFIG_NXWM_NXCONSOLE_ICON - The glyph to use as the NxConsole icon
  */
 
-#ifndef CONFIG_NXWM_NXCONSOLE_PRIO
-#  define CONFIG_NXWM_NXCONSOLE_PRIO  SCHED_PRIORITY_DEFAULT
-#endif
+#ifdef CONFIG_NXWM_NXCONSOLE
+#  ifndef CONFIG_NXWM_NXCONSOLE_PRIO
+#    define CONFIG_NXWM_NXCONSOLE_PRIO  SCHED_PRIORITY_DEFAULT
+#  endif
 
-#if CONFIG_NXWIDGETS_SERVERPRIO <= CONFIG_NXWM_NXCONSOLE_PRIO
-#  warning "CONFIG_NXWIDGETS_SERVERPRIO <= CONFIG_NXWM_NXCONSOLE_PRIO"
-#  warning" -- This can result in data overrun errors"
-#endif
+#  if CONFIG_NXWIDGETS_SERVERPRIO <= CONFIG_NXWM_NXCONSOLE_PRIO
+#    warning "CONFIG_NXWIDGETS_SERVERPRIO <= CONFIG_NXWM_NXCONSOLE_PRIO"
+#    warning" -- This can result in data overrun errors"
+#  endif
 
-#ifndef CONFIG_NXWM_NXCONSOLE_STACKSIZE
-#  define CONFIG_NXWM_NXCONSOLE_STACKSIZE  2048
-#endif
+#  ifndef CONFIG_NXWM_NXCONSOLE_STACKSIZE
+#    define CONFIG_NXWM_NXCONSOLE_STACKSIZE  2048
+#  endif
 
-#ifndef CONFIG_NXWM_NXCONSOLE_WCOLOR
-#  define CONFIG_NXWM_NXCONSOLE_WCOLOR  CONFIG_NXWM_DEFAULT_BACKGROUNDCOLOR
-#endif
+#  ifndef CONFIG_NXWM_NXCONSOLE_WCOLOR
+#    define CONFIG_NXWM_NXCONSOLE_WCOLOR  CONFIG_NXWM_DEFAULT_BACKGROUNDCOLOR
+#  endif
 
-#ifndef CONFIG_NXWM_NXCONSOLE_FONTCOLOR
-#  define CONFIG_NXWM_NXCONSOLE_FONTCOLOR  CONFIG_NXWM_DEFAULT_FONTCOLOR
-#endif
+#  ifndef CONFIG_NXWM_NXCONSOLE_FONTCOLOR
+#    define CONFIG_NXWM_NXCONSOLE_FONTCOLOR  CONFIG_NXWM_DEFAULT_FONTCOLOR
+#  endif
 
-#ifndef CONFIG_NXWM_NXCONSOLE_FONTID
-#  define CONFIG_NXWM_NXCONSOLE_FONTID  CONFIG_NXWM_DEFAULT_FONTID
-#endif
+#  ifndef CONFIG_NXWM_NXCONSOLE_FONTID
+#    define CONFIG_NXWM_NXCONSOLE_FONTID  CONFIG_NXWM_DEFAULT_FONTID
+#  endif
 
-/**
- * The NxConsole window glyph
- */
+  /**
+   * The NxConsole window glyph
+   */
 
-#ifndef CONFIG_NXWM_NXCONSOLE_ICON
-#  define CONFIG_NXWM_NXCONSOLE_ICON NxWM::g_cmdBitmap
+#  ifndef CONFIG_NXWM_NXCONSOLE_ICON
+#    define CONFIG_NXWM_NXCONSOLE_ICON NxWM::g_cmdBitmap
+#  endif
 #endif
 
 /* Touchscreen device *******************************************************/
@@ -392,7 +429,7 @@
  * CONFIG_NXWM_TOUCHSCREEN_SIGNO - The realtime signal used to wake up the
  *   touchscreen listener thread.  Default: 5
  * CONFIG_NXWM_TOUCHSCREEN_LISTENERPRIO - Priority of the touchscreen listener
- *   thread.  Default: SCHED_PRIORITY_DEFAULT
+ *   thread.  Default: (SCHED_PRIORITY_DEFAULT + 20)
  * CONFIG_NXWM_TOUCHSCREEN_LISTENERSTACK - Touchscreen listener thread stack
  *   size.  Default 1024
  */
@@ -410,7 +447,11 @@
 #endif
 
 #ifndef CONFIG_NXWM_TOUCHSCREEN_LISTENERPRIO
-#  define CONFIG_NXWM_TOUCHSCREEN_LISTENERPRIO SCHED_PRIORITY_DEFAULT
+#  define CONFIG_NXWM_TOUCHSCREEN_LISTENERPRIO (SCHED_PRIORITY_DEFAULT + 20)
+#endif
+
+#if CONFIG_NXWM_TOUCHSCREEN_LISTENERPRIO <= CONFIG_NXWM_CALIBRATION_LISTENERPRIO
+#  warning You should have CONFIG_NXWM_TOUCHSCREEN_LISTENERPRIO > CONFIG_NXWM_CALIBRATION_LISTENERPRIO
 #endif
 
 #ifndef CONFIG_NXWM_TOUCHSCREEN_LISTENERSTACK
@@ -428,7 +469,7 @@
  * CONFIG_NXWM_KEYBOARD_BUFSIZE - The size of the keyboard read data buffer.
  *   Default: 16
  * CONFIG_NXWM_KEYBOARD_LISTENERPRIO - Priority of the touchscreen listener
- *   thread.  Default: SCHED_PRIORITY_DEFAULT
+ *   thread.  Default: (SCHED_PRIORITY_DEFAULT + 20)
  * CONFIG_NXWM_KEYBOARD_LISTENERSTACK - Keyboard listener thread stack
  *   size.  Default 1024
  */
@@ -446,7 +487,7 @@
 #endif
 
 #ifndef CONFIG_NXWM_KEYBOARD_LISTENERPRIO
-#  define CONFIG_NXWM_KEYBOARD_LISTENERPRIO SCHED_PRIORITY_DEFAULT
+#  define CONFIG_NXWM_KEYBOARD_LISTENERPRIO (SCHED_PRIORITY_DEFAULT + 20)
 #endif
 
 #ifndef CONFIG_NXWM_KEYBOARD_LISTENERSTACK
@@ -465,8 +506,10 @@
  * CONFIG_NXWM_CALIBRATION_CIRCLECOLOR - The color of the circle in the
  *   touchscreen calibration display.  Default:  MKRGB(255, 255, 255) (white)
  * CONFIG_NXWM_CALIBRATION_TOUCHEDCOLOR - The color of the circle in the
- *   touchscreen calibration display after the touch is recorder.  Default: 
+ *   touchscreen calibration display after the touch is recorder.  Default:
  *   MKRGB(255, 255, 96) (very light yellow)
+ * CONFIG_NXWM_CALIBRATION_FONTID - Use this default NxWidgets font ID
+ *   instead of the system font ID (NXFONT_DEFAULT).
  * CONFIG_NXWM_CALIBRATION_ICON - The ICON to use for the touchscreen
  *   calibration application.  Default:  NxWM::g_calibrationBitmap
  * CONFIG_NXWM_CALIBRATION_SIGNO - The realtime signal used to wake up the
@@ -475,6 +518,13 @@
  *   thread.  Default: SCHED_PRIORITY_DEFAULT
  * CONFIG_NXWM_CALIBRATION_LISTENERSTACK - Calibration listener thread stack
  *   size.  Default 2048
+ * CONFIG_NXWM_CALIBRATION_MARGIN
+ *   The Calbration display consists of a target press offset from the edges
+ *   of the display by this number of pixels (in the horizontal direction)
+ *   or rows (in the vertical).  The closer that you can comfortably
+ *   position the press positions to the edge, the more accurate will be the
+ *   linear interpolation (provide that the hardware provides equally good
+ *   measurements near the edges).
  */
 
 #ifndef CONFIG_NXWM_CALIBRATION_BACKGROUNDCOLOR
@@ -493,6 +543,10 @@
 #  define CONFIG_NXWM_CALIBRATION_TOUCHEDCOLOR MKRGB(255, 255, 96)
 #endif
 
+#ifndef CONFIG_NXWM_CALIBRATION_FONTID
+#  define CONFIG_NXWM_CALIBRATION_FONTID NXFONT_DEFAULT
+#endif
+
 #ifndef CONFIG_NXWM_CALIBRATION_ICON
 #  define CONFIG_NXWM_CALIBRATION_ICON NxWM::g_calibrationBitmap
 #endif
@@ -507,6 +561,40 @@
 
 #ifndef CONFIG_NXWM_CALIBRATION_LISTENERSTACK
 #  define CONFIG_NXWM_CALIBRATION_LISTENERSTACK 2048
+#endif
+
+#ifndef CONFIG_NXWM_CALIBRATION_MARGIN
+#  define CONFIG_NXWM_CALIBRATION_MARGIN 40
+#endif
+
+// Calibration sample averaging
+
+#ifndef CONFIG_NXWM_CALIBRATION_AVERAGE
+#  undef CONFIG_NXWM_CALIBRATION_AVERAGE
+#  undef CONFIG_NXWM_CALIBRATION_NSAMPLES
+#  define CONFIG_NXWM_CALIBRATION_NSAMPLES 1
+#  undef CONFIG_NXWM_CALIBRATION_DISCARD_MINMAX
+#endif
+
+#if !defined(CONFIG_NXWM_CALIBRATION_NSAMPLES) || CONFIG_NXWM_CALIBRATION_NSAMPLES < 2
+#  undef CONFIG_NXWM_CALIBRATION_AVERAGE
+#  undef CONFIG_NXWM_CALIBRATION_NSAMPLES
+#  define CONFIG_NXWM_CALIBRATION_NSAMPLES 1
+#  undef CONFIG_NXWM_CALIBRATION_DISCARD_MINMAX
+#endif
+
+#if CONFIG_NXWM_CALIBRATION_NSAMPLES < 3
+#  undef CONFIG_NXWM_CALIBRATION_DISCARD_MINMAX
+#endif
+
+#if CONFIG_NXWM_CALIBRATION_NSAMPLES > 255
+#  define CONFIG_NXWM_CALIBRATION_NSAMPLES 255
+#endif
+
+#ifdef CONFIG_NXWM_CALIBRATION_DISCARD_MINMAX
+#  define NXWM_CALIBRATION_NAVERAGE (CONFIG_NXWM_CALIBRATION_NSAMPLES - 2)
+#else
+#  define NXWM_CALIBRATION_NAVERAGE CONFIG_NXWM_CALIBRATION_NSAMPLES
 #endif
 
 /* Hexcalculator applications ***********************************************/
@@ -544,8 +632,36 @@
  *   Default: CONFIG_NXWM_DEFAULT_FONTID
  */
 
+#ifndef CONFIG_NXWM_MEDIAPLAYER_PREFERRED_DEVICE
+#  define CONFIG_NXWM_MEDIAPLAYER_PREFERRED_DEVICE "pcm0"
+#endif
+
+#ifndef CONFIG_NXWM_MEDIAPLAYER_MEDIAPATH
+#  define CONFIG_NXWM_MEDIAPLAYER_MEDIAPATH "/mnt/sdcard"
+#endif
+
 #ifndef CONFIG_NXWM_MEDIAPLAYER_BACKGROUNDCOLOR
 #  define CONFIG_NXWM_MEDIAPLAYER_BACKGROUNDCOLOR CONFIG_NXWM_DEFAULT_BACKGROUNDCOLOR
+#endif
+
+#ifndef CONFIG_NXWM_MEDIAPLAYER_XSPACING
+#  define CONFIG_NXWM_MEDIAPLAYER_XSPACING 12
+#endif
+
+#ifndef CONFIG_NXWM_MEDIAPLAYER_YSPACING
+#  define CONFIG_NXWM_MEDIAPLAYER_YSPACING 8
+#endif
+
+#ifndef CONFIG_NXWM_MEDIAPLAYER_VOLUMESTEP
+#  define CONFIG_NXWM_MEDIAPLAYER_VOLUMESTEP 5
+#endif
+
+#ifndef CONFIG_NXWM_MEDIAPLAYER_MINVOLUMEHEIGHT
+#  define CONFIG_NXWM_MEDIAPLAYER_MINVOLUMEHEIGHT 6
+#endif
+
+#ifndef CONFIG_NXWM_MEDIAPLAYER_VOLUMECOLOR
+#  define CONFIG_NXWM_MEDIAPLAYER_VOLUMECOLOR MKRGB(63,90,192)
 #endif
 
 #ifndef CONFIG_NXWM_MEDIAPLAYER_ICON

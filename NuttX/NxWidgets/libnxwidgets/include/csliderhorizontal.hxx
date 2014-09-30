@@ -1,7 +1,7 @@
 /****************************************************************************
  * NxWidgets/libnxwidgets/include/csliderhorizontal.hxx
  *
- *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -73,7 +73,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <stdint.h>
@@ -88,11 +88,11 @@
 /****************************************************************************
  * Pre-Processor Definitions
  ****************************************************************************/
- 
+
 /****************************************************************************
  * Implementation Classes
  ****************************************************************************/
- 
+
 #if defined(__cplusplus)
 
 namespace NXWidgets
@@ -110,8 +110,8 @@ namespace NXWidgets
   {
   protected:
     CSliderHorizontalGrip *m_grip;   /**< Pointer to the grip. */
-    nxgl_coord_t m_minimumValue;     /**< Minimum value that the grip can represent. */
-    nxgl_coord_t m_maximumValue;     /**< Maximum value that the grip can represent. */
+    int m_minimumValue;              /**< Minimum value that the grip can represent. */
+    int m_maximumValue;              /**< Maximum value that the grip can represent. */
     int32_t m_value;                 /**< Current value of the slider. */
     nxgl_coord_t m_minimumGripWidth; /**< Smallest width that the grip can become */
     nxgl_coord_t m_pageSize;         /**< Value of a page of data, used when clicking
@@ -119,12 +119,12 @@ namespace NXWidgets
     int32_t m_gutterWidth;           /**< Width of the gutter, taking into account
                                           any adjustments made to the width of the grip. */
     uint32_t m_contentSize;          /**< Number of values in the min/max range. */
-    
+
     /**
      * Get the maximum possible value that the slider can represent.  Useful when
      * using the slider as a scrollbar, as the height of the grip prevents the full
      * range of values being accessed (intentionally).
-     * The returned value is bitshfted left 16 places for more accuracy in fixed-point
+     * The returned value is shifted left 16 places for more accuracy in fixed-point
      * calculations.
      *
      * @return The maximum possible value that the slider can represent.
@@ -167,7 +167,7 @@ namespace NXWidgets
      */
 
     virtual void onResize(nxgl_coord_t width, nxgl_coord_t height);
-    
+
     /**
      * Moves the grip towards the mouse.
      *
@@ -218,7 +218,7 @@ namespace NXWidgets
      * @return The smallest value.
      */
 
-     inline const nxgl_coord_t getMinimumValue(void) const
+     inline const int getMinimumValue(void) const
      {
        return m_minimumValue;
      }
@@ -229,7 +229,7 @@ namespace NXWidgets
      * @return The largest value.
      */
 
-     inline const nxgl_coord_t getMaximumValue(void) const
+     inline const int getMaximumValue(void) const
      {
        return m_maximumValue;
      }
@@ -240,7 +240,7 @@ namespace NXWidgets
      * return The current slider value.
      */
 
-    inline const nxgl_coord_t getValue(void) const
+    inline const int getValue(void) const
     {
       return m_value >> 16;
     }
@@ -265,7 +265,7 @@ namespace NXWidgets
      * @param value The smallest value.
      */
 
-    inline void setMinimumValue(const nxgl_coord_t value)
+    inline void setMinimumValue(const int value)
     {
       m_minimumValue = value;
       m_contentSize  = m_maximumValue - m_minimumValue + 1;
@@ -278,7 +278,7 @@ namespace NXWidgets
      * @param value The largest value.
      */
 
-    inline void setMaximumValue(const nxgl_coord_t value)
+    inline void setMaximumValue(const int value)
     {
       m_maximumValue = value;
       m_contentSize  = m_maximumValue - m_minimumValue + 1;
@@ -292,11 +292,11 @@ namespace NXWidgets
      * @param value The new value.
      */
 
-    void setValue(const nxgl_coord_t value);
+    void setValue(const int value);
 
     /**
      * Set the value that of the slider.  This will reposition and redraw
-     * the grip.  The supplied value should be bitshifted left 16 places.
+     * the grip.  The supplied value should be shifted left 16 places.
      * This ensures greater accuracy than the standard setValue() method if
      * the slider is being used as a scrollbar.
      *

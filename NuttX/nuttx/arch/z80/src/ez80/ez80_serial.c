@@ -55,7 +55,6 @@
 #include <arch/io.h>
 
 #include "chip/chip.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 #ifdef USE_SERIALDRIVER
@@ -110,6 +109,9 @@ static const struct uart_ops_s g_uart_ops =
   ez80_receive,        /* receive */
   ez80_rxint,          /* rxint */
   ez80_rxavailable,    /* rxavailable */
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  NULL,                /* rxflowcontrol */
+#endif
   ez80_send,           /* send */
   ez80_txint,          /* txint */
   ez80_txready,        /* txready */
@@ -560,7 +562,7 @@ static void ez80_rxint(struct uart_dev_s *dev, bool enable)
 {
   struct ez80_dev_s *priv = (struct ez80_dev_s*)dev->priv;
   uint8_t ier = ez80_serialin(priv, EZ80_UART_IER);
-  
+
   if (enable)
     {
 #ifndef CONFIG_SUPPRESS_SERIAL_INTS
@@ -766,7 +768,7 @@ int up_putc(int ch)
   ez80_serialout(priv, EZ80_UART_THR, (uint8_t)ch);
 
   /* Wait for the character to be sent before re-enabling interrupts */
- 
+
   ez80_waittxready(priv);
   ez80_restoreuartint(priv, ier);
   return ch;

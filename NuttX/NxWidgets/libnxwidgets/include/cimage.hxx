@@ -1,7 +1,7 @@
 /****************************************************************************
  * NxWidgets/libnxwidgets/include/cimage.hxx
  *
- *   Copyright (C) 2012-2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -115,6 +115,17 @@ namespace NXWidgets
 
     /**
      * Draw the area of this widget that falls within the clipping region.
+     * Called by the drawContents(port) and by classes that inherit from
+     * CImage.
+     *
+     * @param port The CGraphicsPort to draw to.
+     * @see redraw()
+     */
+
+    void drawContents(CGraphicsPort *port, bool selected);
+
+    /**
+     * Draw the area of this widget that falls within the clipping region.
      * Called by the redraw() function to draw all visible regions.
      *
      * @param port The CGraphicsPort to draw to.
@@ -124,8 +135,18 @@ namespace NXWidgets
     virtual void drawContents(CGraphicsPort *port);
 
     /**
-     * Draw the area of this widget that falls within the clipping region.
-     * Called by the redraw() function to draw all visible regions.
+     * Draw the border of this widget.  Called by the indirectly via
+     * drawBoard(port) and also by classes that inherit from CImage.
+     *
+     * @param port The CGraphicsPort to draw to.
+     * @see redraw()
+     */
+
+    void drawBorder(CGraphicsPort *port, bool selected);
+
+    /**
+     * Draw the border of this widget. Called by the redraw() function to draw
+     * all visible regions.
      *
      * @param port The CGraphicsPort to draw to.
      * @see redraw()
@@ -197,6 +218,9 @@ namespace NXWidgets
 
     /**
      * Destructor.
+     *
+     * NOTE: That the contained bitmap image is not destroyed when the image
+     * container is destroyed.
      */
 
     virtual inline ~CImage() { }
@@ -233,6 +257,39 @@ namespace NXWidgets
     void setImageLeft(nxgl_coord_t column);
 
     /**
+     * Align the image at the left of the widget region.
+     *
+     * NOTE: The CImage widget does not support any persistent alignment
+     * attribute (at least not at the moment).  As a result, this alignment
+     * can be lost if the image is changed or if the widget is resized.
+     */
+
+    inline void alignHorizontalLeft(void)
+    {
+      setImageLeft(0);
+    }
+
+    /**
+     * Align the image at the left of the widget region.
+     *
+     * NOTE: The CImage widget does not support any persistent alignment
+     * attribute (at least not at the moment).  As a result, this alignment
+     * can be lost if the image is changed or if the widget is resized.
+     */
+
+    void alignHorizontalCenter(void);
+
+    /**
+     * Align the image at the left of the widget region.
+     *
+     * NOTE: The CImage widget does not support any persistent alignment
+     * attribute (at least not at the moment).  As a result, this alignment
+     * can be lost if the image is changed or if the widget is resized.
+     */
+
+    void alignHorizontalRight(void);
+
+    /**
      * Set the vertical position of the bitmap.  Zero is the top edge
      * of the bitmap and values >0 will move the bit map down.
      * This method is useful for vertical scrolling a large bitmap
@@ -240,6 +297,39 @@ namespace NXWidgets
      */
 
     void setImageTop(nxgl_coord_t row);
+
+    /**
+     * Align the image at the top of the widget region.
+     *
+     * NOTE: The CImage widget does not support any persistent alignment
+     * attribute (at least not at the moment).  As a result, this alignment
+     * can be lost if the image is changed or if the widget is resized.
+     */
+
+    inline void alignVerticalTop(void)
+    {
+      setImageTop(0);
+    }
+
+    /**
+     * Align the image at the middle of the widget region.
+     *
+     * NOTE: The CImage widget does not support any persistent alignment
+     * attribute (at least not at the moment).  As a result, this alignment
+     * can be lost if the image is changed or if the widget is resized.
+     */
+
+    void alignVerticalCenter(void);
+
+    /**
+     * Align the image at the left of the widget region.
+     *
+     * NOTE: The CImage widget does not support any persistent alignment
+     * attribute (at least not at the moment).  As a result, this alignment
+     * can be lost if the image is changed or if the widget is resized.
+     */
+
+    void alignVerticalBottom(void);
 
     /**
      * Control the highlight state.

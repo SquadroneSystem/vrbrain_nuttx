@@ -155,7 +155,7 @@ IDEs
 
   NuttX is built using command-line make.  It can be used with an IDE, but some
   effort will be required to create the project.
-  
+
   Makefile Build
   --------------
   Under Eclipse, it is pretty easy to set up an "empty makefile project" and
@@ -185,7 +185,7 @@ AVR32 Bootloader
 
   Boot Sequence
   -------------
-  
+
     "An AVR UC3 part having the bootloader programmed resets as any other
      part at 80000000h. Bootloader execution begins here. The bootloader
      first performs the boot process to know whether it should start the
@@ -193,7 +193,7 @@ AVR32 Bootloader
      that the USB DFU ISP should be started, then execution continues in
      the bootloader area, i.e. between 80000000h and 80002000h, else
      the bootloader launches the application at 80002000h."
-  
+
   Link Address
   ------------
 
@@ -234,7 +234,7 @@ AVR32 Bootloader
   will need to modify the setenv.sh files.
 
   Notes from "AVR32 UC3 USB DFU Bootloader" (doc7745.pdf)
-  
+
   "To launch BatchISP, open a command prompt. Windows or Cygwin command
    prompt can be used provided that the bin folder of the FLIP installation
    directory is in the PATH (Windows’ or Cygwin’s) environment variable.
@@ -247,7 +247,7 @@ AVR32 Bootloader
   "BatchISP works with an internal ISP buffer per target memory. These ISP
    buffers can be filled from several sources. All target operations (program,
    verify, read) are performed using these buffers."
- 
+
   The following BatchISP command line will erase FLASH, write the nuttx binary
   into FLASH, and reset the AVR32.  This command line is available in the
   script config/avr32dev1/tools/doisp.sh:
@@ -256,7 +256,7 @@ AVR32 Bootloader
      blankcheck loadbuffer nuttx.elf program verify start reset 0
 
   "BatchISP main commands available on AT32UC3xxxxx are:
-  
+
    - ASSERT { PASS | FAIL } changes the displayed results of the following
      operations according to the expected behavior.
    - ONFAIL { ASK | ABORT | RETRY | IGNORE } changes the interactive behavior
@@ -325,7 +325,7 @@ Make Tip
    changes when you run the program.  That is because build is still using the
    version of the file in the copied directory, not your modified file! To work
    around this annoying behavior, do the following when you re-build:
-   
+
    make clean_context all <-- Remove and re-copy all of the directories, then make all
    doisp.sh               <-- Load the code onto the board.
 
@@ -343,7 +343,7 @@ AVR32DEV1 Configuration Options
 
     CONFIG_ARCH_architecture - For use in C code:
 
-       CONFIG_ARCH_AVR32=y
+       CONFIG_ARCH_FAMILY_AVR32=y
 
     CONFIG_ARCH_CHIP - Identifies the arch/*/chip subdirectory
 
@@ -369,17 +369,13 @@ AVR32DEV1 Configuration Options
     CONFIG_ENDIAN_BIG - define if big endian (default is little
        endian)
 
-    CONFIG_DRAM_SIZE - Describes the installed DRAM (SRAM in this case):
+    CONFIG_RAM_SIZE - Describes the installed DRAM (SRAM in this case):
 
-       CONFIG_DRAM_SIZE=0x00010000 (64Kb)
+       CONFIG_RAM_SIZE=0x00010000 (64Kb)
 
-    CONFIG_DRAM_START - The start address of installed DRAM
+    CONFIG_RAM_START - The start address of installed DRAM
 
-       CONFIG_DRAM_START=0x20000000
-
-    CONFIG_ARCH_IRQPRIO - The AT32UC3B0256 supports interrupt prioritization
-
-       CONFIG_ARCH_IRQPRIO=y
+       CONFIG_RAM_START=0x20000000
 
     CONFIG_ARCH_LEDS - Use LEDs to show state. Unique to boards that
        have LEDs
@@ -401,7 +397,7 @@ AVR32DEV1 Configuration Options
        the delay actually is 100 seconds.
 
   Individual subsystems can be enabled:
-  
+
     CONFIG_AVR32_GPIOIRQ - GPIO interrupt support
     CONFIG_AVR32_GPIOIRQSETA - Set of GPIOs on PORTA that support interrupts
     CONFIG_AVR32_GPIOIRQSETB - Set of GPIOs on PORTB that support interrupts
@@ -431,28 +427,51 @@ AVR32DEV1 Configuration Options
 Configurations
 ^^^^^^^^^^^^^^
 
-Each Atmel AVR32DEV configuration is maintained in a sub-directory and
-can be selected as follow:
+Common Configuration Notes
+--------------------------
 
-    cd tools
-    ./configure.sh avr32dev1/<subdir>
-    cd -
-    . ./setenv.sh
+  1. Each Atmel AVR32DEV configuration is maintained in a sub-directory and
+     can be selected as follow:
 
-(Or configure.bat in a native Windows environment).
+       cd tools
+       ./configure.sh avr32dev1/<subdir>
+       cd -
+       . ./setenv.sh
 
-Where <subdir> is one of the following:
+     Where <subdir> is one of the configuration sub-directories described in
+     the following paragraph.
+
+    (Use configure.bat instead of configure.sh in a native Windows environment).
+
+  2. These configurations use the mconf-based configuration tool.  To
+     change a configurations using that tool, you should:
+
+     a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+        and misc/tools/
+
+     b. Execute 'make menuconfig' in nuttx/ in order to start the
+        reconfiguration process.
+
+  3. By default, all configurations assume the AVR toolchain under Cygwin
+     with Windows.  This is easily reconfigured:
+
+        CONFIG_HOST_WINDOWS=y
+        CONFIG_WINDOWS_CYGWIN=y
+        CONFIG_AVR32_AVRTOOLSW=y
+
+Configuration Sub-Directories
+-----------------------------
 
   nsh:
+
     Configures the NuttShell (nsh) located at examples/nsh.  The
     Configuration enables only the serial NSH interface.
 
   ostest:
+
     This configuration directory, performs a simple OS test using
     examples/ostest.
 
     NOTE: Round-robin scheduling is disabled in this test because
     the RR test in examples/ostest declares data structures that
     are too large for the poor little uc3 SRAM.
-
-

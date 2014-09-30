@@ -1,7 +1,7 @@
 /****************************************************************************
  * apps/nshlib/nsh_fscmds.c
  *
- *   Copyright (C) 2007-2009, 2011-2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2011-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,7 @@
 # if !defined(CONFIG_DISABLE_MOUNTPOINT)
 #   ifdef CONFIG_FS_READABLE /* Need at least one filesytem in configuration */
 #     include <sys/mount.h>
-#     include <nuttx/ramdisk.h>
+#     include <nuttx/fs/ramdisk.h>
 #   endif
 #   ifdef CONFIG_FS_FAT
 #     include <nuttx/fs/mkfatfs.h>
@@ -63,7 +63,7 @@
 #     include <nuttx/fs/nfs.h>
 #   endif
 #   ifdef CONFIG_RAMLOG_SYSLOG
-#     include <nuttx/ramlog.h>
+#     include <nuttx/syslog/ramlog.h>
 #   endif
 #endif
 #endif
@@ -104,6 +104,7 @@ typedef int (*direntry_handler_t)(FAR struct nsh_vtbl_s *, const char *,
  * Private Data
  ****************************************************************************/
 
+#if CONFIG_NFILE_DESCRIPTORS > 0
 /* Common buffer for file I/O.  Note the use of this common buffer precludes
  * multiple copies of NSH running concurrently.  It should be allocated per
  * NSH instance and retained in the "vtbl" as is done for the telnet
@@ -111,6 +112,7 @@ typedef int (*direntry_handler_t)(FAR struct nsh_vtbl_s *, const char *,
  */
 
 static char g_iobuffer[IOBUFFERSIZE];
+#endif
 
 /****************************************************************************
  * Public Data
@@ -142,6 +144,7 @@ static void trim_dir(char *arg)
  * Name: nsh_getdirpath
  ****************************************************************************/
 
+#if CONFIG_NFILE_DESCRIPTORS > 0
 static char *nsh_getdirpath(const char *path, const char *file)
 {
   /* Handle the case where all that is left is '/' */
@@ -158,6 +161,7 @@ static char *nsh_getdirpath(const char *path, const char *file)
   g_iobuffer[PATH_MAX] = '\0';
   return strdup(g_iobuffer);
 }
+#endif
 
 /****************************************************************************
  * Name: foreach_direntry
@@ -232,7 +236,8 @@ static inline int ls_specialdir(const char *dir)
  ****************************************************************************/
 
 #if CONFIG_NFILE_DESCRIPTORS > 0
-static int ls_handler(FAR struct nsh_vtbl_s *vtbl, const char *dirpath, struct dirent *entryp, void *pvarg)
+static int ls_handler(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
+                      FAR struct dirent *entryp, FAR void *pvarg)
 {
   unsigned int lsflags = (unsigned int)pvarg;
   int ret;
@@ -244,18 +249,19 @@ static int ls_handler(FAR struct nsh_vtbl_s *vtbl, const char *dirpath, struct d
       struct stat buf;
 
       /* stat the file */
-      if (entryp != NULL) 
-      {
+
+      if (entryp != NULL)
+        {
           char *fullpath = nsh_getdirpath(dirpath, entryp->d_name);
           ret = stat(fullpath, &buf);
           free(fullpath);
-      } 
-      else 
-      {
-          /* a NULL entryp signifies that we are running ls on a
-             single file */
+        }
+      else
+        {
+          /* A NULL entryp signifies that we are running ls on a single file */
+
           ret = stat(dirpath, &buf);
-      }
+        }
 
       if (ret != 0)
         {
@@ -333,29 +339,31 @@ static int ls_handler(FAR struct nsh_vtbl_s *vtbl, const char *dirpath, struct d
         }
     }
 
-  /* then provide the filename that is common to normal and verbose output */
+  /* Then provide the filename that is common to normal and verbose output */
 
-  if (entryp != NULL) 
-  {
+  if (entryp != NULL)
+    {
 #ifdef CONFIG_NSH_FULLPATH
       nsh_output(vtbl, " %s/%s", arg, entryp->d_name);
 #else
       nsh_output(vtbl, " %s", entryp->d_name);
 #endif
-      if (DIRENT_ISDIRECTORY(entryp->d_type) && !ls_specialdir(entryp->d_name))
-      {
+      if (DIRENT_ISDIRECTORY(entryp->d_type) &&
+          !ls_specialdir(entryp->d_name))
+        {
           nsh_output(vtbl, "/\n");
-      }
+        }
       else
-      {
+        {
           nsh_output(vtbl, "\n");
-      }
-  } 
-  else 
-  {
-      /* a single file */
+        }
+    }
+  else
+    {
+      /* A single file */
+
       nsh_output(vtbl, " %s\n", dirpath);
-  }
+    }
 
   return OK;
 }
@@ -365,7 +373,7 @@ static int ls_handler(FAR struct nsh_vtbl_s *vtbl, const char *dirpath, struct d
  * Name: ls_recursive
  ****************************************************************************/
 
-#if CONFIG_NFILE_DESCRIPTORS > 0
+#if CONFIG_NFILE_DESCRIPTORS > 0 && !defined(CONFIG_NSH_DISABLE_LS)
 static int ls_recursive(FAR struct nsh_vtbl_s *vtbl, const char *dirpath,
                         struct dirent *entryp, void *pvarg)
 {
@@ -397,7 +405,8 @@ static int ls_recursive(FAR struct nsh_vtbl_s *vtbl, const char *dirpath,
     }
   return ret;
 }
-#endif
+
+#endif /* CONFIG_NFILE_DESCRIPTORS > 0 && !CONFIG_NSH_DISABLE_LS */
 
 /****************************************************************************
  * Name: cat_common
@@ -500,6 +509,17 @@ static int cat_common(FAR struct nsh_vtbl_s *vtbl, FAR const char *cmd,
           break;
         }
     }
+
+   /* Make sure that the following NSH prompt appears on a new line.  If the
+    * file ends in a newline, then this will print an extra blank line
+    * before the prompt, but that is preferable to the case where there is
+    * no newline and the NSH prompt appears on the same line as the cat'ed
+    * file.
+    */
+
+   nsh_output(vtbl, "\n");
+
+   /* Close the input file and return the result */
 
    (void)close(fd);
    free(buffer);
@@ -872,6 +892,7 @@ errout_with_paths:
     {
       free(filepath);
     }
+
   return ret;
 }
 #endif
@@ -885,12 +906,12 @@ errout_with_paths:
 #ifndef CONFIG_NSH_DISABLE_LS
 int cmd_ls(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
+  struct stat st;
   const char *relpath;
   unsigned int lsflags = 0;
   char *fullpath;
   bool badarg = false;
   int ret;
-  struct stat st;
 
   /* Get the ls options */
 
@@ -955,22 +976,34 @@ int cmd_ls(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       return ERROR;
     }
 
-  /* see if it is a single file */
-  if (stat(fullpath, &st) == 0 && !S_ISDIR(st.st_mode)) {
-      /* pass a null dirent to ls_handler to signify that this is a
-         single file */
+  /* See if it is a single file */
+
+  if (stat(fullpath, &st) < 0)
+    {
+      nsh_output(vtbl, g_fmtcmdfailed, argv[0], "stat", NSH_ERRNO);
+      ret = ERROR;
+    }
+  else if (!S_ISDIR(st.st_mode))
+    {
+      /* Pass a null dirent to ls_handler to signify that this is a single
+       * file
+       */
+
       ret = ls_handler(vtbl, fullpath, NULL, (void*)lsflags);
-  } else {
+    }
+  else
+    {
       /* List the directory contents */
+
       nsh_output(vtbl, "%s:\n", fullpath);
       ret = foreach_direntry(vtbl, "ls", fullpath, ls_handler, (void*)lsflags);
       if (ret == OK && (lsflags & LSFLAGS_RECURSIVE) != 0)
-      {
+        {
           /* Then recurse to list each directory within the directory */
 
           ret = foreach_direntry(vtbl, "ls", fullpath, ls_recursive, (void*)lsflags);
-      }
-  }
+        }
+    }
 
   nsh_freefullpath(fullpath);
   return ret;
@@ -982,7 +1015,7 @@ int cmd_ls(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  * Name: cmd_mkdir
  ****************************************************************************/
 
-#if !defined(CONFIG_DISABLE_MOUNTPOINT) && CONFIG_NFILE_DESCRIPTORS > 0 && defined(CONFIG_FS_WRITABLE)
+#ifdef NSH_HAVE_DIROPTS
 #ifndef CONFIG_NSH_DISABLE_MKDIR
 int cmd_mkdir(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
@@ -996,6 +1029,7 @@ int cmd_mkdir(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
         {
           nsh_output(vtbl, g_fmtcmdfailed, argv[0], "mkdir", NSH_ERRNO);
         }
+
       nsh_freefullpath(fullpath);
     }
   return ret;
@@ -1012,18 +1046,80 @@ int cmd_mkdir(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 int cmd_mkfatfs(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
   struct fat_format_s fmt = FAT_FORMAT_INITIALIZER;
-  char *fullpath = nsh_getfullpath(vtbl, argv[1]);
+  FAR char *fullpath;
+  bool badarg;
+  int option;
   int ret = ERROR;
 
-  if (fullpath)
+  /* mkfatfs [-F <fatsize>] <block-driver> */
+
+  badarg = false;
+  while ((option = getopt(argc, argv, ":F:")) != ERROR)
     {
-      ret = mkfatfs(fullpath, &fmt);
-      if (ret < 0)
+      switch (option)
         {
-          nsh_output(vtbl, g_fmtcmdfailed, argv[0], "mkfatfs", NSH_ERRNO);
+          case 'F':
+            fmt.ff_fattype = atoi(optarg);
+            if (fmt.ff_fattype != 0  && fmt.ff_fattype != 12 &&
+                fmt.ff_fattype != 16 && fmt.ff_fattype != 32)
+              {
+                nsh_output(vtbl, g_fmtargrange, argv[0]);
+                badarg = true;
+              }
+            break;
+
+         case ':':
+            nsh_output(vtbl, g_fmtargrequired, argv[0]);
+            badarg = true;
+            break;
+
+          case '?':
+          default:
+            nsh_output(vtbl, g_fmtarginvalid, argv[0]);
+            badarg = true;
+            break;
         }
-      nsh_freefullpath(fullpath);
     }
+
+  /* If a bad argument was encountered, then return without processing the command */
+
+  if (badarg)
+    {
+      return ERROR;
+    }
+
+  /* There should be exactly one parameter left on the command-line */
+
+  if (optind == argc-1)
+    {
+      fullpath = nsh_getfullpath(vtbl, argv[optind]);
+      if (!fullpath)
+        {
+          nsh_output(vtbl, g_fmtcmdfailed, argv[0], "nsh_getfullpath",
+                     NSH_ERRNO);
+          return ERROR;
+        }
+    }
+  else if (optind >= argc)
+    {
+      nsh_output(vtbl, g_fmttoomanyargs, argv[0]);
+      return ERROR;
+    }
+  else
+    {
+      nsh_output(vtbl, g_fmtargrequired, argv[0]);
+      return ERROR;
+    }
+
+  /* Now format the FAT file system */
+
+  ret = mkfatfs(fullpath, &fmt);
+  if (ret < 0)
+    {
+      nsh_output(vtbl, g_fmtcmdfailed, argv[0], "mkfatfs", NSH_ERRNO);
+    }
+
+  nsh_freefullpath(fullpath);
   return ret;
 }
 #endif
@@ -1047,8 +1143,10 @@ int cmd_mkfifo(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
         {
           nsh_output(vtbl, g_fmtcmdfailed, argv[0], "mkfifo", NSH_ERRNO);
         }
+
       nsh_freefullpath(fullpath);
     }
+
   return ret;
 }
 #endif
@@ -1058,7 +1156,7 @@ int cmd_mkfifo(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  * Name: cmd_mkrd
  ****************************************************************************/
 
-#if !defined(CONFIG_DISABLE_MOUNTPOINT) && CONFIG_NFILE_DESCRIPTORS > 0 && defined(CONFIG_FS_WRITABLE)
+#ifdef NSH_HAVE_WRITABLE_MOUNTPOINT
 #ifndef CONFIG_NSH_DISABLE_MKRD
 int cmd_mkrd(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
@@ -1115,7 +1213,7 @@ int cmd_mkrd(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       return ERROR;
     }
 
-  /* There should be exactly on parameter left on the command-line */
+  /* There should be exactly one parameter left on the command-line */
 
   if (optind == argc-1)
     {
@@ -1155,6 +1253,7 @@ int cmd_mkrd(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       free(buffer);
       return ERROR;
     }
+
   return ret;
 
 errout_with_fmt:
@@ -1219,7 +1318,7 @@ int cmd_mksmartfs(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  * Name: cmd_mv
  ****************************************************************************/
 
-#if !defined(CONFIG_DISABLE_MOUNTPOINT) && CONFIG_NFILE_DESCRIPTORS > 0 && defined(CONFIG_FS_WRITABLE)
+#ifdef NSH_HAVE_DIROPTS
 #ifndef CONFIG_NSH_DISABLE_MV
 int cmd_mv(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
@@ -1263,7 +1362,7 @@ int cmd_mv(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  * Name: cmd_rm
  ****************************************************************************/
 
-#if !defined(CONFIG_DISABLE_MOUNTPOINT) && CONFIG_NFILE_DESCRIPTORS > 0 && defined(CONFIG_FS_WRITABLE)
+#ifdef NSH_HAVE_DIROPTS
 #ifndef CONFIG_NSH_DISABLE_RM
 int cmd_rm(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
@@ -1277,8 +1376,10 @@ int cmd_rm(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
         {
           nsh_output(vtbl, g_fmtcmdfailed, argv[0], "unlink", NSH_ERRNO);
         }
+
       nsh_freefullpath(fullpath);
     }
+
   return ret;
 }
 #endif
@@ -1288,7 +1389,7 @@ int cmd_rm(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  * Name: cmd_rmdir
  ****************************************************************************/
 
-#if !defined(CONFIG_DISABLE_MOUNTPOINT) && CONFIG_NFILE_DESCRIPTORS > 0 && defined(CONFIG_FS_WRITABLE)
+#ifdef NSH_HAVE_DIROPTS
 #ifndef CONFIG_NSH_DISABLE_RMDIR
 int cmd_rmdir(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
@@ -1302,8 +1403,10 @@ int cmd_rmdir(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
         {
           nsh_output(vtbl, g_fmtcmdfailed, argv[0], "rmdir", NSH_ERRNO);
         }
+
       nsh_freefullpath(fullpath);
     }
+
   return ret;
 }
 #endif
@@ -1322,82 +1425,115 @@ int cmd_sh(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 #endif
 #endif
 
+/****************************************************************************
+ * Name: cmd_cmp
+ ****************************************************************************/
+
 #if CONFIG_NFILE_DESCRIPTORS > 0
 #ifndef CONFIG_NSH_DISABLE_CMP
 int cmd_cmp(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
-    char *path1 = NULL;
-    char *path2 = NULL;
-    int fd1 = -1, fd2 = -1;
-    int ret = ERROR;
-    unsigned total_read = 0;
-    
-    /* Get the full path to the two files */
-    
-    path1 = nsh_getfullpath(vtbl, argv[1]);
-    if (!path1)
+  FAR char *path1 = NULL;
+  FAR char *path2 = NULL;
+  off_t total_read = 0;
+  int fd1 = -1;
+  int fd2 = -1;
+  int ret = ERROR;
+
+  /* Get the full path to the two files */
+
+  path1 = nsh_getfullpath(vtbl, argv[1]);
+  if (!path1)
     {
-        goto errout;
+      nsh_output(vtbl, g_fmtargrequired, argv[0]);
+      goto errout;
     }
-    
-    path2 = nsh_getfullpath(vtbl, argv[2]);
-    if (!path2)
+
+  path2 = nsh_getfullpath(vtbl, argv[2]);
+  if (!path2)
     {
-        goto errout;
+      nsh_output(vtbl, g_fmtargrequired, argv[0]);
+      goto errout_with_path1;
     }
-    
-    /* Open the files for reading */
-    fd1 = open(path1, O_RDONLY);
-    if (fd1 < 0)
+
+  /* Open the files for reading */
+
+  fd1 = open(path1, O_RDONLY);
+  if (fd1 < 0)
     {
-        nsh_output(vtbl, g_fmtcmdfailed, argv[0], "open", NSH_ERRNO);
-        goto errout;
+      nsh_output(vtbl, g_fmtcmdfailed, argv[0], "open", NSH_ERRNO);
+      goto errout_with_path2;
     }
-    
-    fd2 = open(path2, O_RDONLY);
-    if (fd2 < 0)
+
+  fd2 = open(path2, O_RDONLY);
+  if (fd2 < 0)
     {
-        nsh_output(vtbl, g_fmtcmdfailed, argv[0], "open", NSH_ERRNO);
-        goto errout;
+      nsh_output(vtbl, g_fmtcmdfailed, argv[0], "open", NSH_ERRNO);
+      goto errout_with_fd1;
     }
-    
-    for (;;)
+
+  /* The loop until we hit the end of file or find a difference in the two
+   * files.
+   */
+
+  for (;;)
     {
-        char buf1[128];
-        char buf2[128];
-        
-        int nbytesread1 = read(fd1, buf1, sizeof(buf1));
-        int nbytesread2 = read(fd2, buf2, sizeof(buf2));
-        
-        if (nbytesread1 < 0)
+      char buf1[128];
+      char buf2[128];
+
+      /* Read the file data */
+
+      ssize_t nbytesread1 = read(fd1, buf1, sizeof(buf1));
+      ssize_t nbytesread2 = read(fd2, buf2, sizeof(buf2));
+
+      if (nbytesread1 < 0)
         {
-            nsh_output(vtbl, g_fmtcmdfailed, argv[0], "read", NSH_ERRNO);
-            goto errout;
+          nsh_output(vtbl, g_fmtcmdfailed, argv[0], "read", NSH_ERRNO);
+          goto errout_with_fd2;
         }
-        
-        if (nbytesread2 < 0)
+
+      if (nbytesread2 < 0)
         {
-            nsh_output(vtbl, g_fmtcmdfailed, argv[0], "read", NSH_ERRNO);
-            goto errout;
+          nsh_output(vtbl, g_fmtcmdfailed, argv[0], "read", NSH_ERRNO);
+          goto errout_with_fd2;
         }
-        
-        total_read += nbytesread1>nbytesread2?nbytesread2:nbytesread1;
-        
-        if (nbytesread1 != nbytesread2 || memcmp(buf1, buf2, nbytesread1) != 0)
+
+      total_read += nbytesread1 > nbytesread2 ? nbytesread2 : nbytesread1;
+
+      /* Compare the file data */
+
+      if (nbytesread1 != nbytesread2 ||
+          memcmp(buf1, buf2, nbytesread1) != 0)
         {
-            nsh_output(vtbl, "files differ: byte %u\n", total_read);
-            goto errout;
+          nsh_output(vtbl, "files differ: byte %u\n", total_read);
+          goto errout_with_fd2;
         }
-        
-        if (nbytesread1 < sizeof(buf1)) break;
+
+      /* A partial read indicates the end of file (usually) */
+
+      if (nbytesread1 < (size_t)sizeof(buf1))
+        {
+          break;
+        }
     }
-    
-    ret = OK;
-    
+
+  /* The files are the same, i.e., the end of file was encountered
+   * without finding any differences.
+   */
+
+  ret = OK;
+
+errout_with_fd2:
+  close(fd2);
+errout_with_fd1:
+  close(fd1);
+errout_with_path2:
+  nsh_freefullpath(path2);
+errout_with_path1:
+  nsh_freefullpath(path1);
 errout:
-    if (fd1 != -1) close(fd1);
-    if (fd2 != -1) close(fd2);
-    return ret;
+  return ret;
 }
 #endif
 #endif
+

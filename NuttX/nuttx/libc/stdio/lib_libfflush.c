@@ -1,7 +1,7 @@
 /****************************************************************************
  * libc/stdio/lib_libfflush.c
  *
- *   Copyright (C) 2007-2008, 2011-2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2008, 2011-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,10 +34,6 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Compilation Switches
- ****************************************************************************/
-
-/****************************************************************************
  * Included Files
  ****************************************************************************/
 
@@ -54,7 +50,7 @@
 #include "lib_internal.h"
 
 /****************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /****************************************************************************
@@ -112,7 +108,7 @@ ssize_t lib_fflush(FAR FILE *stream, bool bforce)
 
   /* Return EBADF if the file is not opened for writing */
 
-  if (stream->fs_filedes < 0 || (stream->fs_oflags & O_WROK) == 0)
+  if (stream->fs_fd < 0 || (stream->fs_oflags & O_WROK) == 0)
     {
       return -EBADF;
     }
@@ -150,13 +146,14 @@ ssize_t lib_fflush(FAR FILE *stream, bool bforce)
         {
           /* Perform the write */
 
-          bytes_written = write(stream->fs_filedes, src, nbuffer);
+          bytes_written = write(stream->fs_fd, src, nbuffer);
           if (bytes_written < 0)
             {
               /* Write failed.  The cause of the failure is in 'errno'.
                * returned the negated errno value.
                */
 
+              stream->fs_flags |= __FS_FLAG_ERROR;
               lib_give_semaphore(stream);
               return -get_errno();
             }

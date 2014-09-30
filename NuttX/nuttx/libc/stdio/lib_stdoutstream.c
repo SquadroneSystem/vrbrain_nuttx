@@ -1,7 +1,7 @@
 /****************************************************************************
  * libc/stdio/lib_stdoutstream.c
  *
- *   Copyright (C) 2007-2009, 2011-2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2011-2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -83,7 +83,7 @@ static void stdoutstream_putc(FAR struct lib_outstream_s *this, int ch)
  ****************************************************************************/
 
 #if defined(CONFIG_STDIO_LINEBUFFER) && CONFIG_STDIO_BUFFER_SIZE > 0
-int stdoutstream_flush(FAR struct lib_outstream_s *this)
+static int stdoutstream_flush(FAR struct lib_outstream_s *this)
 {
   FAR struct lib_stdoutstream_s *sthis = (FAR struct lib_stdoutstream_s *)this;
   return lib_fflush(sthis->stream, true);
@@ -101,22 +101,22 @@ int stdoutstream_flush(FAR struct lib_outstream_s *this)
  *   Initializes a stream for use with a FILE instance.
  *
  * Input parameters:
- *   stdoutstream - User allocated, uninitialized instance of struct
- *                  lib_stdoutstream_s to be initialized.
- *   stream       - User provided stream instance (must have been opened for
- *                  write access).
+ *   outstream - User allocated, uninitialized instance of struct
+ *               lib_stdoutstream_s to be initialized.
+ *   stream    - User provided stream instance (must have been opened for
+ *               write access).
  *
  * Returned Value:
  *   None (User allocated instance initialized).
  *
  ****************************************************************************/
 
-void lib_stdoutstream(FAR struct lib_stdoutstream_s *stdoutstream,
-                   FAR FILE *stream)
+void lib_stdoutstream(FAR struct lib_stdoutstream_s *outstream,
+                      FAR FILE *stream)
 {
   /* Select the put operation */
 
-  stdoutstream->public.put   = stdoutstream_putc;
+  outstream->public.put = stdoutstream_putc;
 
   /* Select the correct flush operation.  This flush is only called when
    * a newline is encountered in the output stream.  However, we do not
@@ -129,19 +129,17 @@ void lib_stdoutstream(FAR struct lib_stdoutstream_s *stdoutstream,
 #if CONFIG_STDIO_BUFFER_SIZE > 0
   if ((stream->fs_oflags & O_BINARY) == 0)
     {
-      stdoutstream->public.flush = stdoutstream_flush;
+      outstream->public.flush = stdoutstream_flush;
     }
   else
 #endif
     {
-      stdoutstream->public.flush = lib_noflush;
+      outstream->public.flush = lib_noflush;
     }
 #endif
 
   /* Set the number of bytes put to zero and remember the stream */
 
-  stdoutstream->public.nput  = 0;
-  stdoutstream->stream       = stream;
+  outstream->public.nput = 0;
+  outstream->stream      = stream;
 }
-
-

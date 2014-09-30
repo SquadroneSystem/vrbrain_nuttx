@@ -129,7 +129,7 @@ config EXECFUNCS_NSYMBOLS
 		symbols in that table.  This selection provides the number of
 		symbols in the symbol table.
 
-endif
+endif # LIBC_EXECFUNCS
 
 config POSIX_SPAWN_PROXY_STACKSIZE
 	int "Spawn Stack Size"
@@ -186,6 +186,29 @@ config ARCH_LOWPUTC
 	---help---
 		architecture supports low-level, boot time console output
 
+config LIBC_LOCALTIME
+	bool "localtime API call support"
+	default "n"
+	depends on !DISABLE_ENVIRON
+	---help---
+		localtime API call support
+
+if LIBC_LOCALTIME
+
+config LIBC_TZ_MAX_TIMES
+	int "Maximum number of times in timezone"
+	default 8
+
+config LIBC_TZ_MAX_TYPES
+	int "Maximum number of TZ types"
+	default 8
+
+config LIBC_TZDIR
+	string "zoneinfo directory path"
+	default "/etc/zoneinfo"
+
+endif
+
 config LIB_SENDFILE_BUFSIZE
 	int "sendfile() buffer size"
 	default 512
@@ -197,7 +220,7 @@ config ARCH_ROMGETC
 	default n
 	---help---
 		In Harvard architectures, data accesses and instruction accesses
-		occur on different busses, perhaps concurrently.  All data accesses
+		occur on different buses, perhaps concurrently.  All data accesses
 		are performed on the data bus unless special machine instructions
 		are used to read data from the instruction address space.  Also, in
 		the typical MCU, the available SRAM data memory is much smaller that
@@ -210,8 +233,8 @@ config ARCH_ROMGETC
 		the function up_romgetc().  up_romgetc() will simply read one byte
 		of data from the instruction space.
 
-		If ARCH_ROMGETC, certain C stdio functions are effected: (1) All
-		format strings in printf, fprintf, sprintf, etc. are assumed to lie
+		If ARCH_ROMGETC is selected, certain C stdio functions are effected: (1)
+		All format strings in printf, fprintf, sprintf, etc. are assumed to lie
 		in FLASH (string arguments for %s are still assumed to reside in SRAM).
 		And (2), the string argument to puts and fputs is assumed to reside
 		in FLASH.  Clearly, these assumptions may have to modified for the
@@ -227,6 +250,7 @@ config ARCH_OPTIMIZED_FUNCTIONS
 		system performance.
 
 if ARCH_OPTIMIZED_FUNCTIONS
+
 config ARCH_MEMCPY
 	bool "memcpy()"
 	default n
@@ -244,6 +268,7 @@ config MEMCPY_VIK
 		size. See licensing information in the top-level COPYING file.
 
 if MEMCPY_VIK
+
 config MEMCPY_PRE_INC_PTRS
 	bool "Pre-increment pointers"
 	default n
@@ -264,7 +289,7 @@ config MEMCPY_64BIT
 		Compiles memcpy() for architectures that suppport 64-bit operations
 		efficiently.
 
-endif
+endif # MEMCPY_VIK
 
 config ARCH_MEMCMP
 	bool "memcmp()"
@@ -352,7 +377,7 @@ config ARCH_BZERO
 		Select this option if the architecture provides an optimized version
 		of bzero().
 
-endif
+endif # ARCH_OPTIMIZED_FUNCTIONS
 
 comment "Non-standard Library Support"
 
@@ -380,6 +405,7 @@ config SCHED_HPWORK
 		as the "bottom half" for driver interrupt handling.
 
 if SCHED_HPWORK
+
 config SCHED_WORKPRIORITY
 	int "High priority worker thread priority"
 	default 192

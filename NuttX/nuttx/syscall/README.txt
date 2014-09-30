@@ -96,7 +96,7 @@ Each type field has a format as follows:
 
   type name:
         For all simpler types
-  formal type | actual type: 
+  formal type | actual type:
         For array types where the form of the formal (eg. int parm[2])
         differs from the type of actual passed parameter (eg. int*).  This
         is necessary because you cannot do simple casts to array types.
@@ -104,7 +104,7 @@ Each type field has a format as follows:
         A similar situation exists for unions.  For example, the formal
         parameter type union sigval -- You cannot cast a uintptr_t to
         a union sigval, but you can cast to the type of one of the union
-        member types when passing the actual paramter.  Similarly, we
+        member types when passing the actual parameter.  Similarly, we
         cannot cast a union sigval to a uinptr_t either.  Rather, we need
         to cast a specific union member fieldname to uintptr_t.
 

@@ -27,8 +27,8 @@ LCPXpresso LPC1768 Board
 
   P0[0]/RD1/TXD3/SDA1               J6-9     I2C E2PROM SDA TXD3/SDA1
   P0[1]/TD1/RXD3/SCL                J6-10                   RXD3/SCL1
-  P0[2]/TXD0/AD0[7]                 J6-21    
-  P0[3]/RXD0/AD0[6]                 J6-22    
+  P0[2]/TXD0/AD0[7]                 J6-21
+  P0[3]/RXD0/AD0[6]                 J6-22
   P0[4]/I2SRX-CLK/RD2/CAP2.0        J6-38                   CAN_RX2
   P0[5]/I2SRX-WS/TD2/CAP2.1         J6-39                   CAN_TX2
   P0[6]/I2SRX_SDA/SSEL1/MAT2[0]     J6-8                    SSEL1, OLED CS
@@ -43,14 +43,14 @@ LCPXpresso LPC1768 Board
   P0[18]/DCD1/MOSI0/MOSI            J6-11                   MOSI0
   P0[19]/DSR1/SDA1                  PAD17                   N/A
   P0[20]/DTR1/SCL1                  PAD18    I2C E2PROM SCL N/A
-  P0[21]/RI1/MCIPWR/RD1             J6-23                  
-  P0[22]/RTS1/TD1                   J6-24    LED            
+  P0[21]/RI1/MCIPWR/RD1             J6-23
+  P0[22]/RTS1/TD1                   J6-24    LED
   P0[23]/AD0[0]/I2SRX_CLK/CAP3[0]   J6-15                   AD0.0
   P0[24]/AD0[1]/I2SRX_WS/CAP3[1]    J6-16                   AD0.1
   P0[25]/AD0[2]/I2SRX_SDA/TXD3      J6-17                   AD0.2
   P0[26]/AD0[3]/AOUT/RXD3           J6-18                   AD0.3/AOUT / RGB LED
-  P0[27]/SDA0/USB_SDA               J6-25                   
-  P0[28]/SCL0                       J6-26                   
+  P0[27]/SDA0/USB_SDA               J6-25
+  P0[28]/SCL0                       J6-26
   P0[29]/USB_D+                     J6-37                   USB_D+
   P0[30]/USB_D-                     J6-36                   USB_D-
 
@@ -85,14 +85,14 @@ LCPXpresso LPC1768 Board
   P2[3]/PWM1.4/DCD1/TRACEDATA[2]    J6-45                   PWM1.4
   P2[4]/PWM1.5/DSR1/TRACEDATA[1]    J6-46                   PWM1.5
   P2[5]/PWM1[6]/DTR1/TRACEDATA[0]   J6-47                   PWM1.6
-  P2[6]/PCAP1[0]/RI1/TRACECLK       J6-48    
+  P2[6]/PCAP1[0]/RI1/TRACECLK       J6-48
   P2[7]/RD2/RTS1                    J6-49                   OLED command/data
-  P2[8]/TD2/TXD2                    J6-50    
+  P2[8]/TD2/TXD2                    J6-50
   P2[9]/USB_CONNECT/RXD2            PAD19   USB Pullup      N/A
-  P2[10]/EINT0/NMI                  J6-51    
-  P2[11]/EINT1/I2STX_CLK            J6-52    
-  P2[12]/EINT2/I2STX_WS             j6-53    
-  P2[13]/EINT3/I2STX_SDA            J6-27                 
+  P2[10]/EINT0/NMI                  J6-51
+  P2[11]/EINT1/I2STX_CLK            J6-52
+  P2[12]/EINT2/I2STX_WS             j6-53
+  P2[13]/EINT3/I2STX_SDA            J6-27
 
   P3[25]/MAT0.0/PWM1.2              PAD13                   N/A
   P3[26]/STCLK/MAT0.1/PWM1.3        PAD14                   N/A
@@ -129,10 +129,10 @@ SD Slot
 
   *J55 must be set to provide chip select PIO1_11 signal as the SD slot
    chip select.
- 
+
 USB Device
 ----------
- 
+
   Base-board          J4/J6 LPC1768
   Signal              Pin   Pin
   ------------------- ----- --------
@@ -251,12 +251,12 @@ GNU Toolchain Options
   the other toolchain, you simply need add one of the following configuration
   options to your .config (or defconfig) file:
 
-    CONFIG_LPC17_CODESOURCERYW=y   : CodeSourcery under Windows
-    CONFIG_LPC17_CODESOURCERYL=y   : CodeSourcery under Linux
-    CONFIG_LPC17_DEVKITARM=y       : devkitARM under Windows
-    CONFIG_LPC17_BUILDROOT=y       : NuttX buildroot under Linux or Cygwin (default)
-    CONFIG_LPC17_CODEREDW=n        : Code Red toolchain under Windows
-    CONFIG_LPC17_CODEREDL=y        : Code Red toolchain under Linux
+    CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYW=y   : CodeSourcery under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYL=y   : CodeSourcery under Linux
+    CONFIG_ARMV7M_TOOLCHAIN_DEVKITARM=y       : devkitARM under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y       : NuttX buildroot under Linux or Cygwin (default)
+    CONFIG_ARMV7M_TOOLCHAIN_CODEREDW=n        : Code Red toolchain under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_CODEREDL=y        : Code Red toolchain under Linux
 
   You may also have to modify the PATH in the setenv.h file if your make cannot
   find the tools.
@@ -303,7 +303,7 @@ Code Red IDE
 
   NuttX is built using command-line make.  It can be used with an IDE, but some
   effort will be required to create the project.
-  
+
   Makefile Build
   --------------
   Under Linux Eclipse, it is pretty easy to set up an "empty makefile project" and
@@ -334,7 +334,7 @@ Code Red IDE
   Under Cygwin, the Code Red command line tools (e.g., arm-non-eabi-gcc) cannot
   be executed because the they only have execut privileges for Administrators.  I
   worked around this by:
-  
+
   Opening a native Cygwin RXVT as Administrator (Right click, "Run as administrator"),
   then executing 'chmod 755 *.exe' in the following directories:
 
@@ -471,7 +471,7 @@ NXFLAT Toolchain
   tools -- just the NXFLAT tools.  The buildroot with the NXFLAT tools can
   be downloaded from the NuttX SourceForge download site
   (https://sourceforge.net/projects/nuttx/files/).
- 
+
   This GNU toolchain builds and executes in the Linux or Cygwin environment.
 
   1. You must have already configured Nuttx in <some-dir>/nuttx.
@@ -514,9 +514,9 @@ LEDs
   is as follows:
 
   - The LED is not illuminated until the LPCXpresso completes initialization.
-  
-    If the LED is stuck in the OFF state, this means that the LPCXpresso did not 
-    complete intialization.
+
+    If the LED is stuck in the OFF state, this means that the LPCXpresso did not
+    complete initializeation.
 
   - Each time the OS enters an interrupt (or a signal) it will turn the LED OFF and
     restores its previous stated upon return from the interrupt (or signal).
@@ -576,19 +576,15 @@ LPCXpresso Configuration Options
     CONFIG_ENDIAN_BIG - define if big endian (default is little
        endian)
 
-    CONFIG_DRAM_SIZE - Describes the installed DRAM (CPU SRAM in this case):
+    CONFIG_RAM_SIZE - Describes the installed DRAM (CPU SRAM in this case):
 
-       CONFIG_DRAM_SIZE=(32*1024) (32Kb)
+       CONFIG_RAM_SIZE=(32*1024) (32Kb)
 
        There is an additional 32Kb of SRAM in AHB SRAM banks 0 and 1.
 
-    CONFIG_DRAM_START - The start address of installed DRAM
+    CONFIG_RAM_START - The start address of installed DRAM
 
-       CONFIG_DRAM_START=0x10000000
-
-    CONFIG_ARCH_IRQPRIO - The LPC17xx supports interrupt prioritization
-
-       CONFIG_ARCH_IRQPRIO=y
+       CONFIG_RAM_START=0x10000000
 
     CONFIG_ARCH_LEDS - Use LEDs to show state. Unique to boards that
        have LEDs
@@ -676,7 +672,7 @@ LPCXpresso Configuration Options
   LPC17xx specific PHY/Ethernet device driver settings.  These setting
   also require CONFIG_NET and CONFIG_LPC17_ETHERNET.
 
-    CONFIG_PHY_KS8721 - Selects Micrel KS8721 PHY
+    CONFIG_ETH0_PHY_KS8721 - Selects Micrel KS8721 PHY
     CONFIG_PHY_AUTONEG - Enable auto-negotion
     CONFIG_PHY_SPEED100 - Select 100Mbit vs. 10Mbit speed.
     CONFIG_PHY_FDUPLEX - Select full (vs. half) duplex
@@ -684,8 +680,6 @@ LPCXpresso Configuration Options
     CONFIG_NET_EMACRAM_SIZE - Size of EMAC RAM.  Default: 16Kb
     CONFIG_NET_NTXDESC - Configured number of Tx descriptors. Default: 18
     CONFIG_NET_NRXDESC - Configured number of Rx descriptors. Default: 18
-    CONFIG_NET_PRIORITY - Ethernet interrupt priority.  The is default is
-      the higest priority.
     CONFIG_NET_WOL - Enable Wake-up on Lan (not fully implemented).
     CONFIG_NET_REGDEBUG - Enabled low level register debug.  Also needs
       CONFIG_DEBUG.
@@ -698,7 +692,7 @@ LPCXpresso Configuration Options
   LPC17xx USB Device Configuration
 
     CONFIG_LPC17_USBDEV_FRAME_INTERRUPT
-      Handle USB Start-Of-Frame events. 
+      Handle USB Start-Of-Frame events.
       Enable reading SOF from interrupt handler vs. simply reading on demand.
       Probably a bad idea... Unless there is some issue with sampling the SOF
       from hardware asynchronously.
@@ -713,7 +707,7 @@ LPCXpresso Configuration Options
       Define if the hardware implementation does not support the VBUS signal
     CONFIG_LPC17_USBDEV_NOLED
       Define if the hardware  implementation does not support the LED output
- 
+
   LPC17xx USB Host Configuration (the LPCXpresso does not support USB Host)
 
     CONFIG_USBHOST_OHCIRAM_SIZE
@@ -749,67 +743,116 @@ Where <subdir> is one of the following:
     (for execution from FLASH.) See apps/examples/README.txt for information
     about the dhcpd example.
 
-    Jumpers: Nothing special.  Use the default base board jumper
-    settings.
+    NOTES:
+
+    1. This configuration uses the mconf-based configuration tool.  To
+       change this configurations using that tool, you should:
+
+       a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+          and misc/tools/
+
+       b. Execute 'make menuconfig' in nuttx/ in order to start the
+          reconfiguration process.
+
+    2. Jumpers: Nothing special.  Use the default base board jumper
+       settings.
 
   nsh:
     Configures the NuttShell (nsh) located at apps/examples/nsh.  The
     Configuration enables both the serial and telnet NSH interfaces.
-    Support for the board's SPI-based MicroSD card is included
-    (but not passing tests as of this writing).
 
-    NOTE: At present, the value for the SD SPI frequency is too
-    high and the SD will fail.  Setting that frequency to 400000
-    removes the problem. TODO:  Tune this frequency to some optimal
-    value.
+    NOTES:
 
-    Jumpers: J55 must be set to provide chip select PIO1_11 signal as
-    the SD slot chip select.
+    1. This configuration uses the mconf-based configuration tool.  To
+       change this configurations using that tool, you should:
+
+       a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+          and misc/tools/
+
+       b. Execute 'make menuconfig' in nuttx/ in order to start the
+          reconfiguration process.
+
+    2. This configuration has been used for testing the microSD card.
+       This support is, however, disabled in the base configuration.
+
+       At last attempt, the SPI-based mircroSD does not work at
+       higher fequencies.  Setting the SPI frequency to 400000
+       removes the problem.   There must be some more optimal
+       value that could be determined with additional experimetnation.
+
+       Jumpers: J55 must be set to provide chip select PIO1_11 signal as
+       the SD slot chip select.
 
   nx:
     And example using the NuttX graphics system (NX).  This example
     uses the UG-9664HSWAG01 driver.
 
-    Jumpers:  There are several jumper settings needed by the OLED.
-    All are the default settings:
-    
-    J42: Close to select the SPI interface (Default: closed)
-    J43: Close to support OLED command/data select (Default: closed)
-    J44: Close to allow control of OLED voltage (Default: closed)
-    J45: Close to select SPI clock (Default: closed)
-    J46: Close SPI data input (MOSI) (Default:closed)
+    NOTES:
 
-  ostest:
-    This configuration directory, performs a simple OS test using
-    apps/examples/ostest.
- 
-    Jumpers: Nothing special.  Use the default base board jumper
-    settings.
+    1. This configuration uses the mconf-based configuration tool.  To
+       change this configurations using that tool, you should:
+
+       a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+          and misc/tools/
+
+       b. Execute 'make menuconfig' in nuttx/ in order to start the
+          reconfiguration process.
+
+    2. Jumpers:  There are several jumper settings needed by the OLED.
+       All are the default settings:
+
+         J42: Close to select the SPI interface (Default: closed)
+         J43: Close to support OLED command/data select (Default: closed)
+         J44: Close to allow control of OLED voltage (Default: closed)
+         J45: Close to select SPI clock (Default: closed)
+         J46: Close SPI data input (MOSI) (Default:closed)
 
   thttpd:
     This builds the THTTPD web server example using the THTTPD and
     the apps/examples/thttpd application.
 
-    NOTE:  You will need to build the NXFLAT toolchain as described
-    above in order to use this example.
+    NOTES:
 
-    See also note above with regard to the EABI/OABI buildroot
-    toolchains.  This example can only be built using the older
-    OABI toolchain.
+    1. This configuration uses the mconf-based configuration tool.  To
+       change this configurations using that tool, you should:
 
-    Jumpers: Nothing special.  Use the default base board jumper
-    settings.
+       a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+          and misc/tools/
 
-  usbstorage:
+       b. Execute 'make menuconfig' in nuttx/ in order to start the
+          reconfiguration process.
+
+    2. You will need to build the NXFLAT toolchain as described above in
+       order to use this example.
+
+    3. Build setup (easily reconfigured):
+
+       CONFIG_HOST_LINUX=y                : Linux
+       CONFIG_ARMV7M_TOOLCHAIN_CODEREDL=y : CodeRed for Linux
+
+    4. Jumpers: Nothing special.  Use the default base board jumper
+       settings.
+
+  usbmsc:
     This configuration directory exercises the USB mass storage
-    class driver at apps/examples/usbstorage.  See apps/examples/README.txt
+    class driver at apps/system/usbmsc.  See apps/examples/README.txt
     for more information.
 
-    NOTE: At present, the value for the SD SPI frequency is too
-    high and the SD will fail.  Setting that frequency to 400000
-    removes the problem. TODO:  Tune this frequency to some optimal
-    value.
- 
-    Jumpers: J55 must be set to provide chip select PIO1_11 signal as
-    the SD slot chip select.
+    NOTES:
+
+    1. This configuration uses the mconf-based configuration tool.  To
+       change this configurations using that tool, you should:
+
+       a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+          and misc/tools/
+
+       b. Execute 'make menuconfig' in nuttx/ in order to start the
+          reconfiguration process.
+
+    2. At present, the value for the SD SPI frequency is too high and the
+       SD will fail.  Setting that frequency to 400000 removes the problem.
+       TODO:  Tune this frequency to some optimal value.
+
+    3. Jumpers: J55 must be set to provide chip select PIO1_11 signal as
+       the SD slot chip select.
 

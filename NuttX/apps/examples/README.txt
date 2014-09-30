@@ -24,21 +24,6 @@ examples
       "named" applications that can be executed from the NSH
       command line (see apps/README.txt for more information).
 
-  Older configurations.
-
-    Older, deprecated configuration files might use a variable called
-    CONFIGURED_APPS to selected examples.  Those CONFIGURED_APPS settings
-    where kept in files called appconfig.  For example, in those older
-    configuration files, the OS test example would have been selected with
-    an entry like the following in the appconfig file:
-
-      CONFIGURED_APPS += examples/ostest
-
-    appconfig files are not longer used in the current NuttX configuration
-    system.  And syntax like the above is being phased out (but is still
-    supported by the make system butonly until the last configuration is
-    converted to the newer style configuration files).
-
 examples/adc
 ^^^^^^^^^^^^
 
@@ -126,21 +111,30 @@ examples/can
    CONFIG_EXAMPLES_CAN_READONLY - Only receive messages
    CONFIG_EXAMPLES_CAN_WRITEONLY - Only send messages
 
+examples/cc3000
+^^^^^^^^^^^^^^^
+
+  This is a test for the TI CC3000 wireless networking module.
+
+examples/configdata
+^^^^^^^^^^^^^^^^^^^
+
+  This is a Unit Test for the MTD configuration data driver
+
+examples/cpuhog
+^^^^^^^^^^^^^^^
+
+  Attempts to keep the system busy by passing data through a pipe in loop
+  back mode.  This may be useful if you are trying run down other problems
+  that you think might only occur when the system is very busy.
+
 examples/cxxtest
 ^^^^^^^^^^^^^^^^
 
   This is a test of the C++ standard library.  At present a port of the uClibc++
-  C++ library is available.  Due to licensinging issues, the uClibc++ C++ library
+  C++ library is available.  Due to licensing issues, the uClibc++ C++ library
   is not included in the NuttX source tree by default, but must be installed
   (see misc/uClibc++/README.txt for installation).
-
-  The  NuttX setting that are required include:
-
-    CONFIG_HAVE_CXX=y
-    CONFIG_HAVE_CXXINITIALIZE=y
-    CONFIG_UCLIBCXX=y
-
-  Additional uClibc++ settings may be required in your build environment.
 
   The uClibc++ test includes simple test of:
 
@@ -148,6 +142,25 @@ examples/cxxtest
     - STL,
     - RTTI, and
     - Exceptions
+
+  Example Configuration Options
+  -----------------------------
+    CONFIG_EXAMPLES_CXXTEST=y - Eanbles the example
+    CONFIG_EXAMPLES_CXXTEST_CXXINITIALIZE=y - By default, if CONFIG_HAVE_CXX
+      and CONFIG_HAVE_CXXINITIALIZE are defined, then this example
+      will call the NuttX function to initialize static C++ constructors.
+      This option may be disabled, however, if that static initialization
+      was performed elsewhere.
+
+  Other Required Configuration Settings
+  -------------------------------------
+  Other NuttX setting that are required include:
+
+    CONFIG_HAVE_CXX=y
+    CONFIG_HAVE_CXXINITIALIZE=y
+    CONFIG_UCLIBCXX=y
+
+  Additional uClibc++ settings may be required in your build environment.
 
 examples/dhcpd
 ^^^^^^^^^^^^^^
@@ -169,7 +182,7 @@ examples/dhcpd
                                      (as well as various other UDP-related
                                      configuration settings)
     CONFIG_NET_BROADCAST=y         - UDP broadcast support is needed.
-    CONFIG_NETUTILS_UIPLIB=y       - The UIP library is needed
+    CONFIG_NETUTILS_NETLIB=y       - The networking library is needed
 
     CONFIG_EXAMPLES_DHCPD_NOMAC     - (May be defined to use software assigned MAC)
     CONFIG_EXAMPLES_DHCPD_IPADDR    - Target IP address
@@ -381,7 +394,7 @@ examples/ftpd
   The following netutils libraries should be enabled in your defconfig
   file:
 
-    CONFIG_NETUTILS_UIPLIB=y
+    CONFIG_NETUTILS_NETLIB=y
     CONFIG_NETUTILS_TELNED=y
 
 examples/hello
@@ -417,6 +430,11 @@ examples/helloxx
       "built-in"  that can be executed from the NSH command line.
     CONFIG_EXAMPLES_HELLOXX_NOSTACKCONST - Set if the system does not
       support construction of objects on the stack.
+    CONFIG_EXAMPLES_HELLOXX_CXXINITIALIZE - By default, if CONFIG_HAVE_CXX
+      and CONFIG_HAVE_CXXINITIALIZE are defined, then this example
+      will call the NuttX function to initialize static C++ constructors.
+      This option may be disabled, however, if that static initialization
+      was performed elsewhere.
 
   Also needed:
 
@@ -454,7 +472,6 @@ examples/hidkbd
       able and control ASCII characters will be provided to the user.
       Requires CONFIG_HIDKBD_ENCODED && CONFIG_LIB_KBDCODEC
 
-endif
 examples/igmp
 ^^^^^^^^^^^^^
 
@@ -472,8 +489,55 @@ examples/igmp
       Network mask
   * CONFIG_EXAMPLES_IGMP_GRPADDR
       Multicast group address
-  * CONFIG_EXAMPLES_UIPLIB
-      The UIP library is needed
+  * CONFIG_EXAMPLES_NETLIB
+      The networking library is needed
+
+examples/adc
+^^^^^^^^^^^^
+
+  A mindlessly simple test of an I2C driver.  It reads an write garbage data to the
+  I2C transmitter and/or received as fast possible.
+
+  This test depends on these specific I2S/AUDIO/NSH configurations settings (your
+  specific I2S settings might require additional settings).
+
+    CONFIG_I2S - Enabled I2S support
+    CONFIG_AUDIO - Enabled audio support
+    CONFIG_AUDIO_DEVICES - Enable audio device support
+    CONFIG_AUDIO_I2SCHAR = Enabled support for the I2S character device
+    CONFIG_NSH_BUILTIN_APPS - Build the I2S test as an NSH built-in function.
+      Default: Built as a standalone problem
+
+  Specific configuration options for this example include:
+
+    CONFIG_EXAMPLES_I2SCHAR - Enables the I2C test
+    CONFIG_EXAMPLES_I2SCHAR_DEVPATH - The default path to the ADC device.
+      Default: /dev/i2schar0
+    CONFIG_EXAMPLES_I2SCHAR_TX - This should be set if the I2S device supports
+      a transmitter.
+    CONFIG_EXAMPLES_I2SCHAR_TXBUFFERS - This is the default number of audio
+      buffers to send before the TX transfers terminate.  When both TX and
+      RX transfers terminate, the task exits (and, if an NSH builtin, the
+      i2schar command returns).  This number can be changed from the NSH
+      command line.
+    CONFIG_EXAMPLES_I2SCHAR_TXSTACKSIZE - This is the stack size to use when
+      starting the transmitter thread.  Default 1536.
+    CONFIG_EXAMPLES_I2SCHAR_RX - This should be set if the I2S device supports
+      a transmitter.
+    CONFIG_EXAMPLES_I2SCHAR_RXBUFFERS - This is the default number of audio
+      buffers to receive before the RX transfers terminate.  When both TX and
+      RX transfers terminate, the task exits (and, if an NSH builtin, the
+      i2schar command returns).  This number can be changed from the NSH
+      command line.
+    CONFIG_EXAMPLES_I2SCHAR_RXSTACKSIZE - This is the stack size to use when
+      starting the receiver thread.  Default 1536.
+    CONFIG_EXAMPLES_I2SCHAR_BUFSIZE - The size of the data payload in one
+      audio buffer.  Applies to both TX and RX audio buffers.
+    CONFIG_EXAMPLES_I2SCHAR_DEVINIT - Define if architecture-specific I2S
+      device initialize is available.  If defined, the the platform specific
+      code must provide a function i2schar_devinit() that will be called
+      each time that this test executes.  Not available in the kernel build
+      mode.
 
 examples/json
 ^^^^^^^^^^^^^
@@ -594,6 +658,11 @@ examples/mtdpart
   * CONFIG_EXAMPLES_MTDPART_NEBLOCKS - This value gives the nubmer of erase
     blocks in MTD RAM device.
 
+examples/netpkt
+^^^^^^^^^^^^^^^
+
+  A test of AF_PACKET, "raw" sockets.  Contributed by Lazlo Sitzer.
+
 examples/nettest
 ^^^^^^^^^^^^^^^^
 
@@ -601,7 +670,7 @@ examples/nettest
   functionality in a TCP/IP connection.
 
     CONFIG_EXAMPLES_NETTEST=y - Enables the nettest example
-    CONFIG_EXAMPLES_UIPLIB=y  - The UIP livrary in needed.
+    CONFIG_EXAMPLES_NETLIB=y  - The networking library in needed.
 
   See also examples/tcpecho
 
@@ -620,17 +689,23 @@ examples/nrf24l01_term
 examples/nsh
 ^^^^^^^^^^^^
 
+  Basic Configuration
+  -------------------
   This directory provides an example of how to configure and use
   the NuttShell (NSH) application.  NSH is a simple shell
   application.  NSH is described in its own README located at
-  apps/nshlib/README.txt
+  apps/nshlib/README.txt.  This function is enabled with:
+
+    CONFIG_EXAMPLES_NSH=y
 
   Applications using this example will need to provide an defconfig
   file in the configuration directory with instruction to build
-  applicationslike:
+  the NSH library like:
 
     CONFIG_NSH_LIBRARY=y
 
+  Other Configuration Requirements
+  --------------------------------
   NOTE:  If the NSH serial console is used, then following is also
   required to build the readline() library:
 
@@ -638,9 +713,9 @@ examples/nsh
 
   And if networking is included:
 
-    CONFIG_NETUTILS_UIPLIB=y
+    CONFIG_NETUTILS_NETLIB=y
     CONFIG_NETUTILS_DHCPC=y
-    CONFIG_NETUTILS_RESOLV=y
+    CONFIG_NETUTILS_DNSCLIENT=y
     CONFIG_NETUTILS_TFTPC=y
     CONFIG_NETUTILS_WEBCLIENT=y
 
@@ -656,6 +731,16 @@ examples/nsh
 
     CONFIG_STDIO_BUFFER_SIZE - Some value >= 64
     CONFIG_STDIO_LINEBUFFER=y
+
+  C++ Support
+  -----------
+  If CONFIG_HAVE_CXX=y and CONFIG_HAVE_CXXINITIALIZE=y, then this NSH
+  example can be configured to initialize C++ constructors when it
+  is started.  NSH does not use C++ and, by default, assumes that
+  constructors are initialized elsewhere.  However, you can force
+  NSH to initialize constructors by setting:
+
+    CONFIG_EXAMPLES_NSH_CXXINITIALIZE=y
 
 examples/nx
 ^^^^^^^^^^^
@@ -1095,6 +1180,7 @@ examples/poll
   CONFIG_NET                        - Defined for general network support
   CONFIG_NET_TCP                    - Defined for TCP/IP support
   CONFIG_NSOCKET_DESCRIPTORS        - Defined to be greater than 0
+  CONFIG_NET_TCP_READAHEAD          - Defined
   CONFIG_NET_NTCP_READAHEAD_BUFFERS - Defined to be greater than zero
 
   CONFIG_EXAMPLES_POLL_NOMAC         - (May be defined to use software assigned MAC)
@@ -1132,9 +1218,9 @@ examples/poll
 
   If networking is enabled, applications using this example will need to
   provide the following definition in the defconfig file to enable the
-  UIP library:
+  networking library:
 
-    CONFIG_NETUTILS_UIPLIB=y
+    CONFIG_NETUTILS_NETLIB=y
 
 examples/posix_spawn
 ^^^^^^^^^^^^^^^^^^^^
@@ -1221,8 +1307,8 @@ examples/pwm
   specific PWM settings might require additional settings).
 
     CONFIG_PWM - Enables PWM support.
-    CONFIG_EXAMPLES_PWM_COUNT - Enabled PWM pulse count support (if the
-      hardware supports it).
+    CONFIG_PWM_PULSECOUNT - Enables PWM pulse count support (if the hardware
+      supports it).
     CONFIG_NSH_BUILTIN_APPS - Build the PWM test as an NSH built-in function.
       Default: Not built!  The example can only be used as an NSH built-in
       application
@@ -1269,6 +1355,28 @@ examples/qencoder
       milliseonds) between each sample.  If CONFIG_NSH_BUILTIN_APPS
       is defined, then this value is the default delay if no other delay is
       provided on the command line.  Default:  100 milliseconds
+
+examples/random
+^^^^^^^^^^^^^^^
+
+  This is a very simply test of /dev/random.  It simple collects random
+  numbers and displays them on the console.
+
+  Prerequistes:
+
+    CONFIG_DEV_RANDOM - Support for /dev/random must be enabled in order
+      to select this example.
+
+  Configuration:
+
+    CONFIG_EXAMPLES_RANDOM - Enables the /dev/random test
+    CONFIG_EXAMPLES_MAXSAMPLES - This is the size of the /dev/random I/O
+      buffer in units of 32-bit samples.  Careful!  This buffer is allocated
+      on the stack as needed! Default 64.
+    CONFIG_EXAMPLES_NSAMPLES; - When you execute the rand command, a number
+      of samples ranging from 1 to EXAMPLES_MAXSAMPLES may be specified.  If
+      no argument is specified, this is the default number of samples that\
+      will be collected and displayed.  Default 8
 
 examples/relays
 ^^^^^^^^^^^^^^^
@@ -1343,8 +1451,22 @@ examples/sendmail
   Applications using this example will need to enble the following
   netutils libraries in their defconfig file:
 
-    CONFIG_NETUTILS_UIPLIB=y
+    CONFIG_NETUTILS_NETLIB=y
     CONFIG_NETUTILS_SMTP=y
+
+examples/serialblaster
+^^^^^^^^^^^^^^^^^^^^^^
+
+  Sends a repeating pattern (the alphabet) out a serial port continuously.
+  This may be useful if you are trying run down other problems that you
+  think might only occur when the serial port usage is high.
+
+examples/serialrx
+^^^^^^^^^^^^^^^^^
+
+  Constant receives serial data.  This is the complement to serialblaster.
+  This may be useful if you are trying run down other problems that you
+  think might only occur when the serial port usage is high.
 
 examples/serloop
 ^^^^^^^^^^^^^^^^
@@ -1430,7 +1552,7 @@ examples/telnetd
   tiny shell and also supports telnetd.
 
     CONFIG_EXAMPLES_TELNETD - Enable the Telnetd example
-    CONFIG_NETUTILS_UIPLIB, CONFIG_NETUTILS_TELNED - Enable netutils
+    CONFIG_NETUTILS_NETLIB, CONFIG_NETUTILS_TELNED - Enable netutils
       libraries needed by the Telnetd example.
     CONFIG_EXAMPLES_TELNETD_DAEMONPRIO - Priority of the Telnet daemon.
       Default: SCHED_PRIORITY_DEFAULT
@@ -1468,7 +1590,7 @@ examples/thttpd
   Applications using this example will need to enable the following
   netutils libraries in the defconfig file:
 
-    CONFIG_NETUTILS_UIPLIB=y
+    CONFIG_NETUTILS_NETLIB=y
     CONFIG_NETUTILS_THTTPD=y
 
 examples/tiff
@@ -1510,13 +1632,15 @@ examples/touchscreen
       corresponds to touchscreen device /dev/inputN.  Note this value must
       with CONFIG_EXAMPLES_TOUCHSCREEN_DEVPATH.  Default 0.
     CONFIG_EXAMPLES_TOUCHSCREEN_DEVPATH - The path to the touchscreen
-     device.  This must be consistent with CONFIG_EXAMPLES_TOUCHSCREEN_MINOR.
-     Default: "/dev/input0"
+      device.  This must be consistent with CONFIG_EXAMPLES_TOUCHSCREEN_MINOR.
+      Default: "/dev/input0"
     CONFIG_EXAMPLES_TOUCHSCREEN_NSAMPLES - If CONFIG_NSH_BUILTIN_APPS
-     is defined, then the number of samples is provided on the command line
-     and this value is ignored.  Otherwise, this number of samples is
-     collected and the program terminates.  Default:  Samples are collected
-     indefinitely.
+      is defined, then the number of samples is provided on the command line
+      and this value is ignored.  Otherwise, this number of samples is
+      collected and the program terminates.  Default:  Samples are collected
+      indefinitely.
+    CONFIG_EXAMPLES_TOUCHSCREEN_MOUSE - The touchscreen test can also be
+      configured to work with a mouse driver by setting this option.
 
   The following additional configurations must be set in the NuttX
   configuration file:
@@ -1544,53 +1668,7 @@ examples/udp
   Applications using this example will need to enabled the following
   netutils libraries in the defconfig file:
 
-    CONFIG_NETUTILS_UIPLIB=y
-
-examples/uip
-^^^^^^^^^^^^
-
-  This is a port of uIP tiny webserver example application.  Settings
-  specific to this example include:
-
-    CONFIG_EXAMPLES_UIP_NOMAC     - (May be defined to use software assigned MAC)
-    CONFIG_EXAMPLES_UIP_IPADDR    - Target IP address
-    CONFIG_EXAMPLES_UIP_DRIPADDR  - Default router IP addess
-    CONFIG_EXAMPLES_UIP_NETMASK   - Network mask
-    CONFIG_EXAMPLES_UIP_DHCPC     - Select to get IP address via DHCP
-
-  If you use DHCPC, then some special configuration network options are
-  required.  These include:
-
-    CONFIG_NET=y                 - Of course
-    CONFIG_NSOCKET_DESCRIPTORS   - And, of course, you must allocate some
-                                   socket descriptors.
-    CONFIG_NET_UDP=y             - UDP support is required for DHCP
-                                   (as well as various other UDP-related
-                                   configuration settings).
-    CONFIG_NET_BROADCAST=y       - UDP broadcast support is needed.
-    CONFIG_NET_BUFSIZE=650       - Per RFC2131 (p. 9), the DHCP client must be
-    (or larger)                    prepared to receive DHCP messages of up to
-                                   576 bytes (excluding Ethernet, IP, or UDP
-                                   headers and FCS).
-
-  Other configuration items apply also to the selected webserver net utility.
-  Additional relevant settings for the uIP webserver net utility are:
-
-    CONFIG_NETUTILS_HTTPDSTACKSIZE
-    CONFIG_NETUTILS_HTTPDFILESTATS
-    CONFIG_NETUTILS_HTTPDNETSTATS
-
-  Applications using this example will need to enable the following
-  netutils libraries in their defconfig file:
-
-    CONFIG_NETUTILS_UIPLIB=y
-    CONFIG_NETUTILS_DHCPC=y
-    CONFIG_NETUTILS_RESOLV=y
-    CONFIG_NETUTILS_WEBSERVER=y
-
-  NOTE:  This example does depend on the perl script at
-  nuttx/tools/mkfsdata.pl.  You must have perl installed on your
-  development system at /usr/bin/perl.
+    CONFIG_NETUTILS_NETLIB=y
 
 examples/usbserial
 ^^^^^^^^^^^^^^^^^^
@@ -1770,6 +1848,52 @@ examples/watchdog
       milliseconds before the watchdog timer expires.  Default:  2000
       milliseconds.
 
+examples/webserver
+^^^^^^^^^^^^^^^^^^
+
+  This is a port of uIP tiny webserver example application.  Settings
+  specific to this example include:
+
+    CONFIG_EXAMPLES_WEBSERVER_NOMAC     - (May be defined to use software assigned MAC)
+    CONFIG_EXAMPLES_WEBSERVER_IPADDR    - Target IP address
+    CONFIG_EXAMPLES_WEBSERVER_DRIPADDR  - Default router IP addess
+    CONFIG_EXAMPLES_WEBSERVER_NETMASK   - Network mask
+    CONFIG_EXAMPLES_WEBSERVER_DHCPC     - Select to get IP address via DHCP
+
+  If you use DHCPC, then some special configuration network options are
+  required.  These include:
+
+    CONFIG_NET=y                 - Of course
+    CONFIG_NSOCKET_DESCRIPTORS   - And, of course, you must allocate some
+                                   socket descriptors.
+    CONFIG_NET_UDP=y             - UDP support is required for DHCP
+                                   (as well as various other UDP-related
+                                   configuration settings).
+    CONFIG_NET_BROADCAST=y       - UDP broadcast support is needed.
+    CONFIG_NET_BUFSIZE=650       - Per RFC2131 (p. 9), the DHCP client must be
+    (or larger)                    prepared to receive DHCP messages of up to
+                                   576 bytes (excluding Ethernet, IP, or UDP
+                                   headers and FCS).
+
+  Other configuration items apply also to the selected webserver net utility.
+  Additional relevant settings for the uIP webserver net utility are:
+
+    CONFIG_NETUTILS_HTTPDSTACKSIZE
+    CONFIG_NETUTILS_HTTPDFILESTATS
+    CONFIG_NETUTILS_HTTPDNETSTATS
+
+  Applications using this example will need to enable the following
+  netutils libraries in their defconfig file:
+
+    CONFIG_NETUTILS_NETLIB=y
+    CONFIG_NETUTILS_DHCPC=y
+    CONFIG_NETUTILS_DNSCLIENT=y
+    CONFIG_NETUTILS_WEBSERVER=y
+
+  NOTE:  This example does depend on the perl script at
+  nuttx/tools/mkfsdata.pl.  You must have perl installed on your
+  development system at /usr/bin/perl.
+
 examples/wget
 ^^^^^^^^^^^^^
 
@@ -1806,8 +1930,8 @@ examples/wget
   Applications using this example will need to enable the following netutils
   libraries in the defconfig file:
 
-    CONFIG_NETUTILS_UIPLIB=y
-    CONFIG_NETUTILS_RESOLV=y
+    CONFIG_NETUTILS_NETLIB=y
+    CONFIG_NETUTILS_DNSCLIENT=y
     CONFIG_NETUTILS_WEBCLIENT=y
 
 examples/wget

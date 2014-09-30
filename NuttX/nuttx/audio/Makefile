@@ -42,7 +42,7 @@ endif
 
 DEPPATH = --dep-path .
 ASRCS =
-CSRCS = audio.c buffer.c
+CSRCS = audio.c
 VPATH = .
 
 # Include support for various drivers.  Each Make.defs file will add its
@@ -50,19 +50,7 @@ VPATH = .
 # the appropriate paths to the VPATH variable
 
 ifeq ($(CONFIG_AUDIO_FORMAT_PCM),y)
-  CSRCS += pcm.c
-endif
-
-ifeq ($(CONFIG_AUDIO_MIXER),y)
-  CSRCS += mixer.c
-endif
-
-ifeq ($(CONFIG_AUDIO_MIDI_SYNTH),y)
-  CSRCS += midisynth.c
-endif
-
-ifeq ($(CONFIG_AUDIO_FONT),y)
-  CSRCS += audio_font.c
+  CSRCS += pcm_decode.c
 endif
 
 AOBJS = $(ASRCS:.S=$(OBJEXT))

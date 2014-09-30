@@ -54,7 +54,6 @@
 #include <arch/serial.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 #include "lpc31_cgudrvr.h"
@@ -113,6 +112,9 @@ static const struct uart_ops_s g_uart_ops =
   .receive        = up_receive,
   .rxint          = up_rxint,
   .rxavailable    = up_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
   .send           = up_send,
   .txint          = up_txint,
   .txready        = up_txready,
@@ -238,7 +240,7 @@ static inline void up_configbaud(void)
    */
 
   /* Get UART block clock divided by 16 */
-  
+
   qtrclk = lpc31_clkfreq(CLKID_UARTUCLK, DOMAINID_UART) >> 4;
 
   /* Try every valid multiplier, tmulval (or until a perfect
@@ -343,7 +345,7 @@ static inline void up_configbaud(void)
 
 static int up_setup(struct uart_dev_s *dev)
 {
-#ifndef CONFIG_SUPPRESS_LPC31_UART_CONFIG
+#ifndef CONFIG_SUPPRESS_UART_CONFIG
   struct up_dev_s *priv = (struct up_dev_s*)dev->priv;
   uint32_t regval;
 
@@ -576,9 +578,11 @@ static int up_interrupt(int irq, void *context)
 
 static int up_ioctl(struct file *filep, int cmd, unsigned long arg)
 {
+#ifdef CONFIG_SERIAL_TIOCSERGSTRUCT
   struct inode      *inode = filep->f_inode;
   struct uart_dev_s *dev   = inode->i_private;
-  int                ret    = OK;
+#endif
+  int                ret   = OK;
 
   switch (cmd)
     {

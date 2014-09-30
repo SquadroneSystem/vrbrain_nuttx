@@ -1,7 +1,7 @@
 ############################################################################
 # Makefile.unix
 #
-#   Copyright (C) 2007-2012 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2007-2012, 2014 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,12 @@ KDEFINE = ${shell $(TOPDIR)/tools/define.sh "$(CC)" __KERNEL__}
 ARCH_DIR = arch/$(CONFIG_ARCH)
 ARCH_SRC = $(ARCH_DIR)/src
 ARCH_INC = $(ARCH_DIR)/include
-BOARD_DIR = configs/$(CONFIG_ARCH_BOARD)
+
+ifeq ($(CONFIG_ARCH_BOARD_CUSTOM),y)
+  BOARD_DIR = $(CONFIG_ARCH_BOARD_CUSTOM_DIR)
+else
+  BOARD_DIR = configs/$(CONFIG_ARCH_BOARD)
+endif
 
 # Add-on directories.  These may or may not be in place in the
 # NuttX source tree (they must be specifically installed)
@@ -103,7 +108,7 @@ endif
 # USERDIRS - When NuttX is build is a monolithic kernel, this provides the
 #   list of directories that must be built
 # OTHERDIRS - These are directories that are not built but probably should
-#   be cleaned to prevent garbarge from collecting in them when changing
+#   be cleaned to prevent garbage from collecting in them when changing
 #   configurations.
 
 NONFSDIRS = sched $(ARCH_SRC) $(NUTTX_ADDONS)
@@ -134,10 +139,10 @@ endif
 endif
 
 ifeq ($(CONFIG_NX),y)
-NONFSDIRS += graphics
-CONTEXTDIRS += graphics
+NONFSDIRS += graphics libnx
+CONTEXTDIRS += graphics libnx
 else
-OTHERDIRS += graphics
+OTHERDIRS += graphics libnx
 endif
 
 ifeq ($(CONFIG_AUDIO),y)
@@ -178,12 +183,17 @@ KERNDEPDIRS += net
 endif
 CLEANDIRS += net
 
+ifeq ($(CONFIG_CRYPTO),y)
+KERNDEPDIRS += crypto
+endif
+CLEANDIRS += crypto
+
 #
 # Extra objects used in the final link.
 #
 # Pass 1 1ncremental (relative) link objects should be put into the
 # processor-specific source directory (where other link objects will
-# be created).  If the pass1 obect is an archive, it could go anywhere.
+# be created).  If the pass1 object is an archive, it could go anywhere.
 
 ifeq ($(CONFIG_BUILD_2PASS),y)
 EXTRA_OBJS += $(CONFIG_PASS1_OBJECT)
@@ -239,6 +249,12 @@ ifeq ($(CONFIG_NET),y)
 NUTTXLIBS += lib/libnet$(LIBEXT)
 endif
 
+# Add libraries for Crypto API support
+
+ifeq ($(CONFIG_CRYPTO),y)
+NUTTXLIBS += lib/libcrypto$(LIBEXT)
+endif
+
 # Add libraries for file system support
 
 ifeq ($(CONFIG_NFILE_DESCRIPTORS),0)
@@ -256,6 +272,12 @@ endif
 
 ifeq ($(CONFIG_NX),y)
 NUTTXLIBS += lib/libgraphics$(LIBEXT)
+ifeq ($(CONFIG_NUTTX_KERNEL),y)
+NUTTXLIBS += lib/libknx$(LIBEXT)
+USERLIBS  += lib/libunx$(LIBEXT)
+else
+NUTTXLIBS += lib/libnx$(LIBEXT)
+endif
 endif
 
 # Add libraries for the audio sub-system
@@ -308,7 +330,7 @@ endif
 
 # The float.h header file defines the properties of your floating point
 # implementation.  It would always be best to use your toolchain's float.h
-# header file but if none is avaiable, a default float.h header file will
+# header file but if none is available, a default float.h header file will
 # provided if this option is selected.  However there is no assurance that
 # the settings in this float.h are actually correct for your platform!
 
@@ -458,7 +480,7 @@ check_context:
 		exit 1 ; \
 	fi
 
-# Archive targets.  The target build sequency will first create a series of
+# Archive targets.  The target build sequence will first create a series of
 # libraries, one per configured source file directory.  The final NuttX
 # execution will then be built from those libraries.  The following targets
 # build those libraries.
@@ -470,6 +492,12 @@ libc/libkc$(LIBEXT): context
 
 lib/libkc$(LIBEXT): libc/libkc$(LIBEXT)
 	$(Q) install libc/libkc$(LIBEXT) lib/libkc$(LIBEXT)
+
+libnx/libknx$(LIBEXT): context
+	$(Q) $(MAKE) -C libnx TOPDIR="$(TOPDIR)" libknx$(LIBEXT) EXTRADEFINES=$(KDEFINE)
+
+lib/libknx$(LIBEXT): libnx/libknx$(LIBEXT)
+	$(Q) install libnx/libknx$(LIBEXT) lib/libknx$(LIBEXT)
 
 mm/libkmm$(LIBEXT): context
 	$(Q) $(MAKE) -C mm TOPDIR="$(TOPDIR)" libkmm$(LIBEXT) EXTRADEFINES=$(KDEFINE)
@@ -495,6 +523,12 @@ net/libnet$(LIBEXT): context
 
 lib/libnet$(LIBEXT): net/libnet$(LIBEXT)
 	$(Q) install net/libnet$(LIBEXT) lib/libnet$(LIBEXT)
+
+crypto/libcrypto$(LIBEXT): context
+	$(Q) $(MAKE) -C crypto TOPDIR="$(TOPDIR)" libcrypto$(LIBEXT) EXTRADEFINES=$(KDEFINE)
+
+lib/libcrypto$(LIBEXT): crypto/libcrypto$(LIBEXT)
+	$(Q) install crypto/libcrypto$(LIBEXT) lib/libcrypto$(LIBEXT)
 
 fs/libfs$(LIBEXT): context
 	$(Q) $(MAKE) -C fs TOPDIR="$(TOPDIR)" libfs$(LIBEXT) EXTRADEFINES=$(KDEFINE)
@@ -540,6 +574,12 @@ libc/libuc$(LIBEXT): context
 lib/libuc$(LIBEXT): libc/libuc$(LIBEXT)
 	$(Q) install libc/libuc$(LIBEXT) lib/libuc$(LIBEXT)
 
+libnx/libunx$(LIBEXT): context
+	$(Q) $(MAKE) -C libnx TOPDIR="$(TOPDIR)" libunx$(LIBEXT)
+
+lib/libunx$(LIBEXT): libnx/libunx$(LIBEXT)
+	$(Q) install libnx/libunx$(LIBEXT) lib/libunx$(LIBEXT)
+
 mm/libumm$(LIBEXT): context
 	$(Q) $(MAKE) -C mm TOPDIR="$(TOPDIR)" libumm$(LIBEXT)
 
@@ -579,6 +619,12 @@ libc/libc$(LIBEXT): context
 lib/libc$(LIBEXT): libc/libc$(LIBEXT)
 	$(Q) install libc/libc$(LIBEXT) lib/libc$(LIBEXT)
 
+libnx/libnx$(LIBEXT): context
+	$(Q) $(MAKE) -C libnx TOPDIR="$(TOPDIR)" libnx$(LIBEXT)
+
+lib/libnx$(LIBEXT): libnx/libnx$(LIBEXT)
+	$(Q) install libnx/libnx$(LIBEXT) lib/libnx$(LIBEXT)
+
 mm/libmm$(LIBEXT): context
 	$(Q) $(MAKE) -C mm TOPDIR="$(TOPDIR)" libmm$(LIBEXT)
 
@@ -599,7 +645,7 @@ lib/libarch$(LIBEXT): $(ARCH_SRC)/libarch$(LIBEXT)
 # incremental (relative) link object, but could be a static library (archive);
 # some modification to this Makefile would be required if CONFIG_PASS1_OBJECT
 # is an archive.  Exactly what is performed during pass1 or what it generates
-# is unknown to this makefule unless CONFIG_PASS1_OBJECT is defined.
+# is unknown to this makefile unless CONFIG_PASS1_OBJECT is defined.
 
 pass1deps: pass1dep $(USERLIBS)
 
@@ -631,7 +677,7 @@ ifeq ($(CONFIG_RRLOAD_BINARY),y)
 	@echo "MK: $(BIN).rr"
 	$(Q) $(TOPDIR)/tools/mkimage.sh --Prefix $(CROSSDEV) $(BIN) $(BIN).rr
 	$(Q) if [ -w /tftpboot ] ; then \
-		cp -f $(BIN).rr /tftpboot/$\(BIN).rr.$(CONFIG_ARCH); \
+		cp -f $(BIN).rr /tftpboot/$(BIN).rr.$(CONFIG_ARCH); \
 	fi
 endif
 ifeq ($(CONFIG_INTELHEX_BINARY),y)
@@ -646,13 +692,21 @@ ifeq ($(CONFIG_RAW_BINARY),y)
 	@echo "CP: $(BIN).bin"
 	$(Q) $(OBJCOPY) $(OBJCOPYARGS) -O binary $(BIN) $(BIN).bin
 endif
+ifeq ($(CONFIG_UBOOT_UIMAGE),y)
+	@echo "MKIMAGE: uImage"
+	$(Q) mkimage -A arm -O linux -C none -T kernel -a $(CONFIG_UIMAGE_LOAD_ADDRESS) \
+		-e $(CONFIG_UIMAGE_ENTRY_POINT) -n $(BIN) -d $(BIN).bin uImage
+	$(Q) if [ -w /tftpboot ] ; then \
+		cp -f uImage /tftpboot/uImage; \
+	fi
+endif
 
 # $(BIN)
 #
 # Create the final NuttX executable in a two pass build process.  In the
 # normal case, all pass1 and pass2 dependencies are created then pass1
 # and pass2 targets are built.  However, in some cases, you may need to build
-# pass1 depenencies and pass1 first, then build pass2 dependencies and pass2.
+# pass1 dependencies and pass1 first, then build pass2 dependencies and pass2.
 # in that case, execute 'make pass1 pass2' from the command line.
 
 $(BIN): pass1deps pass2deps pass1 pass2
@@ -670,12 +724,12 @@ download: $(BIN)
 # pass1dep: Create pass1 build dependencies
 # pass2dep: Create pass2 build dependencies
 
-pass1dep: context tools/mkdeps$(HOSTEXEEXT) 
+pass1dep: context tools/mkdeps$(HOSTEXEEXT)
 	$(Q) for dir in $(USERDEPDIRS) ; do \
 		$(MAKE) -C $$dir TOPDIR="$(TOPDIR)" depend ; \
 	done
 
-pass2dep: context tools/mkdeps$(HOSTEXEEXT) 
+pass2dep: context tools/mkdeps$(HOSTEXEEXT)
 	$(Q) for dir in $(KERNDEPDIRS) ; do \
 		$(MAKE) -C $$dir TOPDIR="$(TOPDIR)" EXTRADEFINES=$(KDEFINE) depend; \
 	done
@@ -695,6 +749,12 @@ oldconfig:
 
 menuconfig:
 	$(Q) APPSDIR=${CONFIG_APPS_DIR} kconfig-mconf Kconfig
+
+qconfig:
+	$(Q) APPSDIR=${CONFIG_APPS_DIR} kconfig-qconf Kconfig
+
+gconfig:
+	$(Q) APPSDIR=${CONFIG_APPS_DIR} kconfig-gconf Kconfig
 
 # export
 #
@@ -767,10 +827,7 @@ endif
 # apps_clean:     Perform the clean operation only in the user application
 #                 directory
 # apps_distclean: Perform the distclean operation only in the user application
-#                 directory.  Note that the apps/.config file (inf any) is
-#                 preserved so that this is not a "full" distclean but more of a
-#                 configuration "reset." (There willnot be an apps/.config
-#                 file if the configuration was generated via make menuconfig).
+#                 directory.
 
 apps_clean:
 ifneq ($(APPDIR),)
@@ -779,16 +836,5 @@ endif
 
 apps_distclean:
 ifneq ($(APPDIR),)
-	$(Q) if [ -r "$(TOPDIR)/$(APPDIR)/.config" ]; then \
-		cp "$(TOPDIR)/$(APPDIR)/.config" _SAVED_APPS_config || \
-			{ echo "Copy of $(APPDIR)/.config failed" ; exit 1 ; } \
-	else \
-		rm -f _SAVED_APPS_config; \
-	fi
 	$(Q) $(MAKE) -C "$(TOPDIR)/$(APPDIR)" TOPDIR="$(TOPDIR)" distclean
-	$(Q) if [ -r _SAVED_APPS_config ]; then \
-		mv _SAVED_APPS_config "$(TOPDIR)/$(APPDIR)/.config" || \
-			{ echo "Copy of _SAVED_APPS_config failed" ; exit 1 ; } \
-	fi
 endif
-

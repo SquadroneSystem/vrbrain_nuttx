@@ -50,8 +50,7 @@
 #include <arch/irq.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
-#include "irq_internal.h"
+#include "irq/irq.h"
 #include "at32uc3_internal.h"
 #include "at32uc3_gpio.h"
 
@@ -177,7 +176,7 @@ static inline int gpio_pin(unsigned int irq)
 
        pinset >>= 1;
      }
- 
+
   return -EINVAL;
 }
 
@@ -309,7 +308,7 @@ void gpio_irqinitialize(void)
     }
 
   /* Then attach the GPIO interrupt handlers */
-  
+
 #if CONFIG_AVR32_GPIOIRQSETA != 0
   irq_attach(AVR32_IRQ_GPIO0, gpio0_interrupt);
 #endif

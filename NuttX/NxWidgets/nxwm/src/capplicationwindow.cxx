@@ -307,7 +307,7 @@ bool CApplicationWindow::open(void)
   // The rest of the toolbar will hold the left-justified application label
   // Create the default font instance
 
-  m_windowFont = new NXWidgets::CNxFont(CONFIG_NXWM_DEFAULT_FONTID,
+  m_windowFont = new NXWidgets::CNxFont((nx_fontid_e)CONFIG_NXWM_TOOLBAR_FONTID,
                                         CONFIG_NXWM_DEFAULT_FONTCOLOR,
                                         CONFIG_NXWM_TRANSPARENT_COLOR);
   if (!m_windowFont)
@@ -334,6 +334,7 @@ bool CApplicationWindow::open(void)
 
   // Configure the label
 
+  m_windowLabel->setFont(m_windowFont);
   m_windowLabel->setBorderless(true);
   m_windowLabel->setTextAlignmentHoriz(NXWidgets::CLabel::TEXT_ALIGNMENT_HORIZ_LEFT);
   m_windowLabel->setTextAlignmentVert(NXWidgets::CLabel::TEXT_ALIGNMENT_VERT_CENTER);

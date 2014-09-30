@@ -1,7 +1,7 @@
 /****************************************************************************
  * apps/nshlib/nsh_netcmds.c
  *
- *   Copyright (C) 2007-2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,31 +54,31 @@
 #include <debug.h>
 
 #include <net/ethernet.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <netinet/ether.h>
 
-#include <nuttx/net/net.h>
 #include <nuttx/clock.h>
-#include <nuttx/net/uip/uip.h>
-#include <nuttx/net/uip/uip-arch.h>
-
-#ifdef CONFIG_NET_STATISTICS
-#  include <nuttx/net/uip/uip.h>
-#endif
+#include <nuttx/net/net.h>
+#include <nuttx/net/netdev.h>
+#include <nuttx/net/netstats.h>
+#include <nuttx/net/ip.h>
 
 #if defined(CONFIG_NET_ICMP) && defined(CONFIG_NET_ICMP_PING) && \
-   !defined(CONFIG_DISABLE_CLOCK) && !defined(CONFIG_DISABLE_SIGNALS)
-#  include <apps/netutils/uiplib.h>
-#  include <apps/netutils/resolv.h>
+   !defined(CONFIG_DISABLE_SIGNALS)
+#  include <apps/netutils/netlib.h>
+#  include <apps/netutils/dnsclient.h>
 #endif
 
 #if defined(CONFIG_NET_UDP) && CONFIG_NFILE_DESCRIPTORS > 0
-#  include <apps/netutils/uiplib.h>
+#  include <apps/netutils/netlib.h>
 #  include <apps/netutils/tftp.h>
 #endif
 
 #if defined(CONFIG_NET_TCP) && CONFIG_NFILE_DESCRIPTORS > 0
 #  ifndef CONFIG_NSH_DISABLE_WGET
-#    include <apps/netutils/uiplib.h>
+#    include <apps/netutils/netlib.h>
 #    include <apps/netutils/webclient.h>
 #  endif
 #endif
@@ -87,7 +87,7 @@
 #  ifdef CONFIG_HAVE_GETHOSTBYNAME
 #    include <netdb.h>
 #  else
-#    include <apps/netutils/resolv.h>
+#    include <apps/netutils/dnsclient.h>
 #  endif
 #  include <apps/netutils/dhcpc.h>
 #endif
@@ -116,7 +116,7 @@
 #if defined(CONFIG_NET_UDP) && CONFIG_NFILE_DESCRIPTORS > 0
 struct tftpc_args_s
 {
-  bool        binary;    /* true:binary ("octect") false:text ("netascii") */
+  bool        binary;    /* true:binary ("octet") false:text ("netascii") */
   bool        allocated; /* true: destpath is allocated */
   char       *destpath;  /* Path at destination */
   const char *srcpath;   /* Path at src */
@@ -133,7 +133,7 @@ struct tftpc_args_s
  ****************************************************************************/
 
 #if defined(CONFIG_NET_ICMP) && defined(CONFIG_NET_ICMP_PING) && \
-   !defined(CONFIG_DISABLE_CLOCK) && !defined(CONFIG_DISABLE_SIGNALS)
+   !defined(CONFIG_DISABLE_SIGNALS)
 static uint16_t g_pingid = 0;
 #endif
 
@@ -150,7 +150,7 @@ static uint16_t g_pingid = 0;
  ****************************************************************************/
 
 #if defined(CONFIG_NET_ICMP) && defined(CONFIG_NET_ICMP_PING) && \
-   !defined(CONFIG_DISABLE_CLOCK) && !defined(CONFIG_DISABLE_SIGNALS)
+   !defined(CONFIG_DISABLE_SIGNALS)
 static inline uint16_t ping_newid(void)
 {
   irqstate_t save = irqsave();
@@ -161,13 +161,13 @@ static inline uint16_t ping_newid(void)
 #endif
 
 /****************************************************************************
- * Name: uip_statistics
+ * Name: net_statistics
  ****************************************************************************/
 
 #if defined(CONFIG_NET_STATISTICS) && !defined(CONFIG_NSH_DISABLE_IFCONFIG)
-static inline void uip_statistics(FAR struct nsh_vtbl_s *vtbl)
+static inline void net_statistics(FAR struct nsh_vtbl_s *vtbl)
 {
-  nsh_output(vtbl, "uIP         IP ");
+  nsh_output(vtbl, "            IP ");
 #ifdef CONFIG_NET_TCP
   nsh_output(vtbl, "  TCP");
 #endif
@@ -181,43 +181,43 @@ static inline void uip_statistics(FAR struct nsh_vtbl_s *vtbl)
 
   /* Received packets */
 
-  nsh_output(vtbl, "Received    %04x",uip_stat.ip.recv);
+  nsh_output(vtbl, "Received    %04x", g_netstats.ip.recv);
 #ifdef CONFIG_NET_TCP
-  nsh_output(vtbl, " %04x",uip_stat.tcp.recv);
+  nsh_output(vtbl, " %04x", g_netstats.tcp.recv);
 #endif
 #ifdef CONFIG_NET_UDP
-  nsh_output(vtbl, " %04x",uip_stat.udp.recv);
+  nsh_output(vtbl, " %04x", g_netstats.udp.recv);
 #endif
 #ifdef CONFIG_NET_ICMP
-  nsh_output(vtbl, " %04x",uip_stat.icmp.recv);
+  nsh_output(vtbl, " %04x", g_netstats.icmp.recv);
 #endif
   nsh_output(vtbl, "\n");
 
   /* Dropped packets */
 
-  nsh_output(vtbl, "Dropped     %04x",uip_stat.ip.drop);
+  nsh_output(vtbl, "Dropped     %04x", g_netstats.ip.drop);
 #ifdef CONFIG_NET_TCP
-  nsh_output(vtbl, " %04x",uip_stat.tcp.drop);
+  nsh_output(vtbl, " %04x", g_netstats.tcp.drop);
 #endif
 #ifdef CONFIG_NET_UDP
-  nsh_output(vtbl, " %04x",uip_stat.udp.drop);
+  nsh_output(vtbl, " %04x", g_netstats.udp.drop);
 #endif
 #ifdef CONFIG_NET_ICMP
-  nsh_output(vtbl, " %04x",uip_stat.icmp.drop);
+  nsh_output(vtbl, " %04x", g_netstats.icmp.drop);
 #endif
   nsh_output(vtbl, "\n");
 
   nsh_output(vtbl, "  IP        VHL: %04x HBL: %04x\n",
-             uip_stat.ip.vhlerr, uip_stat.ip.hblenerr);
+             g_netstats.ip.vhlerr, g_netstats.ip.hblenerr);
   nsh_output(vtbl, "            LBL: %04x Frg: %04x\n",
-             uip_stat.ip.lblenerr, uip_stat.ip.fragerr);
+             g_netstats.ip.lblenerr, g_netstats.ip.fragerr);
 
-  nsh_output(vtbl, "  Checksum  %04x",uip_stat.ip.chkerr);
+  nsh_output(vtbl, "  Checksum  %04x",g_netstats.ip.chkerr);
 #ifdef CONFIG_NET_TCP
-  nsh_output(vtbl, " %04x",uip_stat.tcp.chkerr);
+  nsh_output(vtbl, " %04x", g_netstats.tcp.chkerr);
 #endif
 #ifdef CONFIG_NET_UDP
-  nsh_output(vtbl, " %04x",uip_stat.udp.chkerr);
+  nsh_output(vtbl, " %04x", g_netstats.udp.chkerr);
 #endif
 #ifdef CONFIG_NET_ICMP
   nsh_output(vtbl, " ----");
@@ -225,13 +225,13 @@ static inline void uip_statistics(FAR struct nsh_vtbl_s *vtbl)
   nsh_output(vtbl, "\n");
 
 #ifdef CONFIG_NET_TCP
-  nsh_output(vtbl, "  TCP       ACK: %04x SYN: %04x\n", 
-            uip_stat.tcp.ackerr, uip_stat.tcp.syndrop);
-  nsh_output(vtbl, "            RST: %04x %04x\n", 
-            uip_stat.tcp.rst, uip_stat.tcp.synrst);
+  nsh_output(vtbl, "  TCP       ACK: %04x SYN: %04x\n",
+            g_netstats.tcp.ackerr, g_netstats.tcp.syndrop);
+  nsh_output(vtbl, "            RST: %04x %04x\n",
+            g_netstats.tcp.rst, g_netstats.tcp.synrst);
 #endif
 
-  nsh_output(vtbl, "  Type      %04x",uip_stat.ip.protoerr);
+  nsh_output(vtbl, "  Type      %04x", g_netstats.ip.protoerr);
 #ifdef CONFIG_NET_TCP
   nsh_output(vtbl, " ----");
 #endif
@@ -239,26 +239,26 @@ static inline void uip_statistics(FAR struct nsh_vtbl_s *vtbl)
   nsh_output(vtbl, " ----");
 #endif
 #ifdef CONFIG_NET_ICMP
-  nsh_output(vtbl, " %04x",uip_stat.icmp.typeerr);
+  nsh_output(vtbl, " %04x", g_netstats.icmp.typeerr);
 #endif
   nsh_output(vtbl, "\n");
 
   /* Sent packets */
 
-  nsh_output(vtbl, "Sent        ----",uip_stat.ip.sent);
+  nsh_output(vtbl, "Sent        ----", g_netstats.ip.sent);
 #ifdef CONFIG_NET_TCP
-  nsh_output(vtbl, " %04x",uip_stat.tcp.sent);
+  nsh_output(vtbl, " %04x", g_netstats.tcp.sent);
 #endif
 #ifdef CONFIG_NET_UDP
-  nsh_output(vtbl, " %04x",uip_stat.udp.sent);
+  nsh_output(vtbl, " %04x", g_netstats.udp.sent);
 #endif
 #ifdef CONFIG_NET_ICMP
-  nsh_output(vtbl, " %04x",uip_stat.icmp.sent);
+  nsh_output(vtbl, " %04x", g_netstats.icmp.sent);
 #endif
   nsh_output(vtbl, "\n");
 
 #ifdef CONFIG_NET_TCP
-  nsh_output(vtbl, "  Rexmit    ---- %04x",uip_stat.tcp.rexmit);
+  nsh_output(vtbl, "  Rexmit    ---- %04x", g_netstats.tcp.rexmit);
 #ifdef CONFIG_NET_UDP
   nsh_output(vtbl, " ----");
 #endif
@@ -270,30 +270,47 @@ static inline void uip_statistics(FAR struct nsh_vtbl_s *vtbl)
   nsh_output(vtbl, "\n");
 }
 #else
-# define uip_statistics(vtbl)
+# define net_statistics(vtbl)
 #endif
-
 
 /****************************************************************************
  * Name: ifconfig_callback
  ****************************************************************************/
 
-int ifconfig_callback(FAR struct uip_driver_s *dev, void *arg)
+int ifconfig_callback(FAR struct net_driver_s *dev, void *arg)
 {
   struct nsh_vtbl_s *vtbl = (struct nsh_vtbl_s*)arg;
   struct in_addr addr;
-  bool is_running = false;
+  uint8_t iff;
+  const char *status;
   int ret;
 
-  ret = uip_getifstatus(dev->d_ifname,&is_running);
+  ret = netlib_getifstatus(dev->d_ifname, &iff);
   if (ret != OK)
     {
       nsh_output(vtbl, "\tGet %s interface flags error: %d\n",
                  dev->d_ifname, ret);
     }
 
+  if (iff & IFF_RUNNING)
+    {
+      status = "RUNNING";
+    }
+  else if (iff & IFF_UP)
+    {
+      status = "UP";
+    }
+  else
+    {
+      status = "DOWN";
+    }
+
+#ifdef CONFIG_NET_ETHERNET
+  /* REVISIT: How will we handle Ethernet and SLIP networks together? */
+
   nsh_output(vtbl, "%s\tHWaddr %s at %s\n",
-             dev->d_ifname, ether_ntoa(&dev->d_mac), (is_running)?"UP":"DOWN");
+             dev->d_ifname, ether_ntoa(&dev->d_mac), status);
+#endif
 
   addr.s_addr = dev->d_ipaddr;
   nsh_output(vtbl, "\tIPaddr:%s ", inet_ntoa(addr));
@@ -305,7 +322,7 @@ int ifconfig_callback(FAR struct uip_driver_s *dev, void *arg)
   nsh_output(vtbl, "Mask:%s\n", inet_ntoa(addr));
 
 #if defined(CONFIG_NSH_DHCPC) || defined(CONFIG_NSH_DNS)
-  resolv_getserver(&addr);
+  dns_getserver(&addr);
   nsh_output(vtbl, "\tDNSaddr:%s\n", inet_ntoa(addr));
 #endif
 
@@ -345,7 +362,7 @@ int tftpc_parseargs(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv,
             break;
 
           case 'h':
-            if (!uiplib_ipaddrconv(optarg, (FAR unsigned char*)&args->ipaddr))
+            if (!netlib_ipaddrconv(optarg, (FAR unsigned char*)&args->ipaddr))
               {
                 nsh_output(vtbl, g_fmtarginvalid, argv[0]);
                 badarg = true;
@@ -502,6 +519,7 @@ int cmd_get(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
     {
       free(args.destpath);
     }
+
   free(fullpath);
   return OK;
 }
@@ -526,7 +544,7 @@ int cmd_ifup(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
     }
 
   intf = argv[1];
-  ret  = uip_ifup(intf);
+  ret  = netlib_ifup(intf);
   nsh_output(vtbl, "ifup %s...%s\n", intf, (ret == OK) ? "OK" : "Failed");
   return ret;
 }
@@ -550,7 +568,7 @@ int cmd_ifdown(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
     }
 
   intf = argv[1];
-  ret = uip_ifdown(intf);
+  ret = netlib_ifdown(intf);
   nsh_output(vtbl, "ifdown %s...%s\n", intf, (ret == OK) ? "OK" : "Failed");
   return ret;
 }
@@ -571,8 +589,12 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
   FAR char *gwip = NULL;
   FAR char *mask = NULL;
   FAR char *tmp = NULL;
+#ifndef CONFIG_NET_SLIP
   FAR char *hw = NULL;
+#endif
+#if defined(CONFIG_NSH_DHCPC) || defined(CONFIG_NSH_DNS)
   FAR char *dns = NULL;
+#endif
   bool badarg = false;
   uint8_t mac[IFHWADDRLEN];
 #if defined(CONFIG_NSH_DHCPC)
@@ -589,19 +611,19 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
   if (argc <= 2)
     {
       netdev_foreach(ifconfig_callback, vtbl);
-      uip_statistics(vtbl);
+      net_statistics(vtbl);
       return OK;
     }
 
   /* If both the network interface name and an IP address are supplied as
-   * arguments, then ifconfig will set the address of the ethernet device:
+   * arguments, then ifconfig will set the address of the Ethernet device:
    *
    *    ifconfig nic_name ip_address
    */
 
   if (argc > 2)
     {
-      for(i = 0; i < argc; i++)
+      for (i = 0; i < argc; i++)
         {
           if (i == 1)
             {
@@ -626,7 +648,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
                       badarg = true;
                     }
                 }
-              else if(!strcmp(tmp, "netmask"))
+              else if (!strcmp(tmp, "netmask"))
                 {
                   if (argc-1 >= i+1)
                     {
@@ -638,20 +660,27 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
                       badarg = true;
                     }
                 }
-              else if(!strcmp(tmp, "hw"))
+
+#ifndef CONFIG_NET_SLIP
+              /* REVISIT: How will we handle Ethernet and SLIP networks together? */
+
+              else if (!strcmp(tmp, "hw"))
                 {
                   if (argc-1>=i+1)
                     {
                       hw = argv[i+1];
                       i++;
-                      badarg = !uiplib_hwmacconv(hw, mac);
+                      badarg = !netlib_hwmacconv(hw, mac);
                     }
                   else
                     {
                       badarg = true;
                     }
                 }
-              else if(!strcmp(tmp, "dns"))
+#endif
+
+#if defined(CONFIG_NSH_DHCPC) || defined(CONFIG_NSH_DNS)
+              else if (!strcmp(tmp, "dns"))
                 {
                   if (argc-1 >= i+1)
                     {
@@ -663,6 +692,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
                       badarg = true;
                     }
                 }
+#endif
             }
         }
     }
@@ -673,13 +703,16 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       return ERROR;
     }
 
-  /* Set Hardware ethernet MAC addr */
+#ifndef CONFIG_NET_SLIP
+  /* Set Hardware Ethernet MAC address */
+  /* REVISIT: How will we handle Ethernet and SLIP networks together? */
 
   if (hw)
     {
       ndbg("HW MAC: %s\n", hw);
-      uip_setmacaddr(intf, mac);
+      netlib_setmacaddr(intf, mac);
     }
+#endif
 
 #if defined(CONFIG_NSH_DHCPC)
   if (!strcmp(hostip, "dhcp"))
@@ -698,7 +731,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       gip = addr.s_addr = inet_addr(hostip);
     }
 
-  uip_sethostaddr(intf, &addr);
+  netlib_sethostaddr(intf, &addr);
 
   /* Set gateway */
 
@@ -721,7 +754,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       addr.s_addr = gip;
     }
 
-  uip_setdraddr(intf, &addr);
+  netlib_setdraddr(intf, &addr);
 
   /* Set network mask */
 
@@ -736,7 +769,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       addr.s_addr = inet_addr("255.255.255.0");
     }
 
-  uip_setnetmask(intf, &addr);
+  netlib_setnetmask(intf, &addr);
 
 #if defined(CONFIG_NSH_DHCPC) || defined(CONFIG_NSH_DNS)
   if (dns)
@@ -750,7 +783,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       addr.s_addr = gip;
     }
 
-  resolv_conf(&addr);
+  dns_setserver(&addr);
 #endif
 
 #if defined(CONFIG_NSH_DHCPC)
@@ -758,7 +791,7 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 
   if (!gip)
     {
-      uip_getmacaddr("eth0", mac);
+      netlib_getmacaddr("eth0", mac);
 
       /* Set up the DHCPC modules */
 
@@ -773,21 +806,21 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
           struct dhcpc_state ds;
 
           (void)dhcpc_request(handle, &ds);
-          uip_sethostaddr("eth0", &ds.ipaddr);
+          netlib_sethostaddr("eth0", &ds.ipaddr);
 
           if (ds.netmask.s_addr != 0)
             {
-              uip_setnetmask("eth0", &ds.netmask);
+              netlib_setnetmask("eth0", &ds.netmask);
             }
 
           if (ds.default_router.s_addr != 0)
             {
-              uip_setdraddr("eth0", &ds.default_router);
+              netlib_setdraddr("eth0", &ds.default_router);
             }
 
           if (ds.dnsaddr.s_addr != 0)
             {
-              resolv_conf(&ds.dnsaddr);
+              dns_setserver(&ds.dnsaddr);
             }
 
           dhcpc_close(handle);
@@ -804,13 +837,13 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  ****************************************************************************/
 
 #if defined(CONFIG_NET_ICMP) && defined(CONFIG_NET_ICMP_PING) && \
-   !defined(CONFIG_DISABLE_CLOCK) && !defined(CONFIG_DISABLE_SIGNALS)
+   !defined(CONFIG_DISABLE_SIGNALS)
 #ifndef CONFIG_NSH_DISABLE_PING
 int cmd_ping(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
   FAR const char *fmt = g_fmtarginvalid;
   const char *staddr;
-  uip_ipaddr_t ipaddr;
+  net_ipaddr_t ipaddr;
   uint32_t start;
   uint32_t next;
   uint32_t dsec = 10;
@@ -911,13 +944,13 @@ int cmd_ping(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
             (ipaddr >> 16 ) & 0xff, (ipaddr >> 24 ) & 0xff,
             DEFAULT_PING_DATALEN);
 
-  start = g_system_timer;
+  start = clock_systimer();
   for (i = 1; i <= count; i++)
     {
       /* Send the ECHO request and wait for the response */
 
-      next  = g_system_timer;
-      seqno = uip_ping(ipaddr, id, i, DEFAULT_PING_DATALEN, maxwait);
+      next  = clock_systimer();
+      seqno = icmp_ping(ipaddr, id, i, DEFAULT_PING_DATALEN, maxwait);
 
       /* Was any response returned? We can tell if a non-negative sequence
        * number was returned.
@@ -930,7 +963,7 @@ int cmd_ping(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
            * to an earlier request, then fudge the elpased time.
            */
 
-          elapsed = TICK2MSEC(g_system_timer - next);
+          elapsed = TICK2MSEC(clock_systimer() - next);
           if (seqno < i)
             {
               elapsed += 100 * dsec * (i - seqno);
@@ -948,7 +981,7 @@ int cmd_ping(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
        * to the current request!
        */
 
-      elapsed = TICK2DSEC(g_system_timer - next);
+      elapsed = TICK2DSEC(clock_systimer() - next);
       if (elapsed < dsec)
         {
           usleep(100000 * (dsec - elapsed));
@@ -957,7 +990,7 @@ int cmd_ping(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 
   /* Get the total elapsed time */
 
-  elapsed = TICK2MSEC(g_system_timer - start);
+  elapsed = TICK2MSEC(clock_systimer() - start);
 
   /* Calculate the percentage of lost packets */
 
@@ -1009,6 +1042,7 @@ int cmd_put(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
     {
       free(args.destpath);
     }
+
   free(fullpath);
   return OK;
 }
@@ -1119,7 +1153,7 @@ int cmd_wget(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
     {
       nsh_output(vtbl, g_fmtcmdfailed, argv[0], "wget", NSH_ERRNO);
       goto exit;
-     }
+    }
 
   /* Free allocated resources */
 
@@ -1128,18 +1162,22 @@ exit:
     {
       close(fd);
     }
+
   if (allocfile)
     {
       free(allocfile);
     }
+
   if (fullpath)
     {
       free(fullpath);
     }
+
   if (buffer)
     {
       free(buffer);
     }
+
   return ret;
 
 errout:

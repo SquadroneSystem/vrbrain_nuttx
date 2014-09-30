@@ -58,6 +58,10 @@
 # define CONFIG_HAVE_FUNCTIONNAME 1 /* Has __FUNCTION__ */
 # define CONFIG_HAVE_FILENAME     1 /* Has __FILE__ */
 
+/* Indicate that a local variable is not used */
+
+# define UNUSED(a) ((void)(a))
+
 /* Attributes
  *
  * GCC supports weak symbols which can be used to reduce code size because
@@ -102,7 +106,7 @@
  */
 
 # define naked_function __attribute__ ((naked,no_instrument_function))
- 
+
 /* The inline_function attribute informs GCC that the function should always
  * be inlined, regardless of the level of optimization.  The noinline_function
  * indicates that the function should never be inlined.
@@ -274,7 +278,7 @@
 
 #if defined(__SDCC_z80) || defined(__SDCC_z180) || defined(__SDCC_gbz80)
 #  define FAR
-#  define NEAR 
+#  define NEAR
 #  define CODE
 #  define DSEG
 #else

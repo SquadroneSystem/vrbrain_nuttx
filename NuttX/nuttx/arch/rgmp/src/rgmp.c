@@ -46,17 +46,19 @@
 #include <nuttx/arch.h>
 #include <nuttx/sched.h>
 #include <nuttx/kmalloc.h>
+#include <nuttx/clock.h>
+
 #include <semaphore.h>
 #include <queue.h>
 #include <stdlib.h>
 #include <arch/arch.h>
-#include <os_internal.h>
+#include <sched/sched.h>
 
 int nest_irq = 0;
 
 // the default time is 10ms
-#ifdef CONFIG_MSEC_PER_TICK
-const unsigned int rtos_tick_time = CONFIG_MSEC_PER_TICK;
+#ifdef MSEC_PER_TICK
+const unsigned int rtos_tick_time = MSEC_PER_TICK;
 #else
 const unsigned int rtos_tick_time = 10;
 #endif
@@ -88,7 +90,7 @@ void rtos_kfree(void *addr)
 
 /**
  * The interrupt can be nested. The pair of rtos_enter_interrupt()
- * and rtos_exit_interrupt() make sure the context switch is 
+ * and rtos_exit_interrupt() make sure the context switch is
  * performed only in the last IRQ exit.
  */
 void rtos_enter_interrupt(void)
@@ -151,9 +153,10 @@ void rtos_stop_running(void)
 
     nuttx_arch_exit();
 
-    while(1) {
-		arch_hlt();
-    }
+    while (1)
+      {
+	arch_hlt();
+      }
 }
 
 int rtos_vnet_init(struct rgmp_vnet *vnet)

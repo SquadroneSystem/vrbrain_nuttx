@@ -127,7 +127,7 @@ static void nximage_position(NXWINDOW hwnd, FAR const struct nxgl_size_s *size,
                           FAR const struct nxgl_point_s *pos,
                           FAR const struct nxgl_rect_s *bounds,
                           FAR void *arg);
-#ifdef CONFIG_NX_MOUSE
+#ifdef CONFIG_NX_XYINPUT
 static void nximage_mousein(NXWINDOW hwnd, FAR const struct nxgl_point_s *pos,
                          uint8_t buttons, FAR void *arg);
 #endif
@@ -157,7 +157,7 @@ const struct nx_callback_s g_nximagecb =
 {
   nximage_redraw,   /* redraw */
   nximage_position  /* position */
-#ifdef CONFIG_NX_MOUSE
+#ifdef CONFIG_NX_XYINPUT
   , nximage_mousein /* mousein */
 #endif
 #ifdef CONFIG_NX_KBD
@@ -231,7 +231,7 @@ static void nximage_position(NXWINDOW hwnd, FAR const struct nxgl_size_s *size,
  *
  ****************************************************************************/
 
-#ifdef CONFIG_NX_MOUSE
+#ifdef CONFIG_NX_XYINPUT
 static void nximage_mousein(NXWINDOW hwnd, FAR const struct nxgl_point_s *pos,
                          uint8_t buttons, FAR void *arg)
 {
@@ -295,7 +295,7 @@ void nximage_image(NXWINDOW hwnd)
 
   dest.pt1.x = pos.x;
   dest.pt2.x = pos.x + SCALED_WIDTH - 1;
- 
+
   /* Now output the rows */
 
   for (row = 0; row < IMAGE_HEIGHT; row += NINPUT_ROWS)

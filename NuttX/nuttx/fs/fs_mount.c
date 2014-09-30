@@ -63,18 +63,20 @@
 /* Configuration ************************************************************/
 /* In the canonical case, a file system is bound to a block driver.  However,
  * some less typical cases a block driver is not required.  Examples are
- * pseudo file systems (like BINFS) and MTD file systems (like NXFFS).
+ * pseudo file systems (like BINFS or PROCFS) and MTD file systems (like NXFFS).
  *
  * These file systems all require block drivers:
  */
 
-#if defined(CONFIG_FS_FAT) || defined(CONFIG_FS_ROMFS)
+#if defined(CONFIG_FS_FAT) || defined(CONFIG_FS_ROMFS) || \
+    defined(CONFIG_FS_SMARTFS)
 #  define BDFS_SUPPORT 1
 #endif
 
 /* These file systems do not require block drivers */
 
-#if defined(CONFIG_FS_NXFFS) || defined(CONFIG_FS_BINFS) || defined(CONFIG_NFS) 
+#if defined(CONFIG_FS_NXFFS) || defined(CONFIG_FS_BINFS) || \
+    defined(CONFIG_FS_PROCFS) || defined(CONFIG_NFS)
 #  define NONBDFS_SUPPORT
 #endif
 
@@ -128,6 +130,9 @@ extern const struct mountpt_operations nfs_operations;
 #ifdef CONFIG_FS_BINFS
 extern const struct mountpt_operations binfs_operations;
 #endif
+#ifdef CONFIG_FS_PROCFS
+extern const struct mountpt_operations procfs_operations;
+#endif
 
 static const struct fsmap_t g_nonbdfsmap[] =
 {
@@ -140,7 +145,10 @@ static const struct fsmap_t g_nonbdfsmap[] =
 #ifdef CONFIG_FS_BINFS
     { "binfs", &binfs_operations },
 #endif
-    { NULL,   NULL },
+#ifdef CONFIG_FS_PROCFS
+    { "procfs", &procfs_operations },
+#endif
+    { NULL, NULL },
 };
 #endif /* NONBDFS_SUPPORT */
 
@@ -238,7 +246,7 @@ int mount(FAR const char *source, FAR const char *target,
       ret = find_blockdriver(source, mountflags, &blkdrvr_inode);
       if (ret < 0)
         {
-          fdbg("Failed to find block driver %s\n", source);
+          fdbg("ERROR: Failed to find block driver %s\n", source);
           errcode = -ret;
           goto errout;
         }
@@ -252,7 +260,7 @@ int mount(FAR const char *source, FAR const char *target,
   else
 #endif /* NONBDFS_SUPPORT */
     {
-      fdbg("Failed to find file system %s\n", filesystemtype);
+      fdbg("ERROR: Failed to find file system %s\n", filesystemtype);
       errcode = ENODEV;
       goto errout;
     }
@@ -273,7 +281,7 @@ int mount(FAR const char *source, FAR const char *target,
        *  -ENOMEM - Failed to allocate in-memory resources for the operation
        */
 
-      fdbg("Failed to reserve inode\n");
+      fdbg("ERROR: Failed to reserve inode\n");
       errcode = -ret;
       goto errout_with_semaphore;
     }
@@ -287,7 +295,7 @@ int mount(FAR const char *source, FAR const char *target,
     {
       /* The filesystem does not support the bind operation ??? */
 
-      fdbg("Filesystem does not support bind\n");
+      fdbg("ERROR: Filesystem does not support bind\n");
       errcode = EINVAL;
       goto errout_with_mountpt;
     }
@@ -317,7 +325,7 @@ int mount(FAR const char *source, FAR const char *target,
        * error.
        */
 
-      fdbg("Bind method failed: %d\n", ret);
+      fdbg("ERROR: Bind method failed: %d\n", ret);
 #ifdef BDFS_SUPPORT
 #ifdef NONBDFS_SUPPORT
       if (blkdrvr_inode)
@@ -392,9 +400,9 @@ errout:
   return ERROR;
 
 #else
-  fdbg("No filesystems enabled\n");
+  fdbg("ERROR: No filesystems enabled\n");
   set_errno(ENOSYS);
-  return error;
+  return ERROR;
 #endif /* BDFS_SUPPORT || NONBDFS_SUPPORT */
 }
 

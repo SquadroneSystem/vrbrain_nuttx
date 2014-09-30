@@ -48,12 +48,12 @@
 #include <wdog.h>
 #include <errno.h>
 
+#include <arpa/inet.h>
+
 #include <nuttx/irq.h>
 #include <nuttx/arch.h>
-
-#include <nuttx/net/uip/uip.h>
-#include <nuttx/net/uip/uip-arp.h>
-#include <nuttx/net/uip/uip-arch.h>
+#include <nuttx/net/arp.h>
+#include <nuttx/net/netdev.h>
 
 /****************************************************************************
  * Definitions
@@ -80,7 +80,7 @@
 
 /* This is a helper pointer for accessing the contents of the Ethernet header */
 
-#define BUF ((struct uip_eth_hdr *)cs89x0->cs_dev.d_buf)
+#define BUF ((struct eth_hdr_s *)cs89x0->cs_dev.d_buf)
 
 /* If there is only one CS89x0 instance, then mapping the CS89x0 IRQ to
  * a driver state instance is trivial.
@@ -116,7 +116,7 @@ static void cs89x0_putppreg(struct cs89x0_driver_s *cs89x0, int addr,
 /* Common TX logic */
 
 static int  cs89x0_transmit(struct cs89x0_driver_s *cs89x0);
-static int  cs89x0_uiptxpoll(struct uip_driver_s *dev);
+static int  cs89x0_txpoll(struct net_driver_s *dev);
 
 /* Interrupt handling */
 
@@ -134,12 +134,12 @@ static void cs89x0_txtimeout(int argc, uint32_t arg, ...);
 
 /* NuttX callback functions */
 
-static int cs89x0_ifup(struct uip_driver_s *dev);
-static int cs89x0_ifdown(struct uip_driver_s *dev);
-static int cs89x0_txavail(struct uip_driver_s *dev);
+static int cs89x0_ifup(struct net_driver_s *dev);
+static int cs89x0_ifdown(struct net_driver_s *dev);
+static int cs89x0_txavail(struct net_driver_s *dev);
 #ifdef CONFIG_NET_IGMP
-static int cs89x0_addmac(struct uip_driver_s *dev, FAR const uint8_t *mac);
-static int cs89x0_rmmac(struct uip_driver_s *dev, FAR const uint8_t *mac);
+static int cs89x0_addmac(struct net_driver_s *dev, FAR const uint8_t *mac);
+static int cs89x0_rmmac(struct net_driver_s *dev, FAR const uint8_t *mac);
 #endif
 
 /****************************************************************************
@@ -307,11 +307,11 @@ static int cs89x0_transmit(struct cs89x0_driver_s *cs89x0)
 }
 
 /****************************************************************************
- * Function: cs89x0_uiptxpoll
+ * Function: cs89x0_txpoll
  *
  * Description:
  *   The transmitter is available, check if uIP has any outgoing packets ready
- *   to send.  This is a callback from uip_poll().  uip_poll() may be called:
+ *   to send.  This is a callback from devif_poll().  devif_poll() may be called:
  *
  *   1. When the preceding TX packet send is complete,
  *   2. When the preceding TX packet send timesout and the interface is reset
@@ -327,7 +327,7 @@ static int cs89x0_transmit(struct cs89x0_driver_s *cs89x0)
  *
  ****************************************************************************/
 
-static int cs89x0_uiptxpoll(struct uip_driver_s *dev)
+static int cs89x0_txpoll(struct net_driver_s *dev)
 {
   struct cs89x0_driver_s *cs89x0 = (struct cs89x0_driver_s *)dev->d_private;
 
@@ -337,7 +337,7 @@ static int cs89x0_uiptxpoll(struct uip_driver_s *dev)
 
   if (cs89x0->cs_dev.d_len > 0)
     {
-      uip_arp_out(&cs89x0->cs_dev);
+      arp_out(&cs89x0->cs_dev);
       cs89x0_transmit(cs89x0);
 
       /* Check if there is room in the CS89x0 to hold another packet. If not,
@@ -414,9 +414,9 @@ static void cs89x0_receive(struct cs89x0_driver_s *cs89x0, uint16_t isq)
       cd89x0->cs_stats.rx_errors++;
       cd89x0->cs_stats.rx_lengtherrors++;
 #endif
-      return;    
+      return;
     }
-    
+
   /* Copy the data data from the hardware to cs89x0->cs_dev.d_buf.  Set
    * amount of data in cs89x0->cs_dev.d_len
    */
@@ -425,7 +425,7 @@ static void cs89x0_receive(struct cs89x0_driver_s *cs89x0, uint16_t isq)
   for (nbytes = 0; nbytes < rxlength; nbytes += sizeof(uint16_t))
     {
       *dest++ = cs89x0_getreg(PPR_RXFRAMELOCATION);
-    }  
+    }
 
 #ifdef CONFIG_C89x0_STATISTICS
   cd89x0->cs_stats.rx_packets++;
@@ -433,13 +433,13 @@ static void cs89x0_receive(struct cs89x0_driver_s *cs89x0, uint16_t isq)
   /* We only accept IP packets of the configured type and ARP packets */
 
 #ifdef CONFIG_NET_IPv6
-  if (BUF->type == HTONS(UIP_ETHTYPE_IP6))
+  if (BUF->type == HTONS(ETHTYPE_IP6))
 #else
-  if (BUF->type == HTONS(UIP_ETHTYPE_IP))
+  if (BUF->type == HTONS(ETHTYPE_IP))
 #endif
     {
-      uip_arp_ipin(&cs89x0->cs_dev);
-      uip_input(&cs89x0->cs_dev);
+      arp_ipin(&cs89x0->cs_dev);
+      devif_input(&cs89x0->cs_dev);
 
       /* If the above function invocation resulted in data that should be
        * sent out on the network, the field  d_len will set to a value > 0.
@@ -447,13 +447,13 @@ static void cs89x0_receive(struct cs89x0_driver_s *cs89x0, uint16_t isq)
 
       if (cs89x0->cs_dev.d_len > 0)
         {
-          uip_arp_out(&cs89x0->cs_dev);
+          arp_out(&cs89x0->cs_dev);
           cs89x0_transmit(cs89x0);
         }
     }
-  else if (BUF->type == htons(UIP_ETHTYPE_ARP))
+  else if (BUF->type == htons(ETHTYPE_ARP))
     {
-       uip_arp_arpin(&cs89x0->cs_dev);
+       arp_arpin(&cs89x0->cs_dev);
 
        /* If the above function invocation resulted in data that should be
         * sent out on the network, the field  d_len will set to a value > 0.
@@ -518,7 +518,7 @@ static void cs89x0_txdone(struct cs89x0_driver_s *cs89x0, uint16_t isq)
 
   /* Then poll uIP for new XMIT data */
 
-  (void)uip_poll(&cs89x0->cs_dev, cs89x0_uiptxpoll);
+  (void)devif_poll(&cs89x0->cs_dev, cs89x0_txpoll);
 }
 
 /****************************************************************************
@@ -576,7 +576,7 @@ static int cs89x0_interrupt(int irq, FAR void *context)
 {
   register struct cs89x0_driver_s *cs89x0 = s89x0_mapirq(irq);
   uint16_t isq;
-  
+
 #ifdef CONFIG_DEBUG
   if (!cs89x0)
     {
@@ -663,7 +663,7 @@ static void cs89x0_txtimeout(int argc, uint32_t arg, ...)
 
   /* Then poll uIP for new XMIT data */
 
-  (void)uip_poll(&cs89x0->cs_dev, cs89x0_uiptxpoll);
+  (void)devif_poll(&cs89x0->cs_dev, cs89x0_txpoll);
 }
 
 /****************************************************************************
@@ -692,7 +692,7 @@ static void cs89x0_polltimer(int argc, uint32_t arg, ...)
 
   /* If so, update TCP timing states and poll uIP for new XMIT data */
 
-  (void)uip_timer(&cs89x0->cs_dev, cs89x0_uiptxpoll, CS89x0_POLLHSEC);
+  (void)devif_timer(&cs89x0->cs_dev, cs89x0_txpoll, CS89x0_POLLHSEC);
 
   /* Setup the watchdog poll timer again */
 
@@ -704,7 +704,7 @@ static void cs89x0_polltimer(int argc, uint32_t arg, ...)
  *
  * Description:
  *   NuttX Callback: Bring up the Ethernet interface when an IP address is
- *   provided 
+ *   provided
  *
  * Parameters:
  *   dev  - Reference to the NuttX driver state structure
@@ -716,7 +716,7 @@ static void cs89x0_polltimer(int argc, uint32_t arg, ...)
  *
  ****************************************************************************/
 
-static int cs89x0_ifup(struct uip_driver_s *dev)
+static int cs89x0_ifup(struct net_driver_s *dev)
 {
   struct cs89x0_driver_s *cs89x0 = (struct cs89x0_driver_s *)dev->d_private;
 
@@ -754,7 +754,7 @@ static int cs89x0_ifup(struct uip_driver_s *dev)
  *
  ****************************************************************************/
 
-static int cs89x0_ifdown(struct uip_driver_s *dev)
+static int cs89x0_ifdown(struct net_driver_s *dev)
 {
   struct cs89x0_driver_s *cs89x0 = (struct cs89x0_driver_s *)dev->d_private;
   irqstate_t flags;
@@ -780,7 +780,7 @@ static int cs89x0_ifdown(struct uip_driver_s *dev)
  * Function: cs89x0_txavail
  *
  * Description:
- *   Driver callback invoked when new TX data is available.  This is a 
+ *   Driver callback invoked when new TX data is available.  This is a
  *   stimulus perform an out-of-cycle poll and, thereby, reduce the TX
  *   latency.
  *
@@ -795,7 +795,7 @@ static int cs89x0_ifdown(struct uip_driver_s *dev)
  *
  ****************************************************************************/
 
-static int cs89x0_txavail(struct uip_driver_s *dev)
+static int cs89x0_txavail(struct net_driver_s *dev)
 {
   struct cs89x0_driver_s *cs89x0 = (struct cs89x0_driver_s *)dev->d_private;
   irqstate_t flags;
@@ -811,7 +811,7 @@ static int cs89x0_txavail(struct uip_driver_s *dev)
 
       /* If so, then poll uIP for new XMIT data */
 
-      (void)uip_poll(&cs89x0->cs_dev, cs89x0_uiptxpoll);
+      (void)devif_poll(&cs89x0->cs_dev, cs89x0_txpoll);
     }
 
   irqrestore(flags);
@@ -827,7 +827,7 @@ static int cs89x0_txavail(struct uip_driver_s *dev)
  *
  * Parameters:
  *   dev  - Reference to the NuttX driver state structure
- *   mac  - The MAC address to be added 
+ *   mac  - The MAC address to be added
  *
  * Returned Value:
  *   None
@@ -837,7 +837,7 @@ static int cs89x0_txavail(struct uip_driver_s *dev)
  ****************************************************************************/
 
 #ifdef CONFIG_NET_IGMP
-static int cs89x0_addmac(struct uip_driver_s *dev, FAR const uint8_t *mac)
+static int cs89x0_addmac(struct net_driver_s *dev, FAR const uint8_t *mac)
 {
   FAR struct cs89x0_driver_s *priv = (FAR struct cs89x0_driver_s *)dev->d_private;
 
@@ -857,7 +857,7 @@ static int cs89x0_addmac(struct uip_driver_s *dev, FAR const uint8_t *mac)
  *
  * Parameters:
  *   dev  - Reference to the NuttX driver state structure
- *   mac  - The MAC address to be removed 
+ *   mac  - The MAC address to be removed
  *
  * Returned Value:
  *   None
@@ -867,7 +867,7 @@ static int cs89x0_addmac(struct uip_driver_s *dev, FAR const uint8_t *mac)
  ****************************************************************************/
 
 #ifdef CONFIG_NET_IGMP
-static int cs89x0_rmmac(struct uip_driver_s *dev, FAR const uint8_t *mac)
+static int cs89x0_rmmac(struct net_driver_s *dev, FAR const uint8_t *mac)
 {
   FAR struct cs89x0_driver_s *priv = (FAR struct cs89x0_driver_s *)dev->d_private;
 

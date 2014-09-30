@@ -44,7 +44,8 @@
 
 #include <nuttx/arch.h>
 
-#include "os_internal.h"
+#include "task/task.h"
+#include "sched/sched.h"
 #include "up_internal.h"
 
 /****************************************************************************
@@ -78,7 +79,7 @@ void _exit(int status)
 {
   struct tcb_s* tcb;
 
-  sdbg("TCB=%p exitting\n", tcb);
+  sdbg("TCB=%p exiting\n", tcb);
 
   /* Destroy the task at the head of the ready to run list. */
 
