@@ -47,7 +47,6 @@
 #include <arch/board/board.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 /****************************************************************************
@@ -72,7 +71,7 @@
 
 uint32_t *up_doirq(int irq, uint32_t *regs)
 {
-  up_ledon(LED_INIRQ);
+  board_led_on(LED_INIRQ);
 #ifdef CONFIG_SUPPRESS_INTERRUPTS
   PANIC();
 #else
@@ -122,6 +121,6 @@ uint32_t *up_doirq(int irq, uint32_t *regs)
 
   up_enable_irq(irq);
 #endif
-  up_ledoff(LED_INIRQ);
+  board_led_off(LED_INIRQ);
   return regs;
 }

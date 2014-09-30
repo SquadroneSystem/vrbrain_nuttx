@@ -1,7 +1,7 @@
 /****************************************************************************
  * binfmt/binfmt_loadmodule.c
  *
- *   Copyright (C) 2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2009, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,7 +72,7 @@
  * Description:
  *   Set the default priority of the module to be loaded.  This may be
  *   changed (1) by the actions of the binary format's load() method if
- *   the binary format contains priority informaition, or (2) by the user
+ *   the binary format contains priority information, or (2) by the user
  *   between calls to load_module() and exec_module().
  *
  * Returned Value:
@@ -94,7 +94,7 @@ static int load_default_priority(FAR struct binary_s *bin)
       bdbg("ERROR: sched_getparam failed: %d\n", errno);
       return ERROR;
     }
-  
+
   /* Save that as the priority of child thread */
 
   bin->priority = param.sched_priority;
@@ -143,6 +143,10 @@ static int load_absmodule(FAR struct binary_s *bin)
           /* Successfully loaded -- break out with ret == 0 */
 
           bvdbg("Successfully loaded module %s\n", bin->filename);
+
+          /* Save the unload method for use by unload_module */
+
+          bin->unload = binfmt->unload;
           dump_module(bin);
           break;
         }
@@ -231,6 +235,10 @@ int load_module(FAR struct binary_s *bin)
                       break;
                     }
                 }
+
+              /* Release the traversal handle */
+
+              exepath_release(handle);
             }
 
           /* Restore the relative path.  This is not needed for anything

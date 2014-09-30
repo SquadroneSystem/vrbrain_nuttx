@@ -56,10 +56,10 @@
 
 #include "up_arch.h"
 #include "up_internal.h"
-#include "os_internal.h"
 
 #include "kl_config.h"
 #include "kl_lowputc.h"
+#include "kl_lowgetc.h"
 #include "chip.h"
 #include "kl_gpio.h"
 #include "chip/kl_uart.h"
@@ -195,6 +195,9 @@ static const struct uart_ops_s g_uart_ops =
   .receive        = up_receive,
   .rxint          = up_rxint,
   .rxavailable    = up_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
   .send           = up_send,
   .txint          = up_txint,
   .txready        = up_txready,
@@ -547,8 +550,8 @@ static int up_interrupts(int irq, void *context)
       s1 = up_serialin(priv, KL_UART_S1_OFFSET);
 
       /* Check if the receive data register is full (RDRF).  NOTE:  If
-       * FIFOS are enabled, this does not mean that the the FIFO is full,
-       * rather, it means that the the number of bytes in the RX FIFO has
+       * FIFOS are enabled, this does not mean that the FIFO is full,
+       * rather, it means that the number of bytes in the RX FIFO has
        * exceeded the watermark setting.  There may actually be RX data
        * available!
        *
@@ -567,8 +570,8 @@ static int up_interrupts(int irq, void *context)
       /* Handle outgoing, transmit bytes */
 
       /* Check if the transmit data register is "empty."  NOTE:  If FIFOS
-       * are enabled, this does not mean that the the FIFO is empty, rather,
-       * it means that the the number of bytes in the TX FIFO is below the
+       * are enabled, this does not mean that the FIFO is empty, rather,
+       * it means that the number of bytes in the TX FIFO is below the
        * watermark setting.  There could actually be space for additional TX
        * data.
        *
@@ -708,7 +711,7 @@ static void up_rxint(struct uart_dev_s *dev, bool enable)
     }
   else
     {
-      priv->ie |= UART_C2_RIE;
+      priv->ie &= ~UART_C2_RIE;
       up_setuartint(priv);
     }
 
@@ -728,8 +731,8 @@ static bool up_rxavailable(struct uart_dev_s *dev)
   struct up_dev_s *priv = (struct up_dev_s*)dev->priv;
 
   /* Return true if the receive data register is full (RDRF).  NOTE:  If
-   * FIFOS are enabled, this does not mean that the the FIFO is full,
-   * rather, it means that the the number of bytes in the RX FIFO has
+   * FIFOS are enabled, this does not mean that the FIFO is full,
+   * rather, it means that the number of bytes in the RX FIFO has
    * exceeded the watermark setting.  There may actually be RX data
    * available!
    */
@@ -804,8 +807,8 @@ static bool up_txready(struct uart_dev_s *dev)
   struct up_dev_s *priv = (struct up_dev_s*)dev->priv;
 
   /* Return true if the transmit data register is "empty."  NOTE:  If
-   * FIFOS are enabled, this does not mean that the the FIFO is empty,
-   * rather, it means that the the number of bytes in the TX FIFO is
+   * FIFOS are enabled, this does not mean that the FIFO is empty,
+   * rather, it means that the number of bytes in the TX FIFO is
    * below the watermark setting.  There may actually be space for
    * additional TX data.
    */
@@ -955,5 +958,19 @@ int up_putc(int ch)
   return ch;
 }
 
+/****************************************************************************
+ * Name: up_getc
+ *
+ * Description:
+ *   Provide priority, low-level access to support OS debug writes
+ *
+ ****************************************************************************/
+
+int up_getc(void)
+{
+  /* Check for LF */
+
+  return kl_lowgetc();
+}
 #endif /* USE_SERIALDRIVER */
 

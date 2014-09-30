@@ -58,7 +58,6 @@
 
 #include "up_arch.h"
 #include "up_internal.h"
-#include "os_internal.h"
 #include "at90usb_internal.h"
 
 /****************************************************************************
@@ -107,7 +106,7 @@ static bool usart1_txempty(struct uart_dev_s *dev);
  ****************************************************************************/
 
 struct uart_ops_s g_uart1_ops =
-{
+{O
   .setup          = usart1_setup,
   .shutdown       = usart1_shutdown,
   .attach         = usart1_attach,
@@ -116,6 +115,9 @@ struct uart_ops_s g_uart1_ops =
   .receive        = usart1_receive,
   .rxint          = usart1_rxint,
   .rxavailable    = usart1_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
   .send           = usart1_send,
   .txint          = usart1_txint,
   .txready        = usart1_txready,

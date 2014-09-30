@@ -2,9 +2,10 @@ drivers/syslog README File
 ==========================
 
 This README file discusses the SYLOG drivers that can be found in the
-drivers/syslog directory.  In NuttX, syslog output is equivalent to
-debug output and, therefore, the syslogging interfaces are defined in the
-header file include/debug.h.
+drivers/syslog directory.  The syslogging interfaces are defined in the
+header file include/syslog.h.  In NuttX, "syslog output" is really
+synonymous to "debug output" and, therefore, the debugging interfaces
+defined in the header file include/debug.h are also sysloggin interfaces.
 
 By default, all system log output goes to console (/dev/console).  But that
 behavior can be changed by the defining CONFIG_SYSLOG in the NuttX
@@ -40,7 +41,7 @@ ramlog.c
   configuration.
 
   Configuration options:
-  
+
     CONFIG_RAMLOG - Enables the RAM logging feature
     CONFIG_RAMLOG_CONSOLE - Use the RAM logging device as a system console.
       If this feature is enabled (along with CONFIG_DEV_CONSOLE), then all
@@ -61,4 +62,4 @@ ramlog.c
    If CONFIG_RAMLOG_CONSOLE or CONFIG_RAMLOG_SYSLOG is selected, then the
    following may also be provided:
 
-   CONFIG_RAMLOG_CONSOLE_BUFSIZE - Size of the console RAM log.  Default: 1024
+   CONFIG_RAMLOG_BUFSIZE - Size of the console RAM log.  Default: 1024

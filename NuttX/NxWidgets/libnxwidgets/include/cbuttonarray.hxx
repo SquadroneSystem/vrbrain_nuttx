@@ -39,7 +39,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <stdint.h>
@@ -53,11 +53,11 @@
 /****************************************************************************
  * Pre-Processor Definitions
  ****************************************************************************/
- 
+
 /****************************************************************************
  * Implementation Classes
  ****************************************************************************/
- 
+
 #if defined(__cplusplus)
 
 namespace NXWidgets
@@ -140,7 +140,7 @@ namespace NXWidgets
      */
 
     virtual void onPreRelease(nxgl_coord_t x, nxgl_coord_t y);
-    
+
     /**
      * Redraws the button.
      *
@@ -149,7 +149,7 @@ namespace NXWidgets
      */
 
     virtual void onRelease(nxgl_coord_t x, nxgl_coord_t y);
-    
+
     /**
      * Redraws the button.
      *
@@ -296,7 +296,7 @@ namespace NXWidgets
      *
      * @param column The column of the button to check.
      * @param row The row of the button to check.
-     * @return True if this button is at the cursor postion and highlighted.
+     * @return True if this button is at the cursor position and highlighted.
      */
 
     virtual bool isCursorPosition(int column, int row) const;

@@ -51,14 +51,12 @@
 
 #include "sam_clockconfig.h"
 #include "sam_lowputc.h"
+#include "sam_cmcc.h"
 #include "sam_userspace.h"
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-#if defined(CONFIG_WDT_ENABLED_ON_RESET) && defined(CONFIG_WDT_DISABLE_ON_RESET)
-#  define NEED_WDT_DISABLE
-#endif
 
 /****************************************************************************
  * Private Data
@@ -112,7 +110,7 @@ void __start(void)
       *dest++ = 0;
     }
 
-  /* Move the intialized data section from his temporary holding spot in
+  /* Move the initialized data section from his temporary holding spot in
    * FLASH into the correct place in SRAM.  The correct place in SRAM is
    * give by _sdata and _edata.  The temporary location is in FLASH at the
    * end of all of the other read-only data (.text, .rodata) at _eronly.
@@ -122,11 +120,6 @@ void __start(void)
     {
       *dest++ = *src++;
     }
-
-#ifdef NEED_WDT_DISABLE
-  /* Disable the watchdog timer */
-#  warning Missing logic
-#endif
 
   /* Copy any necessary code sections from FLASH to RAM.  The correct
    * destination in SRAM is geive by _sramfuncs and _eramfuncs.  The
@@ -171,6 +164,17 @@ void __start(void)
   sam_boardinitialize();
   showprogress('D');
 
+#ifdef CONFIG_SAM34_CMCC
+  /* Enable the Cortex-M Cache
+   *
+   * REVISIT:  This logic is complete but I have not yet tried to enable it.
+   * I have some questions about how the cache will effect memory mapped
+   * register accesses.
+   */
+
+  sam_cmcc_enable();
+#endif
+
   /* Then start NuttX */
 
   showprogress('\r');
@@ -179,5 +183,5 @@ void __start(void)
 
   /* Shouldn't get here */
 
-  for(;;);
+  for (;;);
 }

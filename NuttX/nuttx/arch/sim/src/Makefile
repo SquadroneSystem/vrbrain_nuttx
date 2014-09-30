@@ -1,7 +1,7 @@
 ############################################################################
 # arch/sim/src/Makefile
 #
-#   Copyright (C) 2007, 2008, 2011-2012 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2007, 2008, 2011-2012, 2014 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,10 @@ CSRCS = up_initialize.c up_idle.c up_interruptcontext.c \
 		up_devconsole.c
 HOSTSRCS = up_stdio.c up_hostusleep.c
 
+ifeq ($(CONFIG_SCHED_TICKLESS),y)
+CSRCS += up_tickless.c
+endif
+
 ifeq ($(CONFIG_NX_LCDDRIVER),y)
   CSRCS += up_lcd.c
 else
@@ -73,7 +77,7 @@ CSRCS += up_romgetc.c
 endif
 
 ifeq ($(CONFIG_NET),y)
-CSRCS += up_uipdriver.c
+CSRCS += up_netdriver.c
 HOSTCFLAGS += -DNETDEV_BUFSIZE=$(CONFIG_NET_BUFSIZE)
 ifneq ($(HOSTOS),Cygwin)
 HOSTSRCS += up_tapdev.c up_netdev.c
@@ -111,7 +115,7 @@ STDLIBS += -lc
 
 # Determine which objects are required in the link.  The
 # up_head object normally draws in all that is needed, but
-# there are a fews that must be included because they 
+# there are a fews that must be included because they
 # are called only from the host OS-specific logic (HOSTOBJS)
 
 LINKOBJS = up_head$(OBJEXT)
@@ -132,7 +136,7 @@ RELPATHS += -L"$(TOPDIR)/lib"
 
 # Add the board-specific library and directory
 
-LIBPATHS += -L board 
+LIBPATHS += -L board
 RELPATHS += -L board
 RELLIBS += -lboard
 
@@ -207,7 +211,7 @@ export_head: board/libboard$(LIBEXT) up_head.o $(HOSTOBJS)
 
 depend: .depend
 
-cleanrel: 
+cleanrel:
 	$(Q) rm -f nuttx.rel GNU/Linux-names.dat Cygwin-names.dat
 
 clean: cleanrel

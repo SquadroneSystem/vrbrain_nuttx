@@ -49,7 +49,6 @@
 #include <arch/board/board.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
 
 #include "pic32mx-int.h"
 #include "pic32mx-internal.h"
@@ -95,7 +94,7 @@ uint32_t *pic32mx_decodeirq(uint32_t *regs)
    * processing an interrupt.
    */
 
-  up_ledon(LED_INIRQ);
+  board_led_on(LED_INIRQ);
 
   /* Save the current value of current_regs (to support nested interrupt
    * handling).  Then set current_regs to regs, indicating that this is
@@ -161,11 +160,11 @@ uint32_t *pic32mx_decodeirq(uint32_t *regs)
   current_regs = savestate;
   if (current_regs == NULL)
     {
-      up_ledoff(LED_INIRQ);
+      board_led_off(LED_INIRQ);
     }
 #else
   current_regs = NULL;
-  up_ledoff(LED_INIRQ);
+  board_led_off(LED_INIRQ);
 #endif
 
   return regs;

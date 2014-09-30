@@ -43,14 +43,14 @@
 #include <debug.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
+#include "sched/sched.h"
 #include "up_internal.h"
 
 /****************************************************************************
  * Definitions
  ****************************************************************************/
 
-/* Output debug info if stack dump is selected -- even if 
+/* Output debug info if stack dump is selected -- even if
  * debug is not selected.
  */
 

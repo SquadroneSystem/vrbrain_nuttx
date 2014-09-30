@@ -46,7 +46,7 @@
 
 #include "chip.h"
 #include "up_arch.h"
-#include "clock_internal.h"
+#include "clock/clock.h"
 #include "up_internal.h"
 
 #include "lpc214x_timer.h"
@@ -115,7 +115,7 @@ int up_timerisr(int irq, uint32_t *regs)
 }
 
 /****************************************************************************
- * Function:  up_timerinit
+ * Function:  up_timer_initialize
  *
  * Description:
  *   This function is called during start-up to initialize
@@ -123,7 +123,7 @@ int up_timerisr(int irq, uint32_t *regs)
  *
  ****************************************************************************/
 
-void up_timerinit(void)
+void up_timer_initialize(void)
 {
   uint16_t mcr;
 
@@ -140,7 +140,6 @@ void up_timerinit(void)
   tmr_putreg32(0, LPC214X_TMR_PR_OFFSET);
 
   /* Set timer match registger to get a TICK_PER_SEC rate
-   * See arch/board.h and sched/os_internal.h
    */
 
   tmr_putreg32(LPC214X_PCLKFREQ/TICK_PER_SEC, LPC214X_TMR_MR0_OFFSET);

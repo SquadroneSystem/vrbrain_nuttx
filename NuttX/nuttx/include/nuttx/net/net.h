@@ -1,7 +1,7 @@
 /****************************************************************************
  * include/nuttx/net/net.h
  *
- *   Copyright (C) 2007, 2009-2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007, 2009-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,19 +43,18 @@
 #include <nuttx/config.h>
 #ifdef CONFIG_NET
 
+#include <sys/socket.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdarg.h>
 #include <semaphore.h>
 
-#include <nuttx/net/uip/uip.h>
-
 /****************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /* Socket descriptors are the index into the TCB sockets list, offset by the
- * following amount. This offset is used to distinquish file descriptors from
+ * following amount. This offset is used to distinguish file descriptors from
  * socket descriptors
  */
 
@@ -85,19 +84,32 @@ typedef uint16_t socktimeo_t;
  * descriptor.
  */
 
+struct devif_callback_s;     /* Forward reference */
+
 struct socket
 {
   int           s_crefs;     /* Reference count on the socket */
   uint8_t       s_type;      /* Protocol type: Only SOCK_STREAM or SOCK_DGRAM */
   uint8_t       s_flags;     /* See _SF_* definitions */
+
+  /* Socket options */
+
 #ifdef CONFIG_NET_SOCKOPTS
   sockopt_t     s_options;   /* Selected socket options */
-#ifndef CONFIG_DISABLE_CLOCK
   socktimeo_t   s_rcvtimeo;  /* Receive timeout value (in deciseconds) */
   socktimeo_t   s_sndtimeo;  /* Send timeout value (in deciseconds) */
+#ifdef CONFIG_NET_SOLINGER
+  socktimeo_t   s_linger;    /* Linger timeout value (in deciseconds) */
 #endif
 #endif
-  FAR void     *s_conn;      /* Connection: struct uip_conn or uip_udp_conn */
+
+  FAR void     *s_conn;      /* Connection: struct tcp_conn_s or udp_conn_s */
+
+#ifdef CONFIG_NET_TCP_WRITE_BUFFERS
+  /* Callback instance for TCP send */
+
+  FAR struct devif_callback_s *s_sndcb;
+#endif
 };
 
 /* This defines a list of sockets indexed by the socket descriptor */
@@ -105,15 +117,33 @@ struct socket
 #if CONFIG_NSOCKET_DESCRIPTORS > 0
 struct socketlist
 {
-  sem_t   sl_sem;            /* Manage access to the socket list */
+  sem_t         sl_sem;      /* Manage access to the socket list */
   struct socket sl_sockets[CONFIG_NSOCKET_DESCRIPTORS];
 };
 #endif
 
 /* Callback from netdev_foreach() */
 
-struct uip_driver_s; /* Forward reference. Defined in nuttx/net/uip/uip-arch.h */
-typedef int (*netdev_callback_t)(FAR struct uip_driver_s *dev, void *arg);
+struct net_driver_s; /* Forward reference. Defined in nuttx/net/netdev.h */
+typedef int (*netdev_callback_t)(FAR struct net_driver_s *dev, void *arg);
+
+#ifdef CONFIG_NET_NOINTS
+/* Semaphore based locking for non-interrupt based logic.
+ *
+ * net_lock_t -- Not used.  Only for compatibility
+ */
+
+typedef uint8_t net_lock_t; /* Not really used */
+
+#else
+
+/* Enable/disable locking for interrupt based logic:
+ *
+ * net_lock_t -- The processor specific representation of interrupt state.
+ */
+
+#  define net_lock_t        irqstate_t
+#endif
 
 /****************************************************************************
  * Public Data
@@ -131,6 +161,46 @@ extern "C"
  * Public Function Prototypes
  ****************************************************************************/
 
+/* net_lock.c ****************************************************************/
+/* Critical section management.  The NuttX configuration setting
+ * CONFIG_NET_NOINT indicates that uIP not called from the interrupt level.
+ * If CONFIG_NET_NOINTS is defined, then these will map to semaphore
+ * controls.  Otherwise, it assumed that uIP will be called from interrupt
+ * level handling and these will map to interrupt enable/disable controls.
+ */
+
+#ifdef CONFIG_NET_NOINTS
+/* Semaphore based locking for non-interrupt based logic.
+ *
+ * net_lock()           -- Takes the semaphore().  Implements a re-entrant mutex.
+ * net_unlock()         -- Gives the semaphore().
+ * net_lockedwait()     -- Like pthread_cond_wait(); releases the semaphore
+ *                         momentarily to wait on another semaphore()
+ */
+
+net_lock_t net_lock(void);
+void net_unlock(net_lock_t flags);
+int net_lockedwait(sem_t *sem);
+
+#else
+
+/* Enable/disable locking for interrupt based logic:
+ *
+ * net_lock()           -- Disables interrupts.
+ * net_unlock()         -- Conditionally restores interrupts.
+ * net_lockedwait()     -- Just wait for the semaphore.
+ */
+
+#  define net_lock()        irqsave()
+#  define net_unlock(f)     irqrestore(f)
+#  define net_lockedwait(s) sem_wait(s)
+
+#endif
+
+/* This function may be used at boot time to set the initial ip_id.*/
+
+void net_setipid(uint16_t id);
+
 /* net_checksd.c *************************************************************/
 /* Check if the socket descriptor is valid for the provided TCB and if it
  * supports the requested access.
@@ -143,11 +213,11 @@ int net_checksd(int fd, int oflags);
  * under sched/
  */
 
-void weak_function net_initialize(void);
+void net_initialize(void);
 void net_initlist(FAR struct socketlist *list);
 void net_releaselist(FAR struct socketlist *list);
 
-/* Given a socket descriptor, return the underly NuttX-specific socket
+/* Given a socket descriptor, return the underlying NuttX-specific socket
  * structure.
  */
 
@@ -261,6 +331,14 @@ int net_dup2(int sockfd1, int sockfd2);
 
 int net_clone(FAR struct socket *psock1, FAR struct socket *psock2);
 
+/* net_sendfile.c ************************************************************/
+/* Send files via a TCP connections */
+
+#ifdef CONFIG_NET_SENDFILE
+struct file;
+ssize_t net_sendfile(int outfd, struct file *infile, off_t *offset, size_t count);
+#endif
+
 /* net_vfcntl.c **************************************************************/
 /* Performs fcntl operations on socket */
 
@@ -273,12 +351,12 @@ int net_vfcntl(int sockfd, int cmd, va_list ap);
  * addresses
  */
 
-int netdev_register(FAR struct uip_driver_s *dev);
+int netdev_register(FAR struct net_driver_s *dev);
 
 /* netdev-unregister.c *********************************************************/
 /* Unregister a network device driver. */
 
-int netdev_unregister(FAR struct uip_driver_s *dev);
+int netdev_unregister(FAR struct net_driver_s *dev);
 
 /* net_foreach.c ************************************************************/
 /* Enumerates all registered network devices */

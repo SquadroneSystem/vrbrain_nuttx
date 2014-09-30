@@ -43,7 +43,7 @@
 #include <debug.h>
 #include <nuttx/arch.h>
 
-#include "os_internal.h"
+#include "sched/sched.h"
 #include "up_internal.h"
 
 /****************************************************************************
@@ -97,7 +97,7 @@ void up_release_pending(void)
 
            up_savestate(rtcb->xcp.regs);
 
-          /* Restore the exception context of the rtcb at the (new) head 
+          /* Restore the exception context of the rtcb at the (new) head
            * of the g_readytorun task list.
            */
 

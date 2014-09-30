@@ -54,7 +54,7 @@
 #include <netinet/in.h>
 
 #include <apps/netutils/telnetd.h>
-#include <apps/netutils/uiplib.h>
+#include <apps/netutils/netlib.h>
 
 #include "telnetd.h"
 
@@ -70,7 +70,7 @@
  * Public Data
  ****************************************************************************/
 
-/* This structure is used to passed information to telnet daemon when it 
+/* This structure is used to passed information to telnet daemon when it
  * started.
  */
 
@@ -99,7 +99,7 @@ static int telnetd_daemon(int argc, char *argv[])
 {
   FAR struct telnetd_s *daemon;
   struct sockaddr_in myaddr;
-#ifdef CONFIG_NET_HAVE_SOLINGER
+#ifdef CONFIG_NET_SOLINGER
   struct linger ling;
 #endif
   socklen_t addrlen;
@@ -187,7 +187,7 @@ static int telnetd_daemon(int argc, char *argv[])
 
       /* Configure to "linger" until all data is sent when the socket is closed */
 
-#ifdef CONFIG_NET_HAVE_SOLINGER
+#ifdef CONFIG_NET_SOLINGER
       ling.l_onoff  = 1;
       ling.l_linger = 30;     /* timeout is seconds */
       if (setsockopt(acceptsd, SOL_SOCKET, SO_LINGER, &ling, sizeof(struct linger)) < 0)

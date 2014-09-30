@@ -129,6 +129,7 @@ CNxTimer::CNxTimer(CWidgetControl *pWidgetControl, uint32_t timeout, bool repeat
 
 CNxTimer::~CNxTimer(void)
 {
+  stop();
 }
 
 /**
@@ -199,7 +200,7 @@ void CNxTimer::workQueueCallback(FAR void *arg)
     {
       This->start();
     }
-  
+
   // Raise the action event.
 
   This->m_widgetEventHandlers->raiseActionEvent();

@@ -41,15 +41,15 @@
  ****************************************************************************/
 
 #include "nxconfig.hxx"
- 
+
 /****************************************************************************
  * Pre-Processor Definitions
  ****************************************************************************/
- 
+
 /****************************************************************************
  * Implementation Classes
  ****************************************************************************/
- 
+
 #if defined(__cplusplus)
 
 namespace NXWidgets
@@ -69,13 +69,13 @@ namespace NXWidgets
      */
 
     inline CWindowEventHandler() { }
-    
+
     /**
      * Destructor.
      */
 
     virtual inline ~CWindowEventHandler() { }
-    
+
     /**
      * Handle a NX window redraw request event
      */
@@ -85,7 +85,7 @@ namespace NXWidgets
     /**
      * Handle a NX window position/size change event
      */
- 
+
     virtual void handleGeometryEvent(void) { }
 
     /**
@@ -94,7 +94,7 @@ namespace NXWidgets
      * @param e The event data.
      */
 
-#ifdef CONFIG_NX_MOUSE
+#ifdef CONFIG_NX_XYINPUT
     virtual void handleMouseEvent(void) { }
 #endif
 
@@ -111,7 +111,7 @@ namespace NXWidgets
      *
      * @param arg - User provided argument (see nx_block or nxtk_block)
      */
- 
+
     virtual void handleBlockedEvent(FAR void *arg) { }
   };
 }

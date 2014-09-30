@@ -1,7 +1,7 @@
 /*******************************************************************************
- * arch/arm/src/stm32/stm32_usbdev.c
+ * arch/arm/src/stm32/stm32_otgfsdev.c
  *
- *   Copyright (C) 2012-2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,7 +62,7 @@
 
 #include "stm32_otgfs.h"
 
-#if defined(CONFIG_USBDEV) && defined(CONFIG_STM32_OTGFS)
+#if defined(CONFIG_USBDEV) && (defined(CONFIG_STM32_OTGFS) || defined(CONFIG_STM32_OTGFS2))
 
 /*******************************************************************************
  * Definitions
@@ -276,6 +276,13 @@
 #  define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
+/* For OTGFS2 mode (FS mode of HS module), remap the IRQ number *****************/
+
+#ifdef CONFIG_STM32_OTGFS2
+#  undef  STM32_IRQ_OTGFS
+#  define STM32_IRQ_OTGFS   STM32_IRQ_OTGHS
+#endif
+
 /*******************************************************************************
  * Private Types
  *******************************************************************************/
@@ -434,7 +441,7 @@ struct stm32_usbdev_s
   uint8_t                 devstate:4;    /* See enum stm32_devstate_e */
   uint8_t                 ep0state:4;    /* See enum stm32_ep0state_e */
   uint8_t                 testmode:4;    /* Selected test mode */
-  uint8_t                 epavail:4;     /* Bitset of available endpoints */
+  uint8_t                 epavail[2];    /* Bitset of available OUT/IN endpoints */
 
   /* E0 SETUP data buffering.
    *
@@ -1317,11 +1324,11 @@ static void stm32_epin_request(FAR struct stm32_usbdev_s *priv,
        */
 
       regval = stm32_getreg(regaddr);
-      if ((regval & OTGFS_DTXFSTS_MASK) < nwords)
+      if ((int)(regval & OTGFS_DTXFSTS_MASK) < nwords)
         {
           usbtrace(TRACE_INTDECODE(STM32_TRACEINTID_EPIN_EMPWAIT), (uint16_t)regval);
 
-          /* There is insufficent space in the TxFIFO.  Wait for a TxFIFO
+          /* There is insufficient space in the TxFIFO.  Wait for a TxFIFO
            * empty interrupt and try again.
            */
 
@@ -1964,7 +1971,11 @@ static void stm32_usbreset(struct stm32_usbdev_s *priv)
     {
       CLASS_DISCONNECT(priv->driver, &priv->usbdev);
     }
-  priv->epavail = STM32_EP_AVAILABLE;
+
+  /* Mark all endpoints as available */
+
+  priv->epavail[0] = STM32_EP_AVAILABLE;
+  priv->epavail[1] = STM32_EP_AVAILABLE;
 
   /* Disable all end point interrupts */
 
@@ -2037,10 +2048,7 @@ static void stm32_usbreset(struct stm32_usbdev_s *priv)
 static inline void stm32_ep0out_testmode(FAR struct stm32_usbdev_s *priv,
                                          uint16_t index)
 {
-  uint32_t regval;
   uint8_t testmode;
-
-  regval = stm32_getreg(STM32_OTGFS_DCTL);
 
   testmode = index >> 8;
   switch (testmode)
@@ -4047,7 +4055,7 @@ static void stm32_epout_disable(FAR struct stm32_ep_s *privep)
   while ((stm32_getreg(regaddr) & OTGFS_DOEPINT_EPDISD) == 0);
 #else
   /* REVISIT: */
-  up_mdelay(50);
+  up_udelay(10);
 #endif
 
   /* Clear the EPDISD interrupt indication */
@@ -4105,7 +4113,6 @@ static void stm32_epin_disable(FAR struct stm32_ep_s *privep)
    */
 
 #if 0
-
   /* Make sure that there is no pending IPEPNE interrupt (because we are
    * to poll this bit below).
    */
@@ -4128,7 +4135,6 @@ static void stm32_epin_disable(FAR struct stm32_ep_s *privep)
   /* Clear the INEPNE interrupt indication */
 
   stm32_putreg(OTGFS_DIEPINT_INEPNE, regaddr);
-
 #endif
 
   /* Deactivate and disable the endpoint by setting the EPDIS and SNAK bits
@@ -4166,7 +4172,6 @@ static void stm32_epin_disable(FAR struct stm32_ep_s *privep)
   /* Cancel any queued write requests */
 
   stm32_req_cancel(privep, -ESHUTDOWN);
-
   irqrestore(flags);
 }
 
@@ -4189,6 +4194,7 @@ static int stm32_ep_disable(FAR struct usbdev_ep_s *ep)
       return -EINVAL;
     }
 #endif
+
   usbtrace(TRACE_EPDISABLE, privep->epphy);
 
   /* Is this an IN or an OUT endpoint */
@@ -4228,6 +4234,7 @@ static FAR struct usbdev_req_s *stm32_ep_allocreq(FAR struct usbdev_ep_s *ep)
       return NULL;
     }
 #endif
+
   usbtrace(TRACE_EPALLOCREQ, ((FAR struct stm32_ep_s *)ep)->epphy);
 
   privreq = (FAR struct stm32_req_s *)kmalloc(sizeof(struct stm32_req_s));
@@ -4412,7 +4419,6 @@ static int stm32_ep_submit(FAR struct usbdev_ep_s *ep, FAR struct usbdev_req_s *
 static int stm32_ep_cancel(FAR struct usbdev_ep_s *ep, FAR struct usbdev_req_s *req)
 {
   FAR struct stm32_ep_s *privep = (FAR struct stm32_ep_s *)ep;
-  FAR struct stm32_usbdev_s *priv;
   irqstate_t flags;
 
 #ifdef CONFIG_DEBUG
@@ -4424,7 +4430,6 @@ static int stm32_ep_cancel(FAR struct usbdev_ep_s *ep, FAR struct usbdev_req_s *
 #endif
 
   usbtrace(TRACE_EPCANCEL, privep->epphy);
-  priv = privep->dev;
 
   flags = irqsave();
 
@@ -4479,7 +4484,7 @@ static int stm32_epout_setstall(FAR struct stm32_ep_s *privep)
   while ((stm32_getreg(regaddr) & OTGFS_DOEPINT_EPDISD) == 0);
 #else
   /* REVISIT: */
-  up_mdelay(50);
+  up_udelay(10);
 #endif
 
   /* Disable Global OUT NAK mode */
@@ -4705,10 +4710,10 @@ static FAR struct usbdev_ep_s *stm32_ep_alloc(FAR struct usbdev_s *dev,
 
   epphy = USB_EPNO(eplog);
 
-  /* Get the set of available endpoints */
+  /* Get the set of available endpoints depending on the direction */
 
   flags = irqsave();
-  epavail = priv->epavail;
+  epavail = priv->epavail[in];
 
   /* A physical address of 0 means that any endpoint will do */
 
@@ -4749,7 +4754,7 @@ static FAR struct usbdev_ep_s *stm32_ep_alloc(FAR struct usbdev_s *dev,
             {
               /* Mark the endpoint no longer available */
 
-              priv->epavail &= ~(1 << epno);
+              priv->epavail[in] &= ~(1 << epno);
 
               /* And return the pointer to the standard endpoint structure */
 
@@ -4787,7 +4792,7 @@ static void stm32_ep_free(FAR struct usbdev_s *dev, FAR struct usbdev_ep_s *ep)
       /* Mark the endpoint as available */
 
       flags = irqsave();
-      priv->epavail |= (1 << privep->epphy);
+      priv->epavail[privep->isin] |= (1 << privep->epphy);
       irqrestore(flags);
     }
 }
@@ -4864,7 +4869,7 @@ static int stm32_wakeup(struct usbdev_s *dev)
  * Name: stm32_selfpowered
  *
  * Description:
- *   Sets/clears the device selfpowered feature
+ *   Sets/clears the device self-powered feature
  *
  *******************************************************************************/
 
@@ -4920,8 +4925,6 @@ static int stm32_pullup(struct usbdev_s *dev, bool enable)
     }
 
   stm32_putreg(regval, STM32_OTGFS_DCTL);
-  up_mdelay(3);
-
   irqrestore(flags);
   return OK;
 }
@@ -5049,7 +5052,9 @@ static void stm32_swinitialize(FAR struct stm32_usbdev_s *priv)
 
   priv->usbdev.ops = &g_devops;
   priv->usbdev.ep0 = &priv->epin[EP0].ep;
-  priv->epavail    = STM32_EP_AVAILABLE;
+
+  priv->epavail[0] = STM32_EP_AVAILABLE;
+  priv->epavail[1] = STM32_EP_AVAILABLE;
 
   priv->epin[EP0].ep.priv  = priv;
   priv->epout[EP0].ep.priv = priv;
@@ -5125,7 +5130,7 @@ static void stm32_hwinitialize(FAR struct stm32_usbdev_s *priv)
   uint32_t address;
   int i;
 
-  /* At startup the core is in FS mode. */
+  /* At start-up the core is in FS mode. */
 
   /* Disable global interrupts by clearing the GINTMASK bit in the GAHBCFG
    * register; Set the TXFELVL bit in the GAHBCFG register so that TxFIFO
@@ -5133,6 +5138,16 @@ static void stm32_hwinitialize(FAR struct stm32_usbdev_s *priv)
    */
 
   stm32_putreg(OTGFS_GAHBCFG_TXFELVL, STM32_OTGFS_GAHBCFG);
+
+  /* For OTGFS2 mode (FS mode of the HS module), we must select the FS PHY
+   * mode prior to issuing a soft reset.
+   */
+
+#ifdef CONFIG_STM32_OTGFS2
+  regval  = stm32_getreg(STM32_OTGFS_GUSBCFG);
+  regval |= OTGFS_GUSBCFG_PHYSEL;
+  stm32_putreg(regval, STM32_OTGFS_GUSBCFG);
+#endif
 
   /* Common USB OTG core initialization */
   /* Reset after a PHY select and set Host mode.  First, wait for AHB master
@@ -5186,7 +5201,7 @@ static void stm32_hwinitialize(FAR struct stm32_usbdev_s *priv)
   up_mdelay(50);
 
   /* Initialize device mode */
-  /* Restart the Phy Clock */
+  /* Restart the PHY Clock */
 
   stm32_putreg(0, STM32_OTGFS_PCGCCTL);
 
@@ -5197,7 +5212,7 @@ static void stm32_hwinitialize(FAR struct stm32_usbdev_s *priv)
   regval |= OTGFS_DCFG_PFIVL_80PCT;
   stm32_putreg(regval, STM32_OTGFS_DCFG);
 
-  /* Set full speed phy */
+  /* Set full speed PHY */
 
   regval = stm32_getreg(STM32_OTGFS_DCFG);
   regval &= ~OTGFS_DCFG_DSPD_MASK;
@@ -5391,9 +5406,15 @@ void up_usbinitialize(void)
    * *Pins may vary from device-to-device.
    */
 
+#ifdef CONFIG_STM32_OTGFS2
+  stm32_configgpio(GPIO_OTGFS2_DM);
+  stm32_configgpio(GPIO_OTGFS2_DP);
+  stm32_configgpio(GPIO_OTGFS2_ID);    /* Only needed for OTG */
+#else
   stm32_configgpio(GPIO_OTGFS_DM);
   stm32_configgpio(GPIO_OTGFS_DP);
   stm32_configgpio(GPIO_OTGFS_ID);    /* Only needed for OTG */
+#endif
 
   /* SOF output pin configuration is configurable. */
 
@@ -5435,9 +5456,11 @@ void up_usbinitialize(void)
 
   up_enable_irq(STM32_IRQ_OTGFS);
 
-  /* Set the interrrupt priority */
+#ifdef CONFIG_ARCH_IRQPRIO
+  /* Set the interrupt priority */
 
   up_prioritize_irq(STM32_IRQ_OTGFS, CONFIG_OTGFS_PRI);
+#endif
   return;
 
 errout:
@@ -5611,6 +5634,7 @@ int usbdev_unregister(struct usbdevclass_driver_s *driver)
 
   flags = irqsave();
   stm32_usbreset(priv);
+  irqrestore(flags);
 
   /* Unbind the class driver */
 
@@ -5618,6 +5642,7 @@ int usbdev_unregister(struct usbdevclass_driver_s *driver)
 
   /* Disable USB controller interrupts */
 
+  flags = irqsave();
   up_disable_irq(STM32_IRQ_OTGFS);
 
   /* Disconnect device */

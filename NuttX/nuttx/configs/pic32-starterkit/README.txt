@@ -5,8 +5,8 @@ configs/pic32-starterkit README
 This README file discusses the port of NuttX to the Microchip PIC32 Ethernet
 Starter Kit (DM320004) with either
 
-  1) The Multimedia Expansion Board (MEB, DM320005), or 
-  2) The Starter Kit I/O Expansion Board 
+  1) The Multimedia Expansion Board (MEB, DM320005), or
+  2) The Starter Kit I/O Expansion Board
 
 See www.microchip.com for further information.
 
@@ -58,7 +58,7 @@ Contents
   PIC32MX795F512L Pin Out
   MEB Connector
   PICtail
-  Serial Output using the 
+  Serial Output using the
   Toolchains
   Creating Compatible NuttX HEX files
   Serial Console: MEB
@@ -103,7 +103,7 @@ PIN CONFIGURATIONS                     SIGNAL NAME                ON-BOARD CONNE
  18 AERXD0/INT1/RE8                    ERXD0(2)                   Ethernet RXD_0/PHYAD1
  19 AERXD1/INT2/RE9                    ERXD1(2)                   Ethernet RXD_1/PHYAD2
  20 AN5/C1IN+/CN7/RB5/VBUSON           VBUSON/C1IN+/AN5/CN7/RB5   USB host power supply, TPS20x1B ~EN,
-                                                                  Low enables power to host port (J4) 
+                                                                  Low enables power to host port (J4)
                                                                   USB OTG power supply, MCP1253_MSOP ~SHDN
                                                                   Enables power to device/OTG port (J5)
                                                                   J2 pin 63 (comparator 1)
@@ -240,7 +240,7 @@ PIN CONFIGURATIONS                     SIGNAL NAME                ON-BOARD CONNE
 MEB Connector
 =============
 
-The following table summarizes how the pins brought the the MEB through the
+The following table summarizes how the pins brought the MEB through the
 J2 on the Ethernet Starter Kit are mapped.  This connect is J2 on the Ethernet
 Starter Kit and J3 on the MEB.
 
@@ -298,11 +298,11 @@ SDI1                       pin 93
 SDO1                       pin 95
 -------------------------- ------- ----------------------------------
 RA6                        pin 4   CPLD
-RA7                        pin 6 
+RA7                        pin 6
 RG12                       pin 5
 RG14                       pin 3
 SCK2                       pin 45  (see MRF24WBOMA)
-SDI2                       pin 47  (see MRF24WBOMA) 
+SDI2                       pin 47  (see MRF24WBOMA)
 SDO2                       pin 49  (see MRF24WBOMA)
 RG9                        pin 51  (see MRF24WBOMA)
 SCK3A                      pin 106 (see PICtail)
@@ -310,7 +310,7 @@ SDI3A                      pin 110 (see PICtail)
 SDO3A                      pin 112 (see PICtail)
 RF12                       pin 108 (see PICtail)
 ~SSI                       pin 97  (see PICtail)
-RD9                        pin 54 
+RD9                        pin 54
 -------------------------- ------- ----------------------------------
 INT3                       pin 81  MRF24WBOMA
 RA10                       pin 115 (also Graphics Controller and PICtail)
@@ -323,8 +323,8 @@ SCK2                       pin 45  (see CPLD)
 SDI2                       pin 47  (see CPLD)
 SDO2                       pin 49  (see CPLD)
 RG9                        pin 51  (see CPLD)
-U1RX                       pin 88 
-U1TX                       pin 90 
+U1RX                       pin 88
+U1TX                       pin 90
 ~U1RTS                     pin 92
 ~U1CTS                     pin 94
 RB9                        pin 73
@@ -468,7 +468,7 @@ Toolchains
 
   Windows Native Toolchains
   -------------------------
-  
+
   NOTE:  There are several limitations to using a Windows based toolchain in a
   Cygwin environment.  The three biggest are:
 
@@ -511,9 +511,9 @@ Powering the Board
     is powered up.
 
   Ethernet Starter Kit with MEB:
-  
+
     Power can be supplied to the Multimedia Expansion Board through the DC
-    connector located on the Multimedia Expansion Board... By connecting 
+    connector located on the Multimedia Expansion Board... By connecting
     9-14V power supply to the DC connector, the Multimedia Expansion Board
     and starter kit will receive the proper voltages. The user can also
     supply power via the starter kit. However, if the application uses
@@ -583,7 +583,7 @@ Serial Console: MEB
    gotten any serial UART output to work from the MEB.]]
 
   A serial console is not required to use NuttX.  However, all of the
-  Nuttx example code in the apps/examples assumes that you have a 
+  Nuttx example code in the apps/examples assumes that you have a
   serial console.  The Ethernet Starter Kit(even with the MEB) does not
   have any RS-232 connector needed to drive the serial console.
 
@@ -609,7 +609,7 @@ Serial Console: MEB
      15    U1RX
      17    U1TX
      28    GND
-  
+
   Here is a summary of the tortuous routes taken by the PIC32MX UART pins:
 
   --- ---------------------------------- -------------------------- -------------------------
@@ -635,8 +635,8 @@ Serial Console: MEB
   -------------------------- ------- ----------------------------------
   Signal                     J3
   -------------------------- -------
-  U1RX                       pin 88 
-  U1TX                       pin 90 
+  U1RX                       pin 88
+  U1TX                       pin 90
   ~U1RTS                     pin 92
   ~U1CTS                     pin 94
   U2RX                       pin 110
@@ -682,7 +682,7 @@ Serial Console: Starter Kit I/O Expansion Board
   48  AETXD1/CN21/RD15/SCK3/U1RTS/U4TX   Not available N/A
   52  RF2/SDA3/SDI3/U1RX                 J2 pin 88     J11 pin 41
   53  RF8/SCL3/SDO3/U1TX                 J2 pin 90     J11 pin 43
- 
+
   U2:
   Ethernet Starter Kit                          Expansion I/O board
   --------------------------------------------- -------------------------
@@ -706,7 +706,7 @@ Serial Console: Starter Kit I/O Expansion Board
                                          J2 pin 119    J10 pin 56
   12  PMA3/AECRSDV/AERXDV/CN10/ECRSDV/   Not available N/A
       ERXDV/RG8/SCL4/SDO2/U3TX
-  14  PMA2/AEREFCLK/AERXCLK/CN11/        
+  14  PMA2/AEREFCLK/AERXCLK/CN11/
       EREFCLK/ERXCLK/RG9/SS2/U3CTS/      Not available N/A
       U6RX
 
@@ -814,19 +814,15 @@ PIC32MX Configuration Options
     CONFIG_ENDIAN_BIG - define if big endian (default is little
        endian)
 
-    CONFIG_DRAM_SIZE - Describes the installed DRAM (CPU SRAM in this case):
+    CONFIG_RAM_SIZE - Describes the installed DRAM (CPU SRAM in this case):
 
-       CONFIG_DRAM_SIZE=(32*1024) (32Kb)
+       CONFIG_RAM_SIZE=(32*1024) (32Kb)
 
        There is an additional 32Kb of SRAM in AHB SRAM banks 0 and 1.
 
-    CONFIG_DRAM_START - The start address of installed DRAM
+    CONFIG_RAM_START - The start address of installed DRAM
 
-       CONFIG_DRAM_START=0xa0000000
-
-    CONFIG_ARCH_IRQPRIO - The PIC32MXx supports interrupt prioritization
-
-       CONFIG_ARCH_IRQPRIO=y
+       CONFIG_RAM_START=0xa0000000
 
     CONFIG_ARCH_LEDS - Use LEDs to show state. Unique to boards that
        have LEDs
@@ -907,7 +903,7 @@ PIC32MX Configuration Options
       CONFIG_PIC32MX_CODEWP - Default 1 (disabled)
     DEVCFG1: (All settings determined by selections in board.h)
     DEVCFG2: (All settings determined by selections in board.h)
-    DEVCFG3: 
+    DEVCFG3:
       CONFIG_PIC32MX_USBIDO - USB USBID Selection.  Default 1 if USB enabled
         (USBID pin is controlled by the USB module), but 0 (GPIO) otherwise.
       CONFIG_PIC32MX_VBUSIO - USB VBUSON Selection (Default 1 if USB enabled
@@ -987,16 +983,14 @@ PIC32MX Configuration Options
 
 PIC32MX specific PHY/Ethernet device driver settings
 
-    CONFIG_PHY_KS8721 - Selects the Micrel KS8721 PHY
-    CONFIG_PHY_DP83848C - Selects the National Semiconduction DP83848C PHY
-    CONFIG_PHY_LAN8720 - Selects the SMSC LAN8720 PHY
+    CONFIG_ETH0_PHY_KS8721 - Selects the Micrel KS8721 PHY
+    CONFIG_ETH0_PHY_DP83848C - Selects the National Semiconduction DP83848C PHY
+    CONFIG_ETH0_PHY_LAN8720 - Selects the SMSC LAN8720 PHY
     CONFIG_PHY_AUTONEG - Enable auto-negotion
     CONFIG_PHY_SPEED100 - Select 100Mbit vs. 10Mbit speed.
     CONFIG_PHY_FDUPLEX - Select full (vs. half) duplex
     CONFIG_NET_NTXDESC - Configured number of Tx descriptors. Default: 2
     CONFIG_NET_NRXDESC - Configured number of Rx descriptors. Default: 4
-    CONFIG_NET_PRIORITY - Ethernet interrupt priority.  The is default is
-      the higest priority.
     CONFIG_NET_WOL - Enable Wake-up on Lan (not fully implemented).
     CONFIG_NET_DUMPPACKET - Dump all received and transmitted packets.
       Also needs CONFIG_DEBUG.
@@ -1031,117 +1025,102 @@ selected as follow:
 
 Where <subdir> is one of the following:
 
-  ostest:
-  =======
-    Description.
-    ------------
-    This configuration directory, performs a simple OS test using
-    apps/examples/ostest.
-
-    Serial Output.
-    --------------
-    The OS test produces all of its test output on the serial console.
-    This configuration has UART1 enabled as a serial console.  I have
-    been unable to get this UART work on the MEB.  But on the Expansion
-    I/O board, this maps to RX = J11 pin 41 and TX = J11 pin 43
-
   nsh:
-  ====
-    Description.
-    ------------
+
     This is the NuttShell (NSH) using the NSH startup logic at
     apps/examples/nsh.
 
-    Serial Output.
-    --------------
-    The OS test produces all of its test output on the serial console.
-    This configuration has UART1 enabled as a serial console.  I have
-    been unable to get this UART work on the MEB.  But on the Expansion
-    I/O board, this maps to RX = J11 pin 41 and TX = J11 pin 43
-
-    USB Configuations.
-    -----------------
-    Several USB device configurations can be enabled and included
-    as NSH built-in built in functions.  
-
-    To use USB device, connect the starter kit to the host using a cable
-    with a Type-B micro-plug to the starter kit’s micro-A/B port J5, located
-    on the bottom side of the starter kit. The other end of the cable
-    must have a Type-A plug. Connect it to a USB host. Jumper JP2 should be
-    removed.
-
-    All USB device configurations require the following basic setup in
-    your NuttX configuration file to enable USB device support:
- 
-      CONFIG_USBDEV=y         : Enable basic USB device support
-      CONFIG_PIC32MX_USBDEV=y : Enable PIC32 USB device support
-
-    examples/usbterm - This option can be enabled by uncommenting
-    the following line in the appconfig file:
-
-      CONFIGURED_APPS += examples/usbterm
-
-    And by enabling one of the USB serial devices:
-
-      CONFIG_PL2303=y         : Enable the Prolifics PL2303 emulation
-      CONFIG_CDCACM=y         : or the CDC/ACM serial driver (not both)
-
-    examples/cdcacm -  The examples/cdcacm program can be included as an 
-    function by uncommenting the following line in the appconfig file:
-    
-      CONFIGURED_APPS += examples/cdcacm
-
-    and defining the following in your .config file:
-
-      CONFIG_CDCACM=y         : Enable the CDCACM device
-
-    examples/usbstorage - There are some hooks in the appconfig file
-    to enable the USB mass storage device.  However, this device cannot
-    work until support for the SD card is also incorporated.
-
-    Networking Configuations.
-    -------------------------
-    Several Networking configurations can be enabled and included
-    as NSH built-in built in functions.  The following additional
-    configuration settings are required:
-
-      CONFIG_NET=y              : Enable networking support
-      CONFIG_PIC32MX_ETHERNET=y : Enable the PIC32 Ethernet driver
-      CONFIG_NSH_TELNET=y       : Enable the Telnet NSH console (optional)
-
     NOTES:
-    1. This logic will assume that a network is connected.  During its
-       initialization, it will try to negotiate the link speed.  If you have
-       no network connected when you reset the board, there will be a long
-       delay (maybe 30 seconds?) before anything happens.  That is the timeout
-       before the networking finally gives up and decides that no network is
-       available.
 
-    2. This example can support an FTP client.  In order to build in FTP client
-       support simply uncomment the following lines in the appconfig file (before
-       configuring) or in the apps/.config file (after configuring):
+    1. This configuration uses the mconf-based configuration tool.  To
+       change this configurations using that tool, you should:
 
-       #CONFIGURED_APPS += netutils/ftpc
-       #CONFIGURED_APPS += examples/ftpc
+       a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+          and misc/tools/
 
-    3. This example can support an FTP server.  In order to build in FTP server
-       support simply uncomment the following lines in the appconfig file (before
-       configuring) or in the apps/.config file (after configuring):
+       b. Execute 'make menuconfig' in nuttx/ in order to start the
+          reconfiguration process.
 
-       #CONFIGURED_APPS += netutils/ftpd
-       #CONFIGURED_APPS += examples/ftpd
+    2. Serial Output
 
-       And enable poll() support in the NuttX configuration file:
+       The OS test produces all of its test output on the serial console.
+       This configuration has UART1 enabled as a serial console.  I have
+       been unable to get this UART work on the MEB.  But on the Expansion
+       I/O board, this maps to RX = J11 pin 41 and TX = J11 pin 43
 
-       CONFIG_DISABLE_POLL=n
+    3. SB Configurations
+
+       Several USB device configurations can be enabled and included
+       as NSH built-in built in functions.
+
+       To use USB device, connect the starter kit to the host using a cable
+       with a Type-B micro-plug to the starter kit’s micro-A/B port J5, located
+       on the bottom side of the starter kit. The other end of the cable
+       must have a Type-A plug. Connect it to a USB host. Jumper JP2 should be
+       removed.
+
+       All USB device configurations require the following basic setup in
+       your NuttX configuration file to enable USB device support:
+
+         CONFIG_USBDEV=y         : Enable basic USB device support
+         CONFIG_PIC32MX_USBDEV=y : Enable PIC32 USB device support
+
+       examples/usbterm - This option can be enabled by adding the
+       following line in the NuttX configuration file:
+
+         CONFIG_EXAMPLES_USBTERM=y
+
+       And by enabling one of the USB serial devices:
+
+         CONFIG_PL2303=y         : Enable the Prolifics PL2303 emulation
+         CONFIG_CDCACM=y         : or the CDC/ACM serial driver (not both)
+
+       system/cdcacm -  The system/cdcacm program can be included by
+       adding the following to the configuration file:
+
+         CONFIG_CDCACM=y         : Enable the CDCACM device
+         CONFIG_EXAMPLES_CDCACM=y
+
+    3. Networking Configurations
+
+       Several Networking configurations can be enabled and included
+       as NSH built-in built in functions.  The following additional
+       configuration settings are required:
+
+         CONFIG_NET=y              : Enable networking support
+         CONFIG_PIC32MX_ETHERNET=y : Enable the PIC32 Ethernet driver
+         CONFIG_NSH_TELNET=y       : Enable the Telnet NSH console (optional)
+
+       NOTES:
+
+       a. This logic will assume that a network is connected.  During its
+          initialization, it will try to negotiate the link speed.  If you have
+          no network connected when you reset the board, there will be a long
+          delay (maybe 30 seconds?) before anything happens.  That is the timeout
+          before the networking finally gives up and decides that no network is
+          available.
+
+       b. This example can support an FTP client.  In order to build in FTP client
+          support simply add the following to the Nuttx configuration file:
+
+         CONFIG_NETUTILS_FTPC=y
+         CONFIG_EXAMPLES_FTPC=y
+
+       c. This example can support an FTP server.  In order to build in FTP server
+          support simply add the following to the Nuttx configuration file:
+
+         CONFIG_DISABLE_POLL=n
+         CONFIG_NETUTILS_FTPD=y
+         CONFIG_EXAMPLES_FTPD=y
 
   nsh2:
-  =====
 
     This is an alternative NSH configuration.  Without the Expansion I/O board,
     there is no way to connect a serial console.  This NSH alternative supports
     only a Telnet console.  The nsh2 differs from the nsh configuration in the
     following ways:
+
+    NOTES:
 
     1. Networking is enabled:
 
@@ -1154,12 +1133,12 @@ Where <subdir> is one of the following:
        settings.
 
     2. UART1 is disabled
- 
+
       CONFIG_PIC32MX_UART1=n        : UART1 is disabled (as well as other UARTs)
       CONFIG_UART1_SERIAL_CONSOLE=n : There is no serial console
 
     3. The RAM log is enabled"
-    
+
       CONFIG_SYSLOG=y             : Enables the System Logging feature.
       CONFIG_RAMLOG=y             : Enable the RAM-based logging feature.
       CONFIG_RAMLOG_CONSOLE=n     : (there is no default console device)
@@ -1168,7 +1147,7 @@ Where <subdir> is one of the following:
 
       Logging is currently set up to use 16Kb of memory:
 
-      CONFIG_RAMLOG_CONSOLE_BUFSIZE=16384
+      CONFIG_RAMLOG_BUFSIZE=16384
 
     There are a few other configuration differences as necessary to support
     this different device configuration. Just the do the 'diff' if you are
@@ -1188,7 +1167,7 @@ Where <subdir> is one of the following:
 
     a) Enable support for the PIC32 USB device
 
-      -CONFIG_PIC32MX_USBDEV=n 
+      -CONFIG_PIC32MX_USBDEV=n
       +CONFIG_PIC32MX_USBDEV=y
 
     b) Enable NuttX USB device support
@@ -1203,15 +1182,12 @@ Where <subdir> is one of the following:
 
     d) Use a RAM disk (instead of an SD card) as the USB MSC logical unit:
 
-      -CONFIG_EXAMPLES_USBMSC_DEVPATH1="/dev/mmcsd0"
-      +CONFIG_EXAMPLES_USBMSC_DEVPATH1="/dev/ram0"
+      -CONFIG_SYSTEM_USBMSC_DEVPATH1="/dev/mmcsd0"
+      +CONFIG_SYSTEM_USBMSC_DEVPATH1="/dev/ram0"
 
-  2. Changes to apps/.config.
+    e) Enable building of the system/usbmsc:
 
-    a) Enable building of the examples/usbstorage:
-
-      -# CONFIGURED_APPS += examples/usbstorage
-      +  CONFIGURED_APPS += examples/usbstorage
+      +CONFIG_SYSTEM_USBMSC=y
 
   3. When NSH first comes up, you must manually create the RAM disk
      before exporting it:
@@ -1221,7 +1197,7 @@ Where <subdir> is one of the following:
       nsh> mkrd -s 512 128
 
     b) Put a FAT file system on the RAM disk:
-  
+
       nsh> mkfatfs /dev/ram0
 
     b) Now the 'msconn' command will connect to the host and

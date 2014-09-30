@@ -212,13 +212,12 @@ GNU Toolchain Options
   add one of the following configuration options to your .config (or defconfig)
   file:
 
-    CONFIG_STM32_CODESOURCERYW=y  : CodeSourcery under Windows
-    CONFIG_STM32_CODESOURCERYL=y  : CodeSourcery under Linux
-    CONFIG_STM32_ATOLLIC_LITE=y   : The free, "Lite" version of Atollic toolchain under Windows
-    CONFIG_STM32_ATOLLIC_PRO=y    : The paid, "Pro" version of Atollic toolchain under Windows
-    CONFIG_STM32_DEVKITARM=y      : devkitARM under Windows
-    CONFIG_STM32_RAISONANCE=y     : Raisonance RIDE7 under Windows
-    CONFIG_STM32_BUILDROOT=y      : NuttX buildroot under Linux or Cygwin (default)
+    CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYW=y  : CodeSourcery under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYL=y  : CodeSourcery under Linux
+    CONFIG_ARMV7M_TOOLCHAIN_ATOLLIC=y        : The Atollic toolchain under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_DEVKITARM=y      : devkitARM under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_RAISONANCE=y     : Raisonance RIDE7 under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y      : NuttX buildroot under Linux or Cygwin (default)
 
   If you change the default toolchain, then you may also have to modify the PATH in
   the setenv.h file if your make cannot find the tools.
@@ -361,8 +360,8 @@ NuttX EABI buildroot Toolchain
   8. Edit nuttx/.config to select the buildroot toolchain as described above
      and below:
 
-     -CONFIG_STM32_CODESOURCERYW=y
-     +CONFIG_STM32_BUILDROOT=y
+     -CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYW=y
+     +CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y
 
   9. Edit setenv.h, if necessary, so that the PATH variable includes
      the path to the newly built binaries.
@@ -410,7 +409,7 @@ NXFLAT Toolchain
   tools -- just the NXFLAT tools.  The buildroot with the NXFLAT tools can
   be downloaded from the NuttX SourceForge download site
   (https://sourceforge.net/projects/nuttx/files/).
- 
+
   This GNU toolchain builds and executes in the Linux or Cygwin environment.
 
   1. You must have already configured Nuttx in <some-dir>/nuttx.
@@ -510,19 +509,15 @@ Shenzhou-specific Configuration Options
     CONFIG_ENDIAN_BIG - define if big endian (default is little
        endian)
 
-    CONFIG_DRAM_SIZE - Describes the installed DRAM (SRAM in this case):
+    CONFIG_RAM_SIZE - Describes the installed DRAM (SRAM in this case):
 
-       CONFIG_DRAM_SIZE=0x00010000 (64Kb)
+       CONFIG_RAM_SIZE=0x00010000 (64Kb)
 
-    CONFIG_DRAM_START - The start address of installed DRAM
+    CONFIG_RAM_START - The start address of installed DRAM
 
-       CONFIG_DRAM_START=0x20000000
+       CONFIG_RAM_START=0x20000000
 
     CONFIG_STM32_CCMEXCLUDE - Exclude CCM SRAM from the HEAP
-
-    CONFIG_ARCH_IRQPRIO - The STM32107xxx supports interrupt prioritization
-
-       CONFIG_ARCH_IRQPRIO=y
 
     CONFIG_ARCH_LEDS - Use LEDs to show state. Unique to boards that
        have LEDs
@@ -718,14 +713,14 @@ Shenzhou-specific Configuration Options
   STM32 USB OTG FS Host Driver Support
 
   Pre-requisites
- 
+
    CONFIG_USBHOST         - Enable USB host support
    CONFIG_STM32_OTGFS     - Enable the STM32 USB OTG FS block
    CONFIG_STM32_SYSCFG    - Needed
    CONFIG_SCHED_WORKQUEUE - Worker thread support is required
- 
+
   Options:
- 
+
    CONFIG_STM32_OTGFS_RXFIFO_SIZE - Size of the RX FIFO in 32-bit words.
      Default 128 (512 bytes)
    CONFIG_STM32_OTGFS_NPTXFIFO_SIZE - Size of the non-periodic Tx FIFO
@@ -758,7 +753,7 @@ Where <subdir> is one of the following:
     Configures the NuttShell (nsh) located at apps/examples/nsh.  The
     Configuration enables both the serial and telnet NSH interfaces.
 
-    CONFIG_STM32_CODESOURCERYW=y              : CodeSourcery under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYW=y   : CodeSourcery under Windows
     CONFIG_NSH_DHCPC=n                        : DHCP is disabled
     CONFIG_NSH_IPADDR=0x0a000002              : Target IP address 10.0.0.2
     CONFIG_NSH_DRIPADDR=0x0a000001            : Host IP address 10.0.0.1
@@ -778,7 +773,7 @@ Where <subdir> is one of the following:
          ADC1_IN10(PC0) Potentiometer
 
        External signals are also available on CON5 CN14:
-    
+
          ADC_IN8 (PB0) CON5 CN14 Pin2
          ADC_IN9 (PB1) CON5 CN14 Pin1
 
@@ -873,7 +868,7 @@ Where <subdir> is one of the following:
 
       -CONFIG_NX_WRITEONLY=y
       +# CONFIG_NX_WRITEONLY is not set
- 
+
   thttpd
   ------
 

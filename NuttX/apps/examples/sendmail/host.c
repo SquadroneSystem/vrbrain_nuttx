@@ -43,6 +43,9 @@
 #include <string.h>
 #include <errno.h>
 
+#include <netinet/in.h>
+
+#include <nuttx/net/ip.h>
 #include <apps/netutils/smtp.h>
 
 /****************************************************************************
@@ -90,7 +93,7 @@ int main(int argc, char **argv, char **envp)
   printf("sendmail: Subject: %s\n", g_subject);
   printf("sendmail: Body: %s\n", g_msg_body);
 
-  uip_ipaddr(addr.s_addr, 127, 0, 0, 1);
+  net_ipaddr(addr.s_addr, 127, 0, 0, 1);
   handle = smtp_open();
   if (handle)
     {
@@ -99,5 +102,6 @@ int main(int argc, char **argv, char **envp)
                 g_msg_body, strlen(g_msg_body));
       smtp_close(handle);
     }
+
   return 0;
 }

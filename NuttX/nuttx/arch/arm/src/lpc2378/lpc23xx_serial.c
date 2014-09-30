@@ -60,7 +60,6 @@
 
 #include "chip.h"
 #include "up_arch.h"
-#include "os_internal.h"
 
 #include "internal.h"
 #include "lpc23xx_scb.h"
@@ -121,6 +120,9 @@ static const struct uart_ops_s g_uart_ops =
   .receive     = up_receive,
   .rxint       = up_rxint,
   .rxavailable = up_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
   .send        = up_send,
   .txint       = up_txint,
   .txready     = up_txready,
@@ -136,7 +138,7 @@ static char g_uart2txbuffer[CONFIG_UART2_TXBUFSIZE];
 
 /* This describes the state of the LPC214X uart0 port. */
 
-#ifdef CONFIG_UART0
+#ifdef CONFIG_LPC2378_UART0
 static struct up_dev_s g_uart0priv =
 {
   .uartbase  = UART0_BASE_ADDR,
@@ -164,7 +166,7 @@ static uart_dev_t g_uart0port =
 };
 #endif
 
-#ifdef CONFIG_UART2
+#ifdef CONFIG_LPC2378_UART2
 
 /* This describes the state of the LPC23XX uart2 port. */
 
@@ -348,7 +350,7 @@ static inline void up_configbaud(struct up_dev_s *priv)
 
   for (tmulval = 1; tmulval <= 15 && err > 0; tmulval++)
     {
-      /* Try every valid pre-scale div, tdivaddval (or until a perfect match is 
+      /* Try every valid pre-scale div, tdivaddval (or until a perfect match is
        * found).
        */
 
@@ -427,7 +429,7 @@ static inline void up_configbaud(struct up_dev_s *priv)
 
 static int up_setup(struct uart_dev_s *dev)
 {
-#ifndef CONFIG_SUPPRESS_LPC214X_UART_CONFIG
+#ifndef CONFIG_SUPPRESS_UART_CONFIG
   struct up_dev_s *priv = (struct up_dev_s *)dev->priv;
   uint8_t lcr;
 
@@ -481,7 +483,7 @@ static int up_setup(struct uart_dev_s *dev)
                (FCR_FIFO_TRIG8 | FCR_TX_FIFO_RESET |
                 FCR_RX_FIFO_RESET | FCR_FIFO_ENABLE));
 
-  /* The NuttX serial driver waits for the first THRE interrrupt before sending 
+  /* The NuttX serial driver waits for the first THRE interrrupt before sending
    * serial data... However, it appears that the LPC2378 hardware too does not
    * generate that interrupt until a transition from not-empty to empty.  So,
    * the current kludge here is to send one NULL at startup to kick things off.
@@ -537,17 +539,13 @@ static int up_attach(struct uart_dev_s *dev)
 
       up_enable_irq(priv->irq);
 
-      /* Set the uart interrupt priority (the default value is one) */
-      if (priv->uartbase == UART0_BASE_ADDR)
-        {
-          up_prioritize_irq(priv->irq, PRIORITY_LOWEST);
-        }
-      else if (priv->uartbase == UART2_BASE_ADDR)
-        {
-          up_prioritize_irq(priv->irq, 10);
-        }
+#ifdef CONFIG_ARCH_IRQPRIO
+      /* Set the UART interrupt priority */
 
+      up_prioritize_irq(priv->irq, PRIORITY_HIGHEST);
+#endif
     }
+
   return ret;
 }
 

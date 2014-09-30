@@ -1,7 +1,7 @@
 /****************************************************************************
  * arch/arm/src/lpc17xx/lpc17_ethernet.c
  *
- *   Copyright (C) 2010-2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2010-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,14 +48,15 @@
 #include <wdog.h>
 #include <errno.h>
 
+#include <arpa/inet.h>
+
 #include <nuttx/irq.h>
 #include <nuttx/arch.h>
+#include <nuttx/wqueue.h>
 #include <nuttx/net/mii.h>
-
-#include <nuttx/net/uip/uip.h>
-#include <nuttx/net/uip/uipopt.h>
-#include <nuttx/net/uip/uip-arp.h>
-#include <nuttx/net/uip/uip-arch.h>
+#include <nuttx/net/netconfig.h>
+#include <nuttx/net/arp.h>
+#include <nuttx/net/netdev.h>
 
 #include "up_arch.h"
 #include "chip.h"
@@ -72,7 +73,7 @@
 #if LPC17_NETHCONTROLLERS > 0
 
 /****************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /* Configuration ************************************************************/
@@ -104,28 +105,11 @@
 #endif
 
 /* If the user did not specify a priority for Ethernet interrupts, set the
- * interrupt priority to the maximum (unless CONFIG_ARMV7M_USEBASEPRI is
- * defined, then set it to the maximum allowable priority).
+ * interrupt priority to the default.
  */
 
 #ifndef CONFIG_NET_PRIORITY
-#  ifdef CONFIG_ARMV7M_USEBASEPRI
-#    define CONFIG_NET_PRIORITY NVIC_SYSH_DISABLE_PRIORITY
-#  else
-#    define CONFIG_NET_PRIORITY NVIC_SYSH_PRIORITY_MAX
-#  endif
-#endif
-
-/* If the priority is set at the max (0) and CONFIG_ARMV7M_USEBASEPRI is
- * defined, then silently drop the priority to NVIC_SYSH_DISABLE_PRIORITY.
- * In this configuratin, nothing is permitted to run at priority zero
- * except for the SVCALL handler.  NVIC_SYSH_DISABLE_PRIORITY is the
- * maximum allowable priority in that case.
- */
-
-#if CONFIG_NET_PRIORITY == 0 && defined(CONFIG_ARMV7M_USEBASEPRI)
-#  undef CONFIG_NET_PRIORITY
-#  define CONFIG_NET_PRIORITY NVIC_SYSH_DISABLE_PRIORITY
+#  define CONFIG_NET_PRIORITY NVIC_SYSH_PRIORITY_DEFAULT
 #endif
 
 /* Debug Configuration *****************************************************/
@@ -169,7 +153,7 @@
 
 /* This is a helper pointer for accessing the contents of the Ethernet header */
 
-#define BUF ((struct uip_eth_hdr *)priv->lp_dev.d_buf)
+#define BUF ((struct eth_hdr_s *)priv->lp_dev.d_buf)
 
 /* This is the number of ethernet GPIO pins that must be configured */
 
@@ -178,17 +162,17 @@
 /* PHYs *********************************************************************/
 /* Select PHY-specific values.  Add more PHYs as needed. */
 
-#if defined(CONFIG_PHY_KS8721)
+#if defined(CONFIG_ETH0_PHY_KS8721)
 #  define LPC17_PHYNAME      "KS8721"
 #  define LPC17_PHYID1       MII_PHYID1_KS8721
 #  define LPC17_PHYID2       MII_PHYID2_KS8721
 #  define LPC17_HAVE_PHY     1
-#elif defined(CONFIG_PHY_DP83848C)
+#elif defined(CONFIG_ETH0_PHY_DP83848C)
 #  define LPC17_PHYNAME      "DP83848C"
 #  define LPC17_PHYID1       MII_PHYID1_DP83848C
 #  define LPC17_PHYID2       MII_PHYID2_DP83848C
 #  define LPC17_HAVE_PHY     1
-#elif defined(CONFIG_PHY_LAN8720)
+#elif defined(CONFIG_ETH0_PHY_LAN8720)
 #  define LPC17_PHYNAME      "LAN8720"
 #  define LPC17_PHYID1       MII_PHYID1_LAN8720
 #  define LPC17_PHYID2       MII_PHYID2_LAN8720
@@ -291,14 +275,20 @@ struct lpc17_driver_s
   uint32_t lp_inten;            /* Shadow copy of INTEN register */
   WDOG_ID  lp_txpoll;           /* TX poll timer */
   WDOG_ID  lp_txtimeout;        /* TX timeout timer */
-  
+
+#ifdef CONFIG_NET_WORKER_THREAD
+  struct work_s irqwork_txdone; /* Interrupt continuation work queue support */
+  struct work_s irqwork_rxdone; /* Interrupt continuation work queue support */
+  uint32_t status;
+#endif /*CONFIG_NET_WORKER_THREAD*/
+
 #if defined(CONFIG_DEBUG) && defined(CONFIG_DEBUG_NET)
   struct lpc17_statistics_s lp_stat;
 #endif
 
   /* This holds the information visible to uIP/NuttX */
 
-  struct uip_driver_s lp_dev;  /* Interface understood by uIP */
+  struct net_driver_s lp_dev;  /* Interface understood by uIP */
 };
 
 /****************************************************************************
@@ -342,13 +332,17 @@ static void lpc17_putreg(uint32_t val, uint32_t addr);
 
 static int  lpc17_txdesc(struct lpc17_driver_s *priv);
 static int  lpc17_transmit(struct lpc17_driver_s *priv);
-static int  lpc17_uiptxpoll(struct uip_driver_s *dev);
+static int  lpc17_txpoll(struct net_driver_s *dev);
 
 /* Interrupt handling */
 
 static void lpc17_response(struct lpc17_driver_s *priv);
 static void lpc17_rxdone(struct lpc17_driver_s *priv);
 static void lpc17_txdone(struct lpc17_driver_s *priv);
+#ifdef CONFIG_NET_WORKER_THREAD
+static void lpc17_eth_irqworker_txdone(FAR void *arg);
+static void lpc17_eth_irqworker_rxdone(FAR void *arg);
+#endif /*CONFIG_NET_WORKER_THREAD*/
 static int  lpc17_interrupt(int irq, void *context);
 
 /* Watchdog timer expirations */
@@ -358,12 +352,12 @@ static void lpc17_txtimeout(int argc, uint32_t arg, ...);
 
 /* NuttX callback functions */
 
-static int lpc17_ifup(struct uip_driver_s *dev);
-static int lpc17_ifdown(struct uip_driver_s *dev);
-static int lpc17_txavail(struct uip_driver_s *dev);
+static int lpc17_ifup(struct net_driver_s *dev);
+static int lpc17_ifdown(struct net_driver_s *dev);
+static int lpc17_txavail(struct net_driver_s *dev);
 #ifdef CONFIG_NET_IGMP
-static int lpc17_addmac(struct uip_driver_s *dev, const uint8_t *mac);
-static int lpc17_rmmac(struct uip_driver_s *dev, const uint8_t *mac);
+static int lpc17_addmac(struct net_driver_s *dev, const uint8_t *mac);
+static int lpc17_rmmac(struct net_driver_s *dev, const uint8_t *mac);
 #endif
 
 /* Initialization functions */
@@ -638,7 +632,7 @@ static int lpc17_transmit(struct lpc17_driver_s *priv)
   memcpy(txbuffer, priv->lp_dev.d_buf, priv->lp_dev.d_len);
 
   /* Bump the producer index, making the packet available for transmission. */
-  
+
   if (++prodidx >= CONFIG_NET_NTXDESC)
     {
      /* Wrap back to index zero */
@@ -660,11 +654,11 @@ static int lpc17_transmit(struct lpc17_driver_s *priv)
 }
 
 /****************************************************************************
- * Function: lpc17_uiptxpoll
+ * Function: lpc17_txpoll
  *
  * Description:
  *   The transmitter is available, check if uIP has any outgoing packets ready
- *   to send.  This is a callback from uip_poll().  uip_poll() may be called:
+ *   to send.  This is a callback from devif_poll().  devif_poll() may be called:
  *
  *   1. When the preceding TX packet send is complete,
  *   2. When the preceding TX packet send timesout and the interface is reset
@@ -683,7 +677,7 @@ static int lpc17_transmit(struct lpc17_driver_s *priv)
  *
  ****************************************************************************/
 
-static int lpc17_uiptxpoll(struct uip_driver_s *dev)
+static int lpc17_txpoll(struct net_driver_s *dev)
 {
   struct lpc17_driver_s *priv = (struct lpc17_driver_s *)dev->d_private;
   int ret = OK;
@@ -698,7 +692,7 @@ static int lpc17_uiptxpoll(struct uip_driver_s *dev)
        * at least one more packet in the descriptor list.
        */
 
-      uip_arp_out(&priv->lp_dev);
+      arp_out(&priv->lp_dev);
       lpc17_transmit(priv);
 
       /* Check if there is room in the device to hold another packet. If not,
@@ -723,10 +717,10 @@ static int lpc17_uiptxpoll(struct uip_driver_s *dev)
  *   possibly a response to the incoming packet (but probably not, in reality).
  *   However, since the Rx and Tx operations are decoupled, there is no
  *   guarantee that there will be a Tx descriptor available at that time.
- *   This function will perform that check and, if no Tx descriptor is 
+ *   This function will perform that check and, if no Tx descriptor is
  *   available, this function will (1) stop incoming Rx processing (bad), and
  *   (2) hold the outgoing packet in a pending state until the next Tx
- *   interrupt occurs. 
+ *   interrupt occurs.
  *
  * Parameters:
  *   priv  - Reference to the driver state structure
@@ -748,20 +742,20 @@ static void lpc17_response(struct lpc17_driver_s *priv)
   ret = lpc17_txdesc(priv);
   if (ret == OK)
     {
-       /* Yes.. queue the packet now. */
+      /* Yes.. queue the packet now. */
 
-       lpc17_transmit(priv);
+      lpc17_transmit(priv);
     }
   else
     {
-       /* No.. mark the Tx as pending and halt further Tx interrupts */
+      /* No.. mark the Tx as pending and halt further Tx interrupts */
 
-       DEBUGASSERT((priv->lp_inten & ETH_INT_TXDONE) != 0);
-       
-       priv->lp_txpending = true;
-       priv->lp_inten    &= ~ETH_RXINTS;
-       lpc17_putreg(priv->lp_inten, LPC17_ETH_INTEN);
-       EMAC_STAT(priv, tx_pending);
+      DEBUGASSERT((priv->lp_inten & ETH_INT_TXDONE) != 0);
+
+      priv->lp_txpending = true;
+      priv->lp_inten    &= ~ETH_TXINTS;
+      lpc17_putreg(priv->lp_inten, LPC17_ETH_INTEN);
+      EMAC_STAT(priv, tx_pending);
     }
 }
 
@@ -807,7 +801,7 @@ static void lpc17_rxdone(struct lpc17_driver_s *priv)
       EMAC_STAT(priv, rx_packets);
 
       /* Get the Rx status and packet length (-4+1) */
-    
+
       rxstat   = (uint32_t*)(LPC17_RXSTAT_BASE + (considx << 3));
       pktlen   = (*rxstat & RXSTAT_INFO_RXSIZE_MASK) - 3;
 
@@ -827,7 +821,7 @@ static void lpc17_rxdone(struct lpc17_driver_s *priv)
        * be the same size as our max packet size, any fragments also
        * imply that the packet is too big.
        */
- 
+
       /* else */ if (pktlen > CONFIG_NET_BUFSIZE + CONFIG_NET_GUARDSIZE)
         {
           nlldbg("Too big. considx: %08x prodidx: %08x pktlen: %d rxstat: %08x\n",
@@ -854,11 +848,11 @@ static void lpc17_rxdone(struct lpc17_driver_s *priv)
           void     *rxbuffer;
 
           /* Get the Rx buffer address from the Rx descriptor */
- 
+
           rxdesc   = (uint32_t*)(LPC17_RXDESC_BASE + (considx << 3));
           rxbuffer = (void*)*rxdesc;
 
-          /* Copy the data data from the EMAC DMA RAM to priv->lp_dev.d_buf. 
+          /* Copy the data data from the EMAC DMA RAM to priv->lp_dev.d_buf.
            * Set amount of data in priv->lp_dev.d_len
            *
            * Here would be a great performance improvement:  Remove the
@@ -876,16 +870,16 @@ static void lpc17_rxdone(struct lpc17_driver_s *priv)
           /* We only accept IP packets of the configured type and ARP packets */
 
 #ifdef CONFIG_NET_IPv6
-          if (BUF->type == HTONS(UIP_ETHTYPE_IP6))
+          if (BUF->type == HTONS(ETHTYPE_IP6))
 #else
-          if (BUF->type == HTONS(UIP_ETHTYPE_IP))
+          if (BUF->type == HTONS(ETHTYPE_IP))
 #endif
             {
               /* Handle the incoming Rx packet */
 
               EMAC_STAT(priv, rx_ip);
-              uip_arp_ipin(&priv->lp_dev);
-              uip_input(&priv->lp_dev);
+              arp_ipin(&priv->lp_dev);
+              devif_input(&priv->lp_dev);
 
               /* If the above function invocation resulted in data that
                * should be sent out on the network, the field  d_len will
@@ -894,14 +888,14 @@ static void lpc17_rxdone(struct lpc17_driver_s *priv)
 
               if (priv->lp_dev.d_len > 0)
                 {
-                  uip_arp_out(&priv->lp_dev);
+                  arp_out(&priv->lp_dev);
                   lpc17_response(priv);
                 }
             }
-          else if (BUF->type == htons(UIP_ETHTYPE_ARP))
+          else if (BUF->type == htons(ETHTYPE_ARP))
             {
               EMAC_STAT(priv, rx_arp);
-              uip_arp_arpin(&priv->lp_dev);
+              arp_arpin(&priv->lp_dev);
 
               /* If the above function invocation resulted in data that
                * should be sent out on the network, the field  d_len will
@@ -994,9 +988,49 @@ static void lpc17_txdone(struct lpc17_driver_s *priv)
 
   else
     {
-      (void)uip_poll(&priv->lp_dev, lpc17_uiptxpoll);
+      (void)devif_poll(&priv->lp_dev, lpc17_txpoll);
     }
 }
+
+/****************************************************************************
+ * Function: lpc17_eth_irqworker_txdone and lpc17_eth_irqworker_rxdone
+ *
+ * Description:
+ *   Perform interrupt handling logic outside of the interrupt handler (on
+ *   the work queue thread).
+ *
+ * Parameters:
+ *   arg - The reference to the driver structure (case to void*)
+ *
+ * Returned Value:
+ *   None
+ *
+ * Assumptions:
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NET_WORKER_THREAD
+static void lpc17_eth_irqworker_txdone(FAR void *arg)
+{
+  FAR struct lpc17_driver_s *priv = (FAR struct lpc17_driver_s *)arg;
+
+  DEBUGASSERT(priv);
+
+  lpc17_txdone(priv);
+
+  work_cancel(HPWORK, &priv->irqwork_txdone);
+}
+
+static void lpc17_eth_irqworker_rxdone(FAR void *arg)
+{
+  FAR struct lpc17_driver_s *priv = (FAR struct lpc17_driver_s *)arg;
+
+  DEBUGASSERT(priv);
+
+  lpc17_rxdone(priv);
+  work_cancel(HPWORK, &priv->irqwork_rxdone);
+}
+#endif /*CONFIG_NET_WORKER_THREAD */
 
 /****************************************************************************
  * Function: lpc17_interrupt
@@ -1034,7 +1068,7 @@ static int lpc17_interrupt(int irq, void *context)
       /* Clear all pending interrupts */
 
       lpc17_putreg(status, LPC17_ETH_INTCLR);
-      
+
       /* Handle each pending interrupt **************************************/
       /* Check for Wake-Up on Lan *******************************************/
 
@@ -1076,7 +1110,7 @@ static int lpc17_interrupt(int irq, void *context)
            (void)lpc17_ifup(&priv->lp_dev);
         }
       else
-        {      
+        {
           /* Check for receive events ***************************************/
           /* RX ERROR -- Triggered on receive errors: AlignmentError,
            * RangeError, LengthError, SymbolError, CRCError or NoDescriptor
@@ -1095,28 +1129,32 @@ static int lpc17_interrupt(int irq, void *context)
           /* RX FINISHED -- Triggered when all receive descriptors have
            * been processed i.e. on the transition to the situation
            * where ProduceIndex == ConsumeIndex.
-           */
-
-          if ((status & ETH_INT_RXFIN) != 0)
-            {
-              EMAC_STAT(priv, rx_finished);
-              DEBUGASSERT(lpc17_getreg(LPC17_ETH_RXPRODIDX) == lpc17_getreg(LPC17_ETH_RXCONSIDX));
-            }
-
-          /* RX DONE -- Triggered when a receive descriptor has been
+           *
+           * Treated as INT_RX_DONE if ProduceIndex != ConsumeIndex so the
+           * packets are processed anyway.
+           *
+           * RX DONE -- Triggered when a receive descriptor has been
            * processed while the Interrupt bit in the Control field of
            * the descriptor was set.
            */
 
-          if ((status & ETH_INT_RXDONE) != 0)
+          if ((status & ETH_INT_RXFIN) != 0 || (status & ETH_INT_RXDONE) != 0)
             {
               EMAC_STAT(priv, rx_done);
 
               /* We have received at least one new incoming packet. */
 
+#ifdef CONFIG_NET_WORKER_THREAD
+              work_queue(HPWORK, &priv->irqwork_rxdone,
+                        (worker_t)lpc17_eth_irqworker_rxdone,
+                        (FAR void *)priv, 0);
+
+#else /*CONFIG_NET_WORKER_THREAD*/
               lpc17_rxdone(priv);
+
+#endif /*CONFIG_NET_WORKER_THREAD*/
             }
- 
+
           /* Check for Tx events ********************************************/
           /* TX ERROR -- Triggered on transmit errors: LateCollision,
            * ExcessiveCollision and ExcessiveDefer, NoDescriptor or Underrun.
@@ -1151,7 +1189,19 @@ static int lpc17_interrupt(int irq, void *context)
 
               /* A packet transmission just completed */
 
+#ifdef CONFIG_NET_WORKER_THREAD
+              /* Disable the Ethernet interrupt for now, will be re-enabled
+               * later
+               */
+
+              work_queue(HPWORK, &priv->irqwork_txdone,
+                         (worker_t)lpc17_eth_irqworker_txdone,
+                         (FAR void *)priv, 0);
+
+#else /*CONFIG_NET_WORKER_THREAD*/
               lpc17_txdone(priv);
+
+#endif /*CONFIG_NET_WORKER_THREAD*/
             }
         }
     }
@@ -1205,7 +1255,7 @@ static void lpc17_txtimeout(int argc, uint32_t arg, ...)
 
       /* Then poll uIP for new XMIT data */
 
-      (void)uip_poll(&priv->lp_dev, lpc17_uiptxpoll);
+      (void)devif_poll(&priv->lp_dev, lpc17_txpoll);
     }
 }
 
@@ -1230,6 +1280,8 @@ static void lpc17_txtimeout(int argc, uint32_t arg, ...)
 static void lpc17_polltimer(int argc, uint32_t arg, ...)
 {
   struct lpc17_driver_s *priv = (struct lpc17_driver_s *)arg;
+  unsigned int prodidx;
+  unsigned int considx;
 
   /* Check if there is room in the send another TX packet.  We cannot perform
    * the TX poll if he are unable to accept another packet for transmission.
@@ -1242,7 +1294,29 @@ static void lpc17_polltimer(int argc, uint32_t arg, ...)
        * we will missing TCP time state updates?
        */
 
-      (void)uip_timer(&priv->lp_dev, lpc17_uiptxpoll, LPC17_POLLHSEC);
+      (void)devif_timer(&priv->lp_dev, lpc17_txpoll, LPC17_POLLHSEC);
+    }
+
+  /* Simulate a fake receive to relaunch the data exchanges when a receive
+   * interrupt has been lost and all the receive buffers are used.
+   */
+
+  /* Get the current producer and consumer indices */
+
+  considx = lpc17_getreg(LPC17_ETH_RXCONSIDX) & ETH_RXCONSIDX_MASK;
+  prodidx = lpc17_getreg(LPC17_ETH_RXPRODIDX) & ETH_RXPRODIDX_MASK;
+
+  if (considx != prodidx)
+    {
+#if CONFIG_NET_WORKER_THREAD
+      work_queue(HPWORK, &priv->irqwork_rxdone,
+                 (worker_t)lpc17_eth_irqworker_rxdone,
+                 (FAR void *)priv, 0);
+
+#else /*CONFIG_NET_WORKER_THREAD*/
+      lpc17_rxdone(priv);
+
+#endif /*CONFIG_NET_WORKER_THREAD*/
     }
 
   /* Setup the watchdog poll timer again */
@@ -1255,7 +1329,7 @@ static void lpc17_polltimer(int argc, uint32_t arg, ...)
  *
  * Description:
  *   NuttX Callback: Bring up the Ethernet interface when an IP address is
- *   provided 
+ *   provided
  *
  * Parameters:
  *   dev  - Reference to the NuttX driver state structure
@@ -1267,7 +1341,7 @@ static void lpc17_polltimer(int argc, uint32_t arg, ...)
  *
  ****************************************************************************/
 
-static int lpc17_ifup(struct uip_driver_s *dev)
+static int lpc17_ifup(struct net_driver_s *dev)
 {
   struct lpc17_driver_s *priv = (struct lpc17_driver_s *)dev->d_private;
   uint32_t regval;
@@ -1436,7 +1510,7 @@ static int lpc17_ifup(struct uip_driver_s *dev)
  *
  ****************************************************************************/
 
-static int lpc17_ifdown(struct uip_driver_s *dev)
+static int lpc17_ifdown(struct net_driver_s *dev)
 {
   struct lpc17_driver_s *priv = (struct lpc17_driver_s *)dev->d_private;
   irqstate_t flags;
@@ -1463,7 +1537,7 @@ static int lpc17_ifdown(struct uip_driver_s *dev)
  * Function: lpc17_txavail
  *
  * Description:
- *   Driver callback invoked when new TX data is available.  This is a 
+ *   Driver callback invoked when new TX data is available.  This is a
  *   stimulus perform an out-of-cycle poll and, thereby, reduce the TX
  *   latency.
  *
@@ -1478,16 +1552,20 @@ static int lpc17_ifdown(struct uip_driver_s *dev)
  *
  ****************************************************************************/
 
-static int lpc17_txavail(struct uip_driver_s *dev)
+static int lpc17_txavail(struct net_driver_s *dev)
 {
   struct lpc17_driver_s *priv = (struct lpc17_driver_s *)dev->d_private;
+#ifndef CONFIG_NET_WORKER_THREAD
   irqstate_t flags;
+#endif /*CONFIG_NET_WORKER_THREAD*/
 
   /* Disable interrupts because this function may be called from interrupt
    * level processing.
    */
 
+#ifndef CONFIG_NET_WORKER_THREAD
   flags = irqsave();
+#endif /*CONFIG_NET_WORKER_THREAD*/
 
   /* Ignore the notification if the interface is not yet up */
 
@@ -1499,11 +1577,13 @@ static int lpc17_txavail(struct uip_driver_s *dev)
         {
           /* If so, then poll uIP for new XMIT data */
 
-          (void)uip_poll(&priv->lp_dev, lpc17_uiptxpoll);
+          (void)devif_poll(&priv->lp_dev, lpc17_txpoll);
         }
     }
 
+#ifndef CONFIG_NET_WORKER_THREAD
   irqrestore(flags);
+#endif /*CONFIG_NET_WORKER_THREAD*/
   return OK;
 }
 
@@ -1516,7 +1596,7 @@ static int lpc17_txavail(struct uip_driver_s *dev)
  *
  * Parameters:
  *   dev  - Reference to the NuttX driver state structure
- *   mac  - The MAC address to be added 
+ *   mac  - The MAC address to be added
  *
  * Returned Value:
  *   None
@@ -1526,7 +1606,7 @@ static int lpc17_txavail(struct uip_driver_s *dev)
  ****************************************************************************/
 
 #ifdef CONFIG_NET_IGMP
-static int lpc17_addmac(struct uip_driver_s *dev, const uint8_t *mac)
+static int lpc17_addmac(struct net_driver_s *dev, const uint8_t *mac)
 {
   struct lpc17_driver_s *priv = (struct lpc17_driver_s *)dev->d_private;
 
@@ -1546,7 +1626,7 @@ static int lpc17_addmac(struct uip_driver_s *dev, const uint8_t *mac)
  *
  * Parameters:
  *   dev  - Reference to the NuttX driver state structure
- *   mac  - The MAC address to be removed 
+ *   mac  - The MAC address to be removed
  *
  * Returned Value:
  *   None
@@ -1556,7 +1636,7 @@ static int lpc17_addmac(struct uip_driver_s *dev, const uint8_t *mac)
  ****************************************************************************/
 
 #ifdef CONFIG_NET_IGMP
-static int lpc17_rmmac(struct uip_driver_s *dev, const uint8_t *mac)
+static int lpc17_rmmac(struct net_driver_s *dev, const uint8_t *mac)
 {
   struct lpc17_driver_s *priv = (struct lpc17_driver_s *)dev->d_private;
 
@@ -1574,7 +1654,7 @@ static int lpc17_rmmac(struct uip_driver_s *dev, const uint8_t *mac)
  *   Dump GPIO registers
  *
  * Parameters:
- *   None 
+ *   None
  *
  * Returned Value:
  *   None
@@ -1616,7 +1696,7 @@ static void lpc17_showmii(uint8_t phyaddr, const char *msg)
   dbg("  ADVERTISE: %04x\n", lpc17_phyread(phyaddr, MII_ADVERTISE));
   dbg("  LPA:       %04x\n", lpc17_phyread(phyaddr, MII_LPA));
   dbg("  EXPANSION: %04x\n", lpc17_phyread(phyaddr, MII_EXPANSION));
-#ifdef CONFIG_PHY_KS8721
+#ifdef CONFIG_ETH0_PHY_KS8721
   dbg("  10BTCR:    %04x\n", lpc17_phyread(phyaddr, MII_KS8721_10BTCR));
 #endif
 }
@@ -1631,7 +1711,7 @@ static void lpc17_showmii(uint8_t phyaddr, const char *msg)
  * Parameters:
  *   phyaddr - The device address where the PHY was discovered
  *   regaddr - The address of the PHY register to be written
- *   phydata - The data to write to the PHY register 
+ *   phydata - The data to write to the PHY register
  *
  * Returned Value:
  *   None
@@ -1860,7 +1940,12 @@ static int lpc17_phymode(uint8_t phyaddr, uint8_t mode)
 
   for (timeout = MII_BIG_TIMEOUT; timeout > 0; timeout--)
     {
-#ifdef CONFIG_PHY_DP83848C
+      /* REVISIT:  This should not depend explicity on the board configuration.
+       * Rather, there should be some additional configuration option to
+       * suppress this DP83848C-specific behavior.
+       */
+
+#if defined(CONFIG_ETH0_PHY_DP83848C) && !defined(CONFIG_ARCH_BOARD_MBED)
       phyreg = lpc17_phyread(phyaddr, MII_DP83848C_STS);
       if ((phyreg & 0x0001) != 0)
         {
@@ -1891,7 +1976,7 @@ static int lpc17_phymode(uint8_t phyaddr, uint8_t mode)
  *   Initialize the PHY
  *
  * Parameters:
- *   priv - Pointer to EMAC device driver structure 
+ *   priv - Pointer to EMAC device driver structure
  *
  * Returned Value:
  *   None directly.  As a side-effect, it will initialize priv->lp_phyaddr
@@ -1988,7 +2073,7 @@ static inline int lpc17_phyinit(struct lpc17_driver_s *priv)
 #ifdef CONFIG_PHY_AUTONEG
   /* Setup the Auto-negotiation advertisement: 100 or 10, and HD or FD */
 
-  lpc17_phywrite(phyaddr, MII_ADVERTISE, 
+  lpc17_phywrite(phyaddr, MII_ADVERTISE,
                  (MII_ADVERTISE_100BASETXFULL | MII_ADVERTISE_100BASETXHALF |
                   MII_ADVERTISE_10BASETXFULL  | MII_ADVERTISE_10BASETXHALF  |
                   MII_ADVERTISE_CSMA));
@@ -2016,7 +2101,7 @@ static inline int lpc17_phyinit(struct lpc17_driver_s *priv)
 
   /* Check configuration */
 
-#if defined(CONFIG_PHY_KS8721)
+#if defined(CONFIG_ETH0_PHY_KS8721)
   phyreg = lpc17_phyread(phyaddr, MII_KS8721_10BTCR);
 
   switch (phyreg & KS8721_10BTCR_MODE_MASK)
@@ -2039,7 +2124,7 @@ static inline int lpc17_phyinit(struct lpc17_driver_s *priv)
         ndbg("Unrecognized mode: %04x\n", phyreg);
         return -ENODEV;
     }
-#elif defined(CONFIG_PHY_DP83848C)
+#elif defined(CONFIG_ETH0_PHY_DP83848C)
   phyreg = lpc17_phyread(phyaddr, MII_DP83848C_STS);
 
   /* Configure for full/half duplex mode and speed */
@@ -2062,7 +2147,7 @@ static inline int lpc17_phyinit(struct lpc17_driver_s *priv)
         ndbg("Unrecognized mode: %04x\n", phyreg);
         return -ENODEV;
     }
-#elif defined(CONFIG_PHY_LAN8720)
+#elif defined(CONFIG_ETH0_PHY_LAN8720)
   {
     uint16_t advertise;
     uint16_t lpa;
@@ -2146,7 +2231,7 @@ static inline int lpc17_phyinit(struct lpc17_driver_s *priv)
  *   Initialize the EMAC Tx descriptor table
  *
  * Parameters:
- *   priv - Pointer to EMAC device driver structure 
+ *   priv - Pointer to EMAC device driver structure
  *
  * Returned Value:
  *   None directory.
@@ -2202,7 +2287,7 @@ static inline void lpc17_txdescinit(struct lpc17_driver_s *priv)
  *   Initialize the EMAC Rx descriptor table
  *
  * Parameters:
- *   priv - Pointer to EMAC device driver structure 
+ *   priv - Pointer to EMAC device driver structure
  *
  * Returned Value:
  *   None directory.
@@ -2278,7 +2363,7 @@ static void lpc17_macmode(uint8_t mode)
   if ((mode & LPC17_DUPLEX_MASK) == LPC17_DUPLEX_FULL)
     {
       /* Set the back-to-back inter-packet gap */
- 
+
       lpc17_putreg(21, LPC17_ETH_IPGT);
 
       /* Set MAC to operate in full duplex mode with CRC and Pad enabled */
@@ -2296,7 +2381,7 @@ static void lpc17_macmode(uint8_t mode)
   else
     {
       /* Set the back-to-back inter-packet gap */
- 
+
       lpc17_putreg(18, LPC17_ETH_IPGT);
 
       /* Set MAC to operate in half duplex mode with CRC and Pad enabled */
@@ -2495,7 +2580,7 @@ static inline int lpc17_ethinitialize(int intf)
 #endif
   if (ret != 0)
     {
-      /* We could not attach the ISR to the the interrupt */
+      /* We could not attach the ISR to the interrupt */
 
       return -EAGAIN;
     }

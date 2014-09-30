@@ -112,9 +112,6 @@ config ARCH_FAMILY_LPC178X
 config ARCH_HAVE_SPIFI
 	bool
 
-config ARCH_HAVE_SDIO
-	bool
-
 menu "LPC17xx Peripheral Support"
 
 config LPC17_MAINOSC
@@ -140,7 +137,7 @@ config LPC17_EMC
 
 config LPC17_ETHERNET
 	bool "Ethernet"
-	select NET
+	select NETDEVICES
 	select ARCH_HAVE_PHY
 	default n
 
@@ -247,6 +244,15 @@ config LPC17_TMR0
 	bool "Timer 0"
 	default n
 
+config LPC17_MAT0_PIN
+	int "TIM1 MAT0 Output Pin"
+	default 1
+	range 1 4
+	depends on LPC17_TMR0
+	---help---
+		If TIM1 is enabled for PWM usage, you also need specifies the timer output
+		channel {1,..,4}
+
 config LPC17_TMR1
 	bool "Timer 1"
 	default n
@@ -270,12 +276,30 @@ config LPC17_PWM0
 config LPC17_PWM1
 	bool "PWM1"
 	default n
-	depends on ARCH_FAMILY_LPC177X || ARCH_FAMILY_LPC178X
+	depends on ARCH_FAMILY_LPC177X || ARCH_FAMILY_LPC178X || ARCH_FAMILY_LPC176X
+
+config LPC17_PWM1_PIN
+	int "TIM1 PWM Output Pin"
+	default 1
+	range 1 4
+	depends on LPC17_PWM1
+	---help---
+		If TIM1 is enabled for PWM usage, you also need specifies the timer output
+		channel {1,..,4}
 
 config LPC17_MCPWM
 	bool "MCPWM"
 	default n
 	depends on ARCH_FAMILY_LPC175X || ARCH_FAMILY_LPC176X
+
+config LPC17_MCPWM1_PIN
+	int "TIM1 MCPWM Output Pin"
+	default 1
+	range 1 4
+	depends on LPC17_MCPWM
+	---help---
+		If TIM1 is enabled for PWM usage, you also need specifies the timer output
+		channel {1,..,4}
 
 config LPC17_QEI
 	bool "QEI"
@@ -321,6 +345,121 @@ config LPC17_EEPROM
 	default n
 	depends on ARCH_FAMILY_LPC177X || ARCH_FAMILY_LPC178X
 
+endmenu
+
+menu "External Memory Configuration"
+
+config ARCH_HAVE_EXTNAND
+	bool
+
+config ARCH_HAVE_EXTNOR
+	bool
+
+config ARCH_HAVE_EXTDRAM
+	bool
+
+config ARCH_HAVE_EXTSRAM0
+	bool
+
+config LPC17_EXTNAND
+	bool "Configure external NAND"
+	default n
+	depends on ARCH_HAVE_EXTNAND
+	---help---
+		Configure external NAND memory and, if applicable, map then external
+		NAND into the memory map.
+
+if LPC17_EXTNAND
+
+config LPC17_EXTNANDSIZE
+	int "External NAND size"
+	default 0
+	---help---
+		Size of the external NAND in bytes.
+
+endif
+
+config LPC17_EXTNOR
+	bool "Configure external NOR memory"
+	default n
+	depends on ARCH_HAVE_EXTNOR
+	---help---
+		Configure external NOR memory and, if applicable, map then external
+		NOR into the memory map.
+
+if LPC17_EXTNOR
+
+config LPC17_EXTNORSIZE
+	int "External NOR size"
+	default 0
+	---help---
+		Size of the external NOR in bytes.
+
+endif
+
+config LPC17_EXTDRAM
+	bool "Configure external DRAM"
+	default n
+	depends on ARCH_HAVE_EXTDRAM
+	select ARCH_HAVE_SDRAM
+	---help---
+		Configure external DRAM memory and, if applicable, map then external
+		DRAM into the memory map.
+
+if LPC17_EXTDRAM
+
+config LPC17_EXTDRAMSIZE
+	int "External SDRAM size"
+	default 0
+	---help---
+		Size of the external SDRAM in bytes.
+
+choice
+	prompt "SDRAM Width Selection"
+	default LPC17_SDRAM_16BIT
+
+config LPC17_SDRAM_8BIT
+	bool "8-bit"
+
+config LPC17_SDRAM_16BIT
+	bool "16-bit"
+
+config LPC17_SDRAM_32BIT
+	bool "32-bit"
+
+endchoice
+
+config LPC17_EXTDRAMHEAP
+	bool "Add external SDRAM to the heap"
+	default y
+	---help---
+		Add the external SDRAM into the heap.
+
+endif
+
+config LPC17_EXTSRAM0
+	bool "Configure external SRAM (Bank 0)"
+	default n
+	depends on ARCH_HAVE_EXTSRAM0
+	---help---
+		Configure external SRAM Bank 0 memory and, if applicable, map then
+		external SRAM Bank 0 into the memory map.
+
+if LPC17_EXTSRAM0
+
+config LPC17_EXTSRAM0SIZE
+	int "External SRAM size"
+	default 0
+	---help---
+		Size of the external SRAM Bank 0 in bytes.
+
+config LPC17_EXTSRAM0HEAP
+	bool "Add external SRAM (Bank 0) to the heap"
+	default y
+	---help---
+		Add external SRAM Bank 0 into the heap.
+
+endif
 endmenu
 
 menu "Serial driver options"
@@ -378,10 +517,16 @@ config ADC_CHANLIST
 		(2) provide an array g_adc_chanlist[] with the channel numbers
 		matching the ADC0_MASK within the board-specific library.
 
+config ADC_BURSTMODE
+    bool "One interrupt at the end of all ADC cconversions"
+    default n
+    ---help---
+        Select this if you want to generate only one interrupt once all selected channels has been converted by the ADC
+
 config ADC_NCHANNELS
 	int "ADC0 number of channels"
 	depends on ADC_CHANLIST
-	default 0  
+	default 0
 	---help---
 		If ADC_CHANLIST is enabled, then the platform specific code
 		must do two things:  (1) define ADC_NCHANNELS in the configuration
@@ -494,7 +639,7 @@ config SDIO_DMA
 	default y if LPC17_GPDMA
 	depends on LPC17_GPDMA
 	---help---
-		Support DMA data transfers.  
+		Support DMA data transfers.
 		Enable SD card DMA data transfers.  This is a marginally optional.
 		For most usages, SD accesses will cause data overruns if used without
 		DMA.  Requires LPC17_SDCARD and config LPC17_GPDMA.
@@ -556,9 +701,10 @@ config NET_NRXDESC
 
 config NET_PRIORITY
 	int "Ethernet interrupt priority"
-	default 0
+	default 128
+	depends on ARCH_IRQPRIO && EXPERIMENTAL
 	---help---
-		Ethernet interrupt priority.  The is default is the higest priority (0).
+		Ethernet interrupt priority.  The default is the default priority (128).
 
 config NET_WOL
 	bool "Wake-up on LAN"
@@ -573,13 +719,6 @@ config NET_REGDEBUG
 	---help---
 		Enable low level register debug.  Also needs DEBUG.
 
-config NET_DUMPPACKET
-	bool "Enable packet dumping"
-	depends on DEBUG
-	default n
-	---help---
-		Dump all received and transmitted packets. Also needs DEBUG.
-
 config NET_HASH
 	bool "Hashing"
 	default n
@@ -593,6 +732,13 @@ config NET_MULTICAST
 	---help---
 		Enable receipt of multicast (and unicast) frames. Automatically set
 		if NET_IGMP is selected.
+
+config NET_WORKER_THREAD
+    bool "Net worker thread enable"
+    default y
+    depends on SCHED_WORKQUEUE
+    ---help---
+        Enable use of ethernet worker thread (depends on CONFIG_SCHED_WORKQUEUE).
 
 endmenu
 

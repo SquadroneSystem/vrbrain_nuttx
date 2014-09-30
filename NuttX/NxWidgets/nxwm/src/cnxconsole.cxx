@@ -1,7 +1,7 @@
 /********************************************************************************************
  * NxWidgets/nxwm/src/cnxconsole.cxx
  *
- *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012. 2104 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,6 +60,11 @@
 /********************************************************************************************
  * Pre-Processor Definitions
  ********************************************************************************************/
+/* Configuration ****************************************************************************/
+
+#ifdef CONFIG_NSH_USBKBD
+#  warning You probably do not really want CONFIG_NSH_USBKBD, try CONFIG_NXWM_KEYBOARD_USBHOST
+#endif
 
 /********************************************************************************************
  * Private Types
@@ -311,7 +316,7 @@ void CNxConsole::stop(void)
       // Calling task_delete() will also invoke the on_exit() handler.  We se
       // m_pid = -1 before calling task_delete() to let the on_exit() handler,
       // CNxConsole::exitHandler(), know that it should not do anything
- 
+
       pid_t pid = m_pid;
       m_pid = -1;
 
@@ -319,7 +324,7 @@ void CNxConsole::stop(void)
 
       task_delete(pid);
     }
- 
+
   // Destroy the NX console device
 
   if (m_nxcon)
@@ -659,6 +664,7 @@ bool NxWM::nshlibInitialize(void)
       return false;
    }
 #endif
+
   return true;
 }
 

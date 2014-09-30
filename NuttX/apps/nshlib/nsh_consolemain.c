@@ -45,7 +45,7 @@
 #include "nsh.h"
 #include "nsh_console.h"
 
-#ifndef HAVE_USB_CONSOLE
+#if !defined(HAVE_USB_CONSOLE) && !defined(HAVE_USB_KEYBOARD)
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -84,8 +84,8 @@
  *   function does not normally return (see below).
  *
  *   This version of nsh_consolmain handles generic /dev/console character
- *   devices (see nsh_usbdev.c for another version for special USB console
- *   devices).
+ *   devices (see nsh_usbconsole.c and usb_usbkeyboard for other versions
+ *   for special USB console devices).
   *
  * Input Parameters:
  *   Standard task start-up arguments.  These are not used.  argc may be
@@ -95,7 +95,7 @@
  *   This function does not normally return.  exit() is usually called to
  *   terminate the NSH session.  This function will return in the event of
  *   an error.  In that case, a nonzero value is returned (EXIT_FAILURE=1).
- *  
+ *
  ****************************************************************************/
 
 int nsh_consolemain(int argc, char *argv[])
@@ -127,4 +127,4 @@ int nsh_consolemain(int argc, char *argv[])
   return ret;
 }
 
-#endif /* !HAVE_USB_CONSOLE */
+#endif /* !HAVE_USB_CONSOLE && !HAVE_USB_KEYBOARD */

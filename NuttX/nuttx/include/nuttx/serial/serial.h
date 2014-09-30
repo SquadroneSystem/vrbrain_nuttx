@@ -77,7 +77,11 @@
 #define uart_txempty(dev)        dev->ops->txempty(dev)
 #define uart_send(dev,ch)        dev->ops->send(dev,ch)
 #define uart_receive(dev,s)      dev->ops->receive(dev,s)
-#define uart_onrxdeque(dev)      if(dev->ops->onrxdeque) dev->ops->onrxdeque(dev)
+
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+#define uart_rxflowcontrol(dev) \
+  (dev->ops->rxflowcontrol && dev->ops->rxflowcontrol(dev))
+#endif
 
 /************************************************************************************
  * Public Types
@@ -160,6 +164,12 @@ struct uart_ops_s
 
   CODE bool (*rxavailable)(FAR struct uart_dev_s *dev);
 
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  /* Return true if UART activated RX flow control to block more incoming data. */
+
+  CODE bool (*rxflowcontrol)(FAR struct uart_dev_s *dev);
+#endif
+
   /* This method will send one byte on the UART */
 
   CODE void (*send)(FAR struct uart_dev_s *dev, int ch);
@@ -181,14 +191,6 @@ struct uart_ops_s
    */
 
   CODE bool (*txempty)(FAR struct uart_dev_s *dev);
-
-  /*
-   * Drivers can optionally provide this callback which is invoked any time
-   * received characters have been dequeued in uart_read().  The expected
-   * use-case is for reenabling nRTS if the driver is doing software assisted
-   * HW flow control.
-   */
-  CODE void (*onrxdeque)(FAR struct uart_dev_s *dev);
 };
 
 /* This is the device structure used by the driver.  The caller of
@@ -203,6 +205,8 @@ struct uart_ops_s
 
 struct uart_dev_s
 {
+  /* State data */
+
   uint8_t              open_count;   /* Number of times the device has been opened */
   volatile bool        xmitwaiting;  /* true: User waiting for space in xmit.buffer */
   volatile bool        recvwaiting;  /* true: User waiting for data in recv.buffer */
@@ -210,14 +214,31 @@ struct uart_dev_s
   volatile bool        disconnected; /* true: Removable device is not connected */
 #endif
   bool                 isconsole;    /* true: This is the serial console */
+
+  /* Terminal control flags */
+
+#ifdef CONFIG_SERIAL_TERMIOS
+  tcflag_t             tc_iflag;     /* Input modes */
+  tcflag_t             tc_oflag;     /* Output modes */
+  tcflag_t             tc_lflag;     /* Local modes */
+#endif
+
+  /* Semaphores */
+
   sem_t                closesem;     /* Locks out new open while close is in progress */
   sem_t                xmitsem;      /* Wakeup user waiting for space in xmit.buffer */
   sem_t                recvsem;      /* Wakeup user waiting for data in recv.buffer */
 #ifndef CONFIG_DISABLE_POLL
   sem_t                pollsem;      /* Manages exclusive access to fds[] */
 #endif
+
+  /* I/O buffers */
+
   struct uart_buffer_s xmit;         /* Describes transmit buffer */
   struct uart_buffer_s recv;         /* Describes receive buffer */
+
+  /* Driver interface */
+
   FAR const struct uart_ops_s *ops;  /* Arch-specific operations */
   FAR void            *priv;         /* Used by the arch-specific logic */
 
@@ -229,15 +250,6 @@ struct uart_dev_s
 #ifndef CONFIG_DISABLE_POLL
   struct pollfd *fds[CONFIG_SERIAL_NPOLLWAITERS];
 #endif
-
-  /* Terminal control flags */
-
-#ifdef CONFIG_SERIAL_TERMIOS
-  tcflag_t  tc_iflag;        /* Input modes */
-  tcflag_t  tc_oflag;        /* Output modes */
-  tcflag_t  tc_lflag;        /* Local modes */
-#endif
-
 };
 
 typedef struct uart_dev_s uart_dev_t;
@@ -343,16 +355,6 @@ void uart_datasent(FAR uart_dev_t *dev);
 #ifdef CONFIG_SERIAL_REMOVABLE
 void uart_connected(FAR uart_dev_t *dev, bool connected);
 #endif
-
-/************************************************************************************
- * Name: uart_numrxavail
- *
- * Description:
- *   This function returns the number of characters that are currently available for
- * reading.
- *
- ************************************************************************************/
-ssize_t uart_numrxavail(FAR uart_dev_t *dev);
 
 #undef EXTERN
 #if defined(__cplusplus)

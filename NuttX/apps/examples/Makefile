@@ -1,7 +1,7 @@
 ############################################################################
 # apps/examples/Makefile
 #
-#   Copyright (C) 2011-2012 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2011-2014 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,14 +37,14 @@
 
 # Sub-directories
 
-SUBDIRS  = adc buttons can cxxtest dhcpd discover elf
-SUBDIRS += flash_test ftpc ftpd hello helloxx hidkbd igmp json keypadtest
-SUBDIRS += lcdrw mm modbus mount mtdpart nettest nrf24l01_term nsh null
-SUBDIRS += nx nxconsole nxffs nxflat nxhello nximage nxlines nxtext ostest 
-SUBDIRS += pashello pipe poll posix_spawn pwm qencoder relays rgmp romfs
-SUBDIRS += sendmail serloop slcd smart smart_test tcpecho telnetd thttpd tiff
-SUBDIRS += touchscreen udp uip usbserial usbterm watchdog
-SUBDIRS += wget wgetjson xmlrpc
+SUBDIRS  = adc buttons can cc3000 cpuhog cxxtest dhcpd discover elf
+SUBDIRS += flash_test ftpc ftpd hello helloxx hidkbd igmp i2schar json
+SUBDIRS += keypadtest lcdrw mm modbus mount mtdpart netpkt nettest
+SUBDIRS += nrf24l01_term nsh null nx nxconsole nxffs nxflat nxhello nximage
+SUBDIRS += nxlines nxtext ostest pashello pipe poll posix_spawn pwm qencoder
+SUBDIRS += random relays rgmp romfs sendmail serialblaster serloop serialrx
+SUBDIRS += slcd smart smart_test tcpecho telnetd thttpd tiff touchscreen udp
+SUBDIRS += usbserial usbterm watchdog webserver wget wgetjson xmlrpc
 
 # Sub-directories that might need context setup.  Directories may need
 # context setup for a variety of reasons, but the most common is because
@@ -53,11 +53,12 @@ SUBDIRS += wget wgetjson xmlrpc
 CNTXTDIRS = pwm
 
 ifeq ($(CONFIG_NSH_BUILTIN_APPS),y)
-CNTXTDIRS += adc can cxxtest dhcpd discover flash_test ftpd
-CNTXTDIRS += hello helloxx json keypadtestmodbus lcdrw mtdpart nettest nx
-CNTXTDIRS += nxhello nximage nxlines nxtext nrf24l01_term ostest relays
-CNTXTDIRS += qencoder slcd smart_test tcpecho telnetd tiff touchscreen
-CNTXTDIRS += usbterm watchdog wgetjson
+CNTXTDIRS += adc can cc3000 cpuhog cxxtest dhcpd discover flash_test ftpd
+CNTXTDIRS += hello helloxx i2schar json keypadtestmodbus lcdrw mtdpart
+CNTXTDIRS += netpkt nettest nx nxhello nximage nxlines nxtext nrf24l01_term
+CNTXTDIRS += ostest random relays qencoder serialblasterslcd serialrx
+CNTXTDIRS += smart_test tcpecho telnetd tiff touchscreen usbterm watchdog
+CNTXTDIRS += wgetjson
 endif
 
 all: nothing
@@ -85,4 +86,3 @@ clean: $(foreach SDIR, $(SUBDIRS), $(SDIR)_clean)
 distclean: $(foreach SDIR, $(SUBDIRS), $(SDIR)_distclean)
 
 -include Make.dep
-

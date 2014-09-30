@@ -1,7 +1,7 @@
 /****************************************************************************
  * libc/stdio/lib_sscanf.c
  *
- *   Copyright (C) 2007, 2008, 2011-2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007, 2008, 2011-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,18 +40,29 @@
 #include <nuttx/compiler.h>
 
 #include <sys/types.h>
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #include <debug.h>
 
 /****************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 #define MAXLN 128
+
+#ifndef MIN
+#  define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#endif
+
+#ifndef MAX
+#  define MAX(a,b) (((a) > (b)) ? (a) : (b))
+#endif
 
 /****************************************************************************
  * Private Type Declarations
@@ -65,19 +76,19 @@
  * Global Function Prototypes
  ****************************************************************************/
 
-int vsscanf(char *buf, const char *fmt, va_list ap);
+int vsscanf(FAR const char *buf, FAR const char *fmt, va_list ap);
 
-/**************************************************************************
+/****************************************************************************
  * Global Constant Data
- **************************************************************************/
+ ****************************************************************************/
 
 /****************************************************************************
  * Global Variables
  ****************************************************************************/
 
-/**************************************************************************
+/****************************************************************************
  * Private Constant Data
- **************************************************************************/
+ ****************************************************************************/
 
 static const char spaces[] = " \t\n\r\f\v";
 
@@ -108,7 +119,7 @@ static int findwidth(FAR const char *buf, FAR const char *fmt)
       return strcspn(buf, spaces);
     }
 
-  /* No.. Another possibility is the the format character is followed by
+  /* No.. Another possibility is the format character is followed by
    * some recognizable delimiting value.
    */
 
@@ -125,14 +136,14 @@ static int findwidth(FAR const char *buf, FAR const char *fmt)
         }
     }
 
-  /* No... the format has not delimiter and is back-to-back with the next
-   * formats (or no is following by a delimiter that does not exist in the
+  /* No... the format has no delimiter and is back-to-back with the next
+   * format (or is followed by a delimiter that does not exist in the
    * input string).  At this point we just bail and Use the input up until
    * the first white space is encountered.
    *
    * NOTE:  This means that values from the following format may be
    * concatenated with the first. This is a bug.  We have no generic way of
-   * determining the width of the data if there is no fieldwith, no space
+   * determining the width of the data if there is no fieldwidth, no space
    * separating the input, and no usable delimiter character.
    */
 
@@ -157,7 +168,7 @@ int sscanf(FAR const char *buf, FAR const char *fmt, ...)
   int     count;
 
   va_start(ap, fmt);
-  count = vsscanf((FAR char*)buf, fmt, ap);
+  count = vsscanf((FAR const char*)buf, fmt, ap);
   va_end(ap);
   return count;
 }
@@ -170,18 +181,14 @@ int sscanf(FAR const char *buf, FAR const char *fmt, ...)
  *
  ****************************************************************************/
 
-int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
+int vsscanf(FAR const char *buf, FAR const char *fmt, va_list ap)
 {
-  FAR char       *bufstart;
+  FAR const char *bufstart;
   FAR char       *tv;
   FAR const char *tc;
-  FAR long       *pclong;
-  FAR int        *pcint;
   bool            lflag;
   bool            noassign;
-  bool            data_invalid;
   int             count;
-  int             fmtcount;
   int             width;
   int             base = 10;
   char            tmp[MAXLN];
@@ -196,14 +203,10 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
 
   /* Parse the format, extracting values from the input buffer as needed */
 
-  pclong   = NULL;
-  pcint    = NULL;
   count    = 0;
-  fmtcount = 0;
   width    = 0;
   noassign = false;
   lflag    = false;
-  data_invalid = false;
 
   /* Loop until all characters in the fmt string have been processed.  We
    * may have to continue loop after reaching the end the input data in
@@ -261,7 +264,6 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
 
           if (*fmt == 's')
             {
-              fmtcount++;
               lvdbg("vsscanf: Performing string conversion\n");
 
               /* Get a pointer to the char * value.  We need to do this even
@@ -269,7 +271,7 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                * update the 'ap' variable.
                */
 
-              tv = NULL;      /* To avoid warnings about beign uninitialized */
+              tv = NULL;      /* To avoid warnings about begin uninitialized */
               if (!noassign)
                 {
                   tv    = va_arg(ap, char*);
@@ -280,15 +282,14 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                * bytes remaining in the input data stream.
                */
 
-              /* Skip over any white space before the string */
-
-              while (*buf && isspace(*buf))
-                {
-                  buf++;
-                }
-
               if (*buf)
                 {
+                  /* Skip over white space */
+
+                  while (isspace(*buf))
+                    {
+                      buf++;
+                    }
 
                   /* Was a fieldwidth specified? */
 
@@ -296,7 +297,8 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                     {
                       /* No... Guess a field width using some heuristics */
 
-                      width = findwidth(buf, fmt);
+                      int tmpwidth = findwidth(buf, fmt);
+                      width = MIN(sizeof(tmp) - 1, tmpwidth);
                     }
 
                   /* Copy the string (if we are making an assignment) */
@@ -305,15 +307,12 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                     {
                       strncpy(tv, buf, width);
                       tv[width] = '\0';
+                      count++;
                     }
 
                   /* Update the buffer pointer past the string in the input */
 
                   buf += width;
-                }
-              else
-                {
-                  noassign = true;
                 }
             }
 
@@ -321,7 +320,6 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
 
           else if (*fmt == 'c')
             {
-              fmtcount++;
               lvdbg("vsscanf: Performing character conversion\n");
 
               /* Get a pointer to the char * value.  We need to do this even
@@ -342,7 +340,7 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
 
               if (*buf)
                 {
-                  /* Was a fieldwidth specified? */
+                  /* Was a field width specified? */
 
                   if (!width)
                     {
@@ -357,6 +355,7 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                     {
                       strncpy(tv, buf, width);
                       tv[width] = '\0';
+                      count++;
                     }
 
                   /* Update the buffer pointer past the character(s) in the
@@ -365,17 +364,16 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
 
                   buf += width;
                 }
-              else
-                {
-                  noassign = true;
-                }
             }
 
           /* Process %d, %o, %b, %x, %u:  Various integer conversions */
 
           else if (strchr("dobxu", *fmt))
             {
-              fmtcount++;
+              FAR long *plong = NULL;
+              FAR int  *pint  = NULL;
+              bool sign;
+
               lvdbg("vsscanf: Performing integer conversion\n");
 
               /* Get a pointer to the integer value.  We need to do this even
@@ -383,8 +381,6 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                * update the 'ap' variable.
                */
 
-              FAR long *plong = NULL;
-              FAR int  *pint  = NULL;
               if (!noassign)
                 {
                   /* We have to check whether we need to return a long or an
@@ -403,48 +399,54 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                     }
                 }
 
-              /* But we only perform the data conversion is we still have
+              /* But we only perform the data conversion if we still have
                * bytes remaining in the input data stream.
                */
 
-              /* Skip over any white space before the integer string */
-
-              while (*buf && isspace(*buf))
-                {
-                  buf++;
-                }
-
               if (*buf)
                 {
+                  /* Skip over any white space before the integer string */
+
+                  while (isspace(*buf))
+                    {
+                      buf++;
+                    }
 
                   /* The base of the integer conversion depends on the
                    * specific conversion specification.
                    */
 
-                  if (*fmt == 'd' || *fmt == 'u')
+                  sign = false;
+                  switch (*fmt)
                     {
+                    default:
+                    case 'd':
+                      sign = true;
+                    case 'u':
                       base = 10;
-                    }
-                  else if (*fmt == 'x')
-                    {
+                      break;
+
+                    case 'x':
                       base = 16;
-                    }
-                  else if (*fmt == 'o')
-                    {
+                      break;
+
+                    case 'o':
                       base = 8;
-                    }
-                  else if (*fmt == 'b')
-                    {
+                      break;
+
+                    case 'b':
                       base = 2;
+                      break;
                     }
 
-                  /* Was a fieldwidth specified? */
+                  /* Was a field width specified? */
 
                   if (!width)
                     {
                       /* No... Guess a field width using some heuristics */
 
-                      width = findwidth(buf, fmt);
+                      int tmpwidth = findwidth(buf, fmt);
+                      width = MIN(sizeof(tmp) - 1, tmpwidth);
                     }
 
                   /* Copy the numeric string into a temporary working
@@ -454,39 +456,39 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                   strncpy(tmp, buf, width);
                   tmp[width] = '\0';
 
-                  lvdbg("vsscanf: tmp[]=\"%s\", width: %d\n", tmp, width);
-
-                  /* Ignore anything after the first non-digit character */
-
-                  int c_count;
-                  for (c_count = 0; c_count < width; c_count++)
-                    {
-                      if ((tmp[c_count] < '0' || tmp[c_count] > '9') && !(tmp[c_count] == '-' ||
-                                                                          tmp[c_count] == '+' ||
-                                                                          tmp[c_count] == 'x' ||
-                                                                          tmp[c_count] == 'X' ||
-                                                                          tmp[c_count] == 'b' ||
-                                                                          tmp[c_count] == 'B'))
-                      {
-                        lvdbg("data invalid on char: %c (0x%02x), %d\n", tmp[c_count], tmp[c_count], c_count);
-                        tmp[c_count] = '\0';
-                        width = c_count;
-                        data_invalid = true;
-                        break;
-                      }
-                    }
+                  lvdbg("vsscanf: tmp[]=\"%s\"\n", tmp);
 
                   /* Perform the integer conversion */
 
                   buf += width;
                   if (!noassign)
                     {
-#ifdef SDCC
-                      char *endptr;
-                      long tmplong = strtol(tmp, &endptr, base);
-#else
-                      long tmplong = strtol(tmp, NULL, base);
-#endif
+                      FAR char *endptr;
+                      int       errsave;
+                      long      tmplong;
+
+                      /* Preserve the errno value */
+
+                      errsave = get_errno();
+                      set_errno(0);
+                      if (sign)
+                        {
+                          tmplong = strtol(tmp, &endptr, base);
+                        }
+                      else
+                        {
+                          tmplong = strtoul(tmp, &endptr, base);
+                        }
+
+                      /* Check if the number was successfully converted */
+
+                      if (tmp == endptr || get_errno() == ERANGE)
+                        {
+                          return count;
+                        }
+
+                      set_errno(errsave);
+
                       /* We have to check whether we need to return a long
                        * or an int.
                        */
@@ -503,11 +505,9 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                                 tmplong, pint);
                           *pint = (int)tmplong;
                         }
+
+                      count++;
                     }
-                }
-              else
-                {
-                  noassign = true;
                 }
             }
 
@@ -515,7 +515,11 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
 
           else if (*fmt == 'f')
             {
-              fmtcount++;
+#ifdef CONFIG_HAVE_DOUBLE
+              FAR double_t *pd = NULL;
+#endif
+              FAR float    *pf = NULL;
+
               lvdbg("vsscanf: Performing floating point conversion\n");
 
               /* Get a pointer to the double value.  We need to do this even
@@ -523,10 +527,6 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                * update the 'ap' variable.
                */
 
-#ifdef CONFIG_HAVE_DOUBLE
-              FAR double_t *pd = NULL;
-#endif
-              FAR float    *pf = NULL;
               if (!noassign)
                 {
                   /* We have to check whether we need to return a float or a
@@ -552,15 +552,14 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                * bytes remaining in the input data stream.
                */
 
-              /* Skip over any white space before the real string */
-
-              while (*buf && isspace(*buf))
-                {
-                  buf++;
-                }
-
               if (*buf)
                 {
+                  /* Skip over any white space before the real string */
+
+                  while (isspace(*buf))
+                    {
+                      buf++;
+                    }
 
                   /* Was a fieldwidth specified? */
 
@@ -575,25 +574,6 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
 
                   strncpy(tmp, buf, width);
                   tmp[width] = '\0';
-
-                  /* Ignore anything after the first non-digit character */
-
-                  int c_count;
-                  for (c_count = 0; c_count < width; c_count++)
-                    {
-                      if ((tmp[c_count] < '0' || tmp[c_count] > '9') && !(tmp[c_count] == '.' ||
-                                                                          tmp[c_count] == '-' ||
-                                                                          tmp[c_count] == '+' ||
-                                                                          tmp[c_count] == 'x' ||
-                                                                          tmp[c_count] == 'X'))
-                        {
-                          tmp[c_count] = '\0';
-                          width = c_count;
-                          data_invalid = true;
-                          break;
-                        }
-                    }
-
                   buf += width;
 
                   lvdbg("vsscanf: tmp[]=\"%s\"\n", tmp);
@@ -603,12 +583,26 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                   if (!noassign)
                     {
                       /* strtod always returns a double */
-#ifdef SDCC
+
                       FAR char *endptr;
-                      double_t dvalue = strtod(tmp,&endptr);
-#else
-                      double_t dvalue = strtod(tmp, NULL);
-#endif
+                      int       errsave;
+                      double_t  dvalue;
+
+                      /* Preserve the errno value */
+
+                      errsave = get_errno();
+                      set_errno(0);
+                      dvalue  = strtod(tmp, &endptr);
+
+                      /* Check if the number was successfully converted */
+
+                      if (tmp == endptr || get_errno() == ERANGE)
+                        {
+                          return count;
+                        }
+
+                      set_errno(errsave);
+
                       /* We have to check whether we need to return a float
                        * or a double.
                        */
@@ -625,11 +619,9 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
                           lvdbg("vsscanf: Return %f to %p\n", dvalue, pf);
                           *pf = (float)dvalue;
                         }
+
+                      count++;
                     }
-                }
-              else
-                {
-                  noassign = true;
                 }
 #endif
             }
@@ -638,45 +630,35 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
 
           else if (*fmt == 'n')
             {
-              if (lflag)
-                {
-                  pclong = va_arg(ap, long*);
-                }
-              else
-                {
-                  pcint = va_arg(ap, int*);
-                }
-            }
-          else
-          {
-            /* None of the format specifiers matched */
-            noassign = true;
-          }
+              lvdbg("vsscanf: Performing character count\n");
 
-          /* Note %n does not count as a conversion */
+              if (!noassign)
+                {
+                  size_t nchars = (size_t)(buf - bufstart);
 
-          if (!noassign && *fmt != 'n')
-            {
-              count++;
+                  /* Note %n does not count as a conversion */
+
+                  if (lflag)
+                    {
+                      FAR long *plong = va_arg(ap, long*);
+                      *plong = (long)nchars;
+                    }
+                  else
+                    {
+                      FAR int *pint = va_arg(ap, int*);
+                      *pint = (int)nchars;
+                    }
+                }
             }
 
           width    = 0;
-
-          if (data_invalid)
-            {
-              noassign = true;
-            }
-          else
-            {
-              noassign = false;
-            }
-
+          noassign = false;
           lflag    = false;
 
           fmt++;
         }
 
-    /* Its is not a conversion specifier */
+    /* It is not a conversion specifier */
 
       else if (*buf)
         {
@@ -699,31 +681,17 @@ int vsscanf(FAR char *buf, FAR const char *fmt, va_list ap)
               buf++;
             }
         }
+      else
+        {
+          /* NULL terminator encountered */
+
+          break;
+        }
     }
 
-    /* Clean up - read whitespaces */
-    while (*buf && isspace(*buf))
-      {
-        buf++;
-      }
+  /* sscanf is required to return EOF if the input ends before the first
+   * matching failure or conversion.
+   */
 
-    /* Get character count if requested */
-
-      if (pclong || pcint)
-        {
-          lvdbg("vsscanf: Performing character count\n");
-
-          size_t nchars = (size_t)(buf - bufstart);
-
-          if (pclong)
-            {
-              *pclong = (long)nchars;
-            }
-          else if (pcint)
-            {
-              *pcint = (int)nchars;
-            }
-        }
-
-  return count;
+  return count ? count : EOF;
 }

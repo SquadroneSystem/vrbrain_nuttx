@@ -49,8 +49,7 @@
 #include <errno.h>
 #include <debug.h>
 
-#include <nuttx/net/uip/uipopt.h>
-#include <nuttx/net/uip/uip.h>
+#include <nuttx/net/netconfig.h>
 #include <apps/netutils/tftp.h>
 
 #include "tftpc_internal.h"

@@ -54,7 +54,6 @@
 
 #include "chip.h"
 #include "up_arch.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 #include "lpc214x_pinsel.h"
@@ -113,6 +112,9 @@ static const struct uart_ops_s g_uart_ops =
   .receive        = up_receive,
   .rxint          = up_rxint,
   .rxavailable    = up_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
   .send           = up_send,
   .txint          = up_txint,
   .txready        = up_txready,
@@ -293,7 +295,7 @@ static inline void up_enablebreaks(struct up_dev_s *priv, bool enable)
 
 static int up_setup(struct uart_dev_s *dev)
 {
-#ifndef CONFIG_SUPPRESS_LPC214X_UART_CONFIG
+#ifndef CONFIG_SUPPRESS_UART_CONFIG
   struct up_dev_s *priv = (struct up_dev_s*)dev->priv;
   uint16_t baud;
   uint8_t lcr;
@@ -742,7 +744,7 @@ static bool up_txempty(struct uart_dev_s *dev)
  * Name: up_serialinit
  *
  * Description:
- *   Performs the low level UART initialization early in 
+ *   Performs the low level UART initialization early in
  *   debug so that the serial console will be available
  *   during bootup.  This must be called before up_serialinit.
  *

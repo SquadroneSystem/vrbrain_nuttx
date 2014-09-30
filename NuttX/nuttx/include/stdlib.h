@@ -66,7 +66,7 @@
 #define MAX_RAND 32767
 
 /* Integer expression whose value is the maximum number of bytes in a
- * character specified by the current locale. 
+ * character specified by the current locale.
  */
 
 #define MB_CUR_MAX 1
@@ -189,10 +189,7 @@ void     qsort(void *base, size_t nmemb, size_t size,
                int(*compar)(const void *, const void *));
 
 #ifdef CONFIG_CAN_PASS_STRUCTS
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
 struct mallinfo mallinfo(void);
-#pragma GCC diagnostic pop
 #else
 int      mallinfo(struct mallinfo *info);
 #endif

@@ -59,7 +59,6 @@
 #include <arch/board/board.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 #include "chip.h"
@@ -129,6 +128,9 @@ static const struct uart_ops_s g_uart_ops =
   .receive        = up_receive,
   .rxint          = up_rxint,
   .rxavailable    = up_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
   .send           = up_send,
   .txint          = up_txint,
   .txready        = up_txready,
@@ -611,7 +613,7 @@ static inline uint32_t lpc17_uartcclkdiv(uint32_t baud)
     {
       return SYSCON_PCLKSEL_CCLK;
     }
-   
+
   /* Check divisor == 2.  This works if:
    *
    *   2 * CCLK / BAUD / 16 < 0xffff, or
@@ -636,7 +638,7 @@ static inline uint32_t lpc17_uartcclkdiv(uint32_t baud)
    * And
    *
    *   4 * CCLK / BAUD / 16 >= MinDL, or
-   *   BAUD <= CCLK / 4 / MinDL 
+   *   BAUD <= CCLK / 4 / MinDL
    */
 
   else if (baud < (LPC17_CCLK / 4 / UART_MINDL ))
@@ -652,7 +654,7 @@ static inline uint32_t lpc17_uartcclkdiv(uint32_t baud)
    * And
    *
    *   8 * CCLK / BAUD / 16 >= MinDL, or
-   *   BAUD <= CCLK / 2 / MinDL 
+   *   BAUD <= CCLK / 2 / MinDL
    */
 
   else /* if (baud < (LPC17_CCLK / 2 / UART_MINDL )) */
@@ -874,7 +876,7 @@ static inline uint32_t lpc17_uartdl(uint32_t baud)
 
 static int up_setup(struct uart_dev_s *dev)
 {
-#ifndef CONFIG_SUPPRESS_LPC17_UART_CONFIG
+#ifndef CONFIG_SUPPRESS_UART_CONFIG
   struct up_dev_s *priv = (struct up_dev_s*)dev->priv;
   uint16_t dl;
   uint32_t lcr;
@@ -942,7 +944,7 @@ static int up_setup(struct uart_dev_s *dev)
                (UART_FCR_RXTRIGGER_8|UART_FCR_TXRST|UART_FCR_RXRST|UART_FCR_FIFOEN));
 
   /* Enable Auto-RTS and Auto-CS Flow Control in the Modem Control Register */
-  
+
 #if defined(CONFIG_UART1_IFLOWCONTROL) || defined(CONFIG_UART1_OFLOWCONTROL)
   if (priv->uartbase == LPC17_UART1_BASE)
     {

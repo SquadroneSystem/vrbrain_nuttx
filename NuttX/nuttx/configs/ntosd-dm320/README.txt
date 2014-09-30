@@ -29,7 +29,7 @@ Dev vs. Production Neuros OSD v1.0 boards
   available commercial v1.0 Boards, most notably in the amount of memory:
   8Mb FLASH and 32Mb RAM vs. 16Mb and 64Mb as in the production board.
   See the following for more information:
-    
+
      http://wiki.neurostechnology.com/index.php/OSD_Developer_Board_v1
 
   NuttX operates on the ARM9EJS of this dual core processor.  The DSP
@@ -63,13 +63,13 @@ GNU Toolchain Options
   add one of the following configuration options to your .config (or defconfig)
   file:
 
-    CONFIG_DM320_CODESOURCERYW=y  : CodeSourcery under Windows
-    CONFIG_DM320_CODESOURCERYL=y  : CodeSourcery under Linux
-    CONFIG_DM320_DEVKITARM=y      : devkitARM under Windows
-    CONFIG_DM320_BUILDROOT=y	    : NuttX buildroot under Linux or Cygwin (default)
-    CONFIG_ARM_TOOLCHAIN_GNU_EABI : Generic arm-none-eabi toolchain
+    CONFIG_ARM_TOOLCHAIN_CODESOURCERYW=y  : CodeSourcery under Windows
+    CONFIG_ARM_TOOLCHAIN_CODESOURCERYL=y  : CodeSourcery under Linux
+    CONFIG_ARM_TOOLCHAIN_DEVKITARM=y      : devkitARM under Windows
+    CONFIG_ARM_TOOLCHAIN_BUILDROOT=y	    : NuttX buildroot under Linux or Cygwin (default)
+    CONFIG_ARM_TOOLCHAIN_GNU_EABIL : Generic arm-none-eabi toolchain
 
-  If you are not using CONFIG_DM320_BUILDROOT, then you may also have to modify
+  If you are not using CONFIG_ARM_TOOLCHAIN_BUILDROOT, then you may also have to modify
   the PATH in the setenv.h file if your make cannot find the tools.
 
   The toolchain may also be set using the kconfig-mconf utility (make menuconfig)
@@ -112,7 +112,7 @@ GNU Toolchain Options
   NOTE 2: The devkitARM toolchain includes a version of MSYS make.  Make sure that
   the paths to Cygwin's /bin and /usr/bin directories appear BEFORE the devkitARM
   path or will get the wrong version of make.
- 
+
   Generic arm-none-eabi GNU Toolchain
   -----------------------------------
   There are a number of toolchain projects providing support for ARMv4/v5
@@ -134,9 +134,8 @@ IDEs
 ^^^^
 
   NuttX is built using command-line make.  It can be used with an IDE, but some
-  effort will be required to create the project (There is a simple RIDE project
-  in the RIDE subdirectory).
-  
+  effort will be required to create the project.
+
   Makefile Build
   --------------
   Under Eclipse, it is pretty easy to set up an "empty makefile project" and
@@ -233,11 +232,11 @@ ARM/DM320-specific Configuration Options
 	CONFIG_ENDIAN_BIG - define if big endian (default is little
 	   endian)
 
-	CONFIG_DRAM_SIZE - Describes the installed DRAM.
+	CONFIG_RAM_SIZE - Describes the installed DRAM.
 
-	CONFIG_DRAM_START - The start address of installed DRAM
+	CONFIG_RAM_START - The start address of installed DRAM
 
-	CONFIG_DRAM_VSTART - The startaddress of DRAM (virtual)
+	CONFIG_RAM_VSTART - The startaddress of DRAM (virtual)
 
 	CONFIG_ARCH_LEDS - Use LEDs to show state. Unique to boards that
 	   have LEDs
@@ -274,7 +273,7 @@ ARM/DM320-specific Configuration Options
 	CONFIG_DM320_GIO_USBATTACH
 	   GIO that detects USB attach/detach events
 	CONFIG_DM320_GIO_USBDPPULLUP
-	   GIO 
+	   GIO
 	CONFIG_DMA320_USBDEV_DMA
 	   Enable DM320-specific DMA support
 	CONFIG_DM320_GIO_USBATTACH=6
@@ -282,58 +281,68 @@ ARM/DM320-specific Configuration Options
 Configurations
 ^^^^^^^^^^^^^^
 
-Each Neuros OSD configuration is maintained in a sub-directory and
-can be selected as follow:
+Common Configuration Notes
+--------------------------
 
-	cd tools
-	./configure.sh ntosd-dm320/<subdir>
-	cd -
-	. ./setenv.sh
+  1. Each Neuros OSD configuration is maintained in a sub-directory and
+     can be selected as follow:
 
-Where <subdir> is one of the following:
+       cd tools
+       ./configure.sh ntosd-dm320/<subdir>
+       cd -
+       . ./setenv.sh
 
-nettest
-^^^^^^^
+     Where <subdir> is one of the configuration sub-directories described in
+     the following paragraph.
 
-This alternative configuration directory may be used to
-enable networking using the OSDs DM9000A Ethernet interface.
-It uses examples/nettest to excercise the TCP/IP network.
+  2. These configurations use the mconf-based configuration tool.  To
+     change a configurations using that tool, you should:
 
-nsh
-^^^
+     a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+        and misc/tools/
 
-Configures the NuttShell (nsh) located at examples/nsh.  The
-Configuration enables both the serial and telnetd NSH interfaces.
+     b. Execute 'make menuconfig' in nuttx/ in order to start the
+        reconfiguration process.
 
-ostest
-^^^^^^
+  3. By default, all configurations assume the CodeSourcery toolchain under
+     Linux.  This is easily reconfigured:
 
-This configuration directory, performs a simple OS test using
-examples/ostest.
+        CONFIG_HOST_LINUX=y
+        CONFIG_ARM_TOOLCHAIN_CODESOURCERYL=y
 
-poll
-^^^^
+Configuration Sub-Directories
+-----------------------------
 
-This configuration exercises the poll()/select() text at
-examples/poll
+  nettest
 
-thttpd
-^^^^^^
+    This alternative configuration directory may be used to
+    enable networking using the OSDs DM9000A Ethernet interface.
+    It uses examples/nettest to excercise the TCP/IP network.
 
-This builds the THTTPD web server example using the THTTPD and
-the examples/thttpd application.
+  nsh
 
-udp
-^^^
+    Configures the NuttShell (nsh) located at examples/nsh.  The
+    Configuration enables both the serial and telnetd NSH interfaces.
 
-This alternative configuration directory is similar to nettest
-except that is use examples/upd to exercise UDP.
+  poll
 
-uip
-^^^
+    This configuration exercises the poll()/select() text at
+    examples/poll
 
-This configuration file demonstrates the tiny webserver
-at examples/uip.
+  thttpd
+
+    This builds the THTTPD web server example using the THTTPD and
+    the examples/thttpd application.
+
+  udp
+
+    This alternative configuration directory is similar to nettest
+    except that is use examples/upd to exercise UDP.
+
+  webserver
+
+    This configuration file demonstrates the tiny webserver
+    at examples/webserver.
 
 Configuration Options
 ^^^^^^^^^^^^^^^^^^^^^
@@ -355,8 +364,8 @@ specific to the DM320:
  CONFIG_ARCH_BOARD_name - for use in C code
  CONFIG_BOARD_LOOPSPERMSEC - for delay loops
  CONFIG_ARCH_LEDS - Use LEDs to show state.
- CONFIG_DRAM_SIZE - Describes the internal DRAM.
- CONFIG_DRAM_START - The start address of internal DRAM
+ CONFIG_RAM_SIZE - Describes the internal DRAM.
+ CONFIG_RAM_START - The start address of internal DRAM
  CONFIG_ARCH_STACKDUMP - Do stack dumps after assertions
 
 DM320 specific device driver settings
@@ -384,5 +393,5 @@ DM320 USB Configuration
 Neuros OSD Configuration Options
 
  CONFIG_ARCH_NTOSD_DEVBOARD - Selects the old NTOSD development board.
-   The default is the production OSD board which differs in 
+   The default is the production OSD board which differs in
    several ways.

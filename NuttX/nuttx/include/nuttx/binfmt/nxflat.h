@@ -98,7 +98,7 @@ struct nxflat_loadinfo_s
    *
    * addrenv - This is the handle created by up_addrenv_create() that can be
    *   used to manage the tasks address space.
-   * oldenv  - This is a value returned by up_addrenv_select() that must be 
+   * oldenv  - This is a value returned by up_addrenv_select() that must be
    *   used to restore the current hardware address environment.
    */
 
@@ -145,7 +145,7 @@ extern "C" {
  *
  ****************************************************************************/
 
-EXTERN int nxflat_verifyheader(const struct nxflat_hdr_s *header);
+int nxflat_verifyheader(const struct nxflat_hdr_s *header);
 
 /****************************************************************************
  * Name: nxflat_init
@@ -160,8 +160,7 @@ EXTERN int nxflat_verifyheader(const struct nxflat_hdr_s *header);
  *
  ****************************************************************************/
 
-EXTERN int nxflat_init(const char *filename,
-                       struct nxflat_loadinfo_s *loadinfo);
+int nxflat_init(const char *filename, struct nxflat_loadinfo_s *loadinfo);
 
 /****************************************************************************
  * Name: nxflat_uninit
@@ -176,7 +175,7 @@ EXTERN int nxflat_init(const char *filename,
  *
  ****************************************************************************/
 
-EXTERN int nxflat_uninit(struct nxflat_loadinfo_s *loadinfo);
+int nxflat_uninit(struct nxflat_loadinfo_s *loadinfo);
 
 /****************************************************************************
  * Name: nxflat_load
@@ -184,7 +183,7 @@ EXTERN int nxflat_uninit(struct nxflat_loadinfo_s *loadinfo);
  * Description:
  *   Loads the binary specified by nxflat_init into memory, mapping
  *   the I-space executable regions, allocating the D-Space region,
- *   and inializing the data segment (relocation information is
+ *   and initializing the data segment (relocation information is
  *   temporarily loaded into the BSS region.  BSS will be cleared
  *   by nxflat_bind() after the relocation data has been processed).
  *
@@ -194,7 +193,7 @@ EXTERN int nxflat_uninit(struct nxflat_loadinfo_s *loadinfo);
  *
  ****************************************************************************/
 
-EXTERN int nxflat_load(struct nxflat_loadinfo_s *loadinfo);
+int nxflat_load(struct nxflat_loadinfo_s *loadinfo);
 
 /****************************************************************************
  * Name: nxflat_read
@@ -208,8 +207,8 @@ EXTERN int nxflat_load(struct nxflat_loadinfo_s *loadinfo);
  *
  ****************************************************************************/
 
-EXTERN int nxflat_read(struct nxflat_loadinfo_s *loadinfo, char *buffer,
-                       int readsize, int offset);
+int nxflat_read(struct nxflat_loadinfo_s *loadinfo, char *buffer,
+                int readsize, int offset);
 
 /****************************************************************************
  * Name: nxflat_bind
@@ -227,8 +226,8 @@ EXTERN int nxflat_read(struct nxflat_loadinfo_s *loadinfo, char *buffer,
  ****************************************************************************/
 
 struct symtab_s;
-EXTERN int nxflat_bind(FAR struct nxflat_loadinfo_s *loadinfo,
-                       FAR const struct symtab_s *exports, int nexports);
+int nxflat_bind(FAR struct nxflat_loadinfo_s *loadinfo,
+                FAR const struct symtab_s *exports, int nexports);
 
 /****************************************************************************
  * Name: nxflat_unload
@@ -236,7 +235,7 @@ EXTERN int nxflat_bind(FAR struct nxflat_loadinfo_s *loadinfo,
  * Description:
  *   This function unloads the object from memory. This essentially undoes
  *   the actions of nxflat_load.  It is called only under certain error
- *   conditions after the the module has been loaded but not yet started.
+ *   conditions after the module has been loaded but not yet started.
  *
  * Returned Value:
  *   0 (OK) is returned on success and a negated errno is returned on
@@ -244,27 +243,27 @@ EXTERN int nxflat_bind(FAR struct nxflat_loadinfo_s *loadinfo,
  *
  ****************************************************************************/
 
-EXTERN int nxflat_unload(struct nxflat_loadinfo_s *loadinfo);
+int nxflat_unload(struct nxflat_loadinfo_s *loadinfo);
 
 /****************************************************************************
  * These are APIs used internally only by NuttX:
  ****************************************************************************/
-/****************************************************************************
+/***********************************************************************
  * Name: nxflat_initialize
  *
  * Description:
- *   NXFLAT support is built unconditionally.  However, it order to
+ *   NXFLAT support is built unconditionally.  However, in order to
  *   use this binary format, this function must be called during system
- *   format in order to register the NXFLAT binary format.
+ *   initialization in order to register the NXFLAT binary format.
  *
  * Returned Value:
  *   This is a NuttX internal function so it follows the convention that
  *   0 (OK) is returned on success and a negated errno is returned on
  *   failure.
  *
- ****************************************************************************/
+ ***********************************************************************/
 
-EXTERN int nxflat_initialize(void);
+int nxflat_initialize(void);
 
 /****************************************************************************
  * Name: nxflat_uninitialize
@@ -277,7 +276,7 @@ EXTERN int nxflat_initialize(void);
  *
  ****************************************************************************/
 
-EXTERN void nxflat_uninitialize(void);
+void nxflat_uninitialize(void);
 
 #undef EXTERN
 #if defined(__cplusplus)

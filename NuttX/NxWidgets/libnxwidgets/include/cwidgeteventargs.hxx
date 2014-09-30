@@ -73,7 +73,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <stdint.h>
@@ -97,7 +97,7 @@
 /****************************************************************************
  * Implementation Classes
  ****************************************************************************/
- 
+
 #if defined(__cplusplus)
 
 namespace NXWidgets
@@ -220,7 +220,7 @@ namespace NXWidgets
 
     /**
      * Get the cursor control that generated the event.  Applies only
-     * to the curso control event.
+     * to the cursor control event.
      *
      * @return The cursor control that generated the event.
      */

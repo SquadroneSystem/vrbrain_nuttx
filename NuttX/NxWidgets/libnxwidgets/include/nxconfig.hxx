@@ -39,13 +39,13 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <nuttx/rgbcolors.h>
+#include <nuttx/video/rgbcolors.h>
 #include <nuttx/nx/nxfonts.h>
 
 /****************************************************************************
@@ -57,7 +57,7 @@
  *
  * CONFIG_HAVE_CXX=y   : C++ support is required
  * CONFIG_NX=y         : NX graphics support must be enabled
- * CONFIG_NX_MOUSE=y   : Required to enable NX mouse/touchscreen support
+ * CONFIG_NX_XYINPUT=y : Required to enable NX mouse/touchscreen support
  * CONFIG_NX_KBD=y     : Required to enabled NX keyboard support
  * CONFIG_NX_NPLANES=1 : Only a single video plane is supported
  *
@@ -68,7 +68,7 @@
  * CONFIG_NXWIDGETS_VPLANE - Only a single video plane is supported. Default: 0
  * CONFIG_NXWIDGETS_SERVERPRIO - Priority of the NX server.  This applies
  *   only if NX is configured in multi-user mode (CONFIG_NX_MULTIUSER=y).
- *   Default: SCHED_PRIORITY_DEFAULT+1.  NOTE:  Of the three priority
+ *   Default: (SCHED_PRIORITY_DEFAULT+10).  NOTE:  Of the three priority
  *   definitions here, CONFIG_NXWIDGETS_SERVERPRIO should have the highest
  *   priority to avoid data overrun race conditions. Such errors would most
  *   likely appear as duplicated rows of data on the display.
@@ -160,8 +160,8 @@
  * Required to enable NX mouse/touchscreen support
  */
 
-#ifndef CONFIG_NX_MOUSE
-#  warning "NX mouse/touchscreen support is required (CONFIG_NX_MOUSE)"
+#ifndef CONFIG_NX_XYINPUT
+#  warning "NX mouse/touchscreen support is required (CONFIG_NX_XYINPUT)"
 #endif
 
 /**
@@ -214,7 +214,7 @@
  */
 
 #ifndef CONFIG_NXWIDGETS_SERVERPRIO
-#  define CONFIG_NXWIDGETS_SERVERPRIO (SCHED_PRIORITY_DEFAULT+1)
+#  define CONFIG_NXWIDGETS_SERVERPRIO (SCHED_PRIORITY_DEFAULT+10)
 #endif
 
 #ifndef CONFIG_NXWIDGETS_CLIENTPRIO
@@ -284,9 +284,9 @@
 #  endif
 #  define CONFIG_NXWIDGETS_FMT FB_FMT_RGB8_332
 #  define MKRGB                RGBTO8
-#  define RGB2RED              RBG8RED
-#  define RGB2GREEN            RBG8GREEN
-#  define RGB2BLUE             RBG8BLUE
+#  define RGB2RED              RGB8RED
+#  define RGB2GREEN            RGB8GREEN
+#  define RGB2BLUE             RGB8BLUE
 #  define FONT_RENDERER        nxf_convert_8bpp
 #elif CONFIG_NXWIDGETS_BPP == 16
 #  ifdef CONFIG_NX_DISABLE_16BPP
@@ -294,9 +294,9 @@
 #  endif
 #  define CONFIG_NXWIDGETS_FMT FB_FMT_RGB16_565
 #  define MKRGB                RGBTO16
-#  define RGB2RED              RBG16RED
-#  define RGB2GREEN            RBG16GREEN
-#  define RGB2BLUE             RBG16BLUE
+#  define RGB2RED              RGB16RED
+#  define RGB2GREEN            RGB16GREEN
+#  define RGB2BLUE             RGB16BLUE
 #  define FONT_RENDERER        nxf_convert_16bpp
 #elif CONFIG_NXWIDGETS_BPP == 24
 #  ifdef CONFIG_NX_DISABLE_24BPP
@@ -304,9 +304,9 @@
 #  endif
 #  define CONFIG_NXWIDGETS_FMT FB_FMT_RGB24
 #  define MKRGB                RGBTO24
-#  define RGB2RED              RBG24RED
-#  define RGB2GREEN            RBG24GREEN
-#  define RGB2BLUE             RBG24BLUE
+#  define RGB2RED              RGB24RED
+#  define RGB2GREEN            RGB24GREEN
+#  define RGB2BLUE             RGB24BLUE
 #  define FONT_RENDERER        nxf_convert_24bpp
 #elif CONFIG_NXWIDGETS_BPP == 32
 #  ifdef CONFIG_NX_DISABLE_32BPP
@@ -314,9 +314,9 @@
 #  endif
 #  define CONFIG_NXWIDGETS_FMT FB_FMT_RGB32
 #  define MKRGB                RGBTO24
-#  define RGB2RED              RBG24RED
-#  define RGB2GREEN            RBG24GREEN
-#  define RGB2BLUE             RBG24BLUE
+#  define RGB2RED              RGB24RED
+#  define RGB2GREEN            RGB24GREEN
+#  define RGB2BLUE             RGB24BLUE
 #  define FONT_RENDERER        nxf_convert_32bpp
 #else
 #  error "Pixel depth not supported (CONFIG_NXWIDGETS_BPP)"

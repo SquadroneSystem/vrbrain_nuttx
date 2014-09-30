@@ -152,6 +152,9 @@ static struct uart_ops_s g_com_ops =
     .receive        = up_receive,
     .rxint          = up_rxint,
     .rxavailable    = up_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+    .rxflowcontrol  = NULL,
+#endif
     .send           = up_send,
     .txint          = up_txint,
     .txready        = up_txready,
@@ -310,7 +313,7 @@ static int up_attach(struct uart_dev_s *dev)
     int err;
 
     err = rgmp_request_irq(priv->irq, &priv->action, 0);
-  
+
     return err;
 }
 
@@ -374,7 +377,7 @@ static int up_ioctl(struct file *filep, int cmd, unsigned long arg)
     struct inode      *inode = filep->f_inode;
     struct uart_dev_s *dev   = inode->i_private;
     struct up_dev_s   *priv  = (struct up_dev_s*)dev->priv;
-    
+
     switch (cmd) {
     case COM_SET_BAUD:
         priv->baud = arg;
@@ -546,7 +549,7 @@ static bool up_txempty(struct uart_dev_s *dev)
  * Name: up_serialinit
  *
  * Description:
- *   Performs the low level UART initialization early in 
+ *   Performs the low level UART initialization early in
  *   debug so that the serial console will be available
  *   during bootup.  This must be called before up_serialinit.
  *
@@ -554,7 +557,7 @@ static bool up_txempty(struct uart_dev_s *dev)
 
 void up_earlyserialinit(void)
 {
-    
+
 }
 
 /****************************************************************************

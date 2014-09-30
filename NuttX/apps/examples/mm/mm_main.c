@@ -47,7 +47,7 @@
 
 #define NTEST_ALLOCS 32
 
-/* #define STOP_ON_ERRORS do{}while(0) */
+/* #define STOP_ON_ERRORS do {} while (0) */
 #define STOP_ON_ERRORS exit(1)
 
 /* All other definitions derive from these two */
@@ -149,11 +149,14 @@ static void do_mallocs(void **mem, const int *size, const int *seq, int n)
       if (!mem[j])
         {
           printf("(%d)Allocating %d bytes\n", i,  size[j]);
+
           mem[j] = malloc(size[j]);
           printf("(%d)Memory allocated at %p\n", i, mem[j]);
+
           if (mem[j] == NULL)
             {
               int allocsize = MM_ALIGN_UP(size[j] + SIZEOF_MM_ALLOCNODE);
+
               fprintf(stderr, "(%d)malloc failed for allocsize=%d\n", i, allocsize);
               if (allocsize > alloc_info.mxordblk)
                 {
@@ -167,7 +170,7 @@ static void do_mallocs(void **mem, const int *size, const int *seq, int n)
             }
           else
             {
-              memset(mem[j], 0xAA, size[j]);
+              memset(mem[j], 0xaa, size[j]);
             }
 
           mm_showmallinfo();
@@ -185,11 +188,14 @@ static void do_reallocs(void **mem, const int *oldsize, const int *newsize, cons
       j = seq[i];
       printf("(%d)Re-allocating at %p from %d to %d bytes\n",
              i, mem[j], oldsize[j], newsize[j]);
+
       mem[j] = realloc(mem[j], newsize[j]);
       printf("(%d)Memory re-allocated at %p\n", i, mem[j]);
+
       if (mem[j] == NULL)
         {
           int allocsize = MM_ALIGN_UP(newsize[j] + SIZEOF_MM_ALLOCNODE);
+
           fprintf(stderr, "(%d)realloc failed for allocsize=%d\n", i, allocsize);
           if (allocsize > alloc_info.mxordblk)
             {
@@ -220,11 +226,14 @@ static void do_memaligns(void **mem, const int *size, const int *align, const in
       j = seq[i];
       printf("(%d)Allocating %d bytes aligned to 0x%08x\n",
              i,  size[j], align[i]);
+
       mem[j] = memalign(align[i], size[j]);
       printf("(%d)Memory allocated at %p\n", i, mem[j]);
+
       if (mem[j] == NULL)
         {
           int allocsize = MM_ALIGN_UP(size[j] + SIZEOF_MM_ALLOCNODE) + 2*align[i];
+
           fprintf(stderr, "(%d)memalign failed for allocsize=%d\n", i, allocsize);
           if (allocsize > alloc_info.mxordblk)
             {
@@ -253,8 +262,10 @@ static void do_frees(void **mem, const int *size, const int *seq, int n)
   for (i = 0; i < n; i++)
     {
       j = seq[i];
+
       printf("(%d)Releasing memory at %p (size=%d bytes)\n",
              i, mem[j], size[j]);
+
       free(mem[j]);
       mem[j] = NULL;
 

@@ -4,13 +4,19 @@ tools/README.txt
 This README file addresses the contents of the NuttX tools/ directory.
 
 The tools/ directory contains miscellaneous scripts and host C programs
-that are necessary parts of the the NuttX build system.  These files
+that are necessary parts of the NuttX build system.  These files
 include:
 
 README.txt
 ----------
 
   This file!
+
+astyle.sh
+---------
+
+  A C formatting tool from Lorenz Meier.  This is based on astyle and gets
+  very close to the NuttX coding style.
 
 Config.mk
 ---------
@@ -201,8 +207,14 @@ mksymtab.c, cvsparser.c, and cvsparser.h
   Example:
 
     cd nuttx/tools
-    cat ../syscall/syscall.csv ../lib/lib.csv | sort >tmp.csv
+    cat ../syscall/syscall.csv ../lib/libc.csv | sort >tmp.csv
     ./mksymtab.exe tmp.csv tmp.c
+
+mkctags.sh
+----------
+
+  A script for creating ctags from Ken Pettit.  See http://en.wikipedia.org/wiki/Ctags
+  and http://ctags.sourceforge.net/
 
 pic32mx
 -------
@@ -228,7 +240,7 @@ bdf-convert.c
   Create a new NuttX configuration variable.  For example, suppose
   you define the following variable:  CONFIG_NXFONT_MYFONT.  Then
   you would need to:
-  
+
     3. Define CONFIG_NXFONT_MYFONT=y in your NuttX configuration file.
 
   A font ID number has to be assigned for each new font.  The font ID
@@ -239,7 +251,7 @@ bdf-convert.c
 
     4. include/nuttx/nx/nxfonts.h. Add you new font as a possible system
        default font:
- 
+
        #if defined(CONFIG_NXFONT_SANS23X27)
        # define NXFONT_DEFAULT FONTID_SANS23X27
        #elif defined(CONFIG_NXFONT_MYFONT)
@@ -248,7 +260,7 @@ bdf-convert.c
 
        Then define the actual font ID.  Make sure that the font ID value
        is unique:
- 
+
        enum nx_fontid_e
        {
          FONTID_DEFAULT     = 0      /* The default font */
@@ -259,7 +271,7 @@ bdf-convert.c
          , FONTID_MYFONT    = 2      /* My shiny, new font */
        #endif
        ...
- 
+
   New Add the font to the NX build system.  There are several files that
   you have to modify to to this.  Look how the build system uses the
   font CONFIG_NXFONT_SANS23X27 for examaples:
@@ -326,7 +338,7 @@ bdf-convert.c
        font.  The lookup function is NXHANDLE nxf_getfonthandle(enum nx_fontid_e fontid).
        The new font information needs to be added to data structures used by
        that function:
- 
+
        #ifdef CONFIG_NXFONT_SANS23X27
        extern const struct nx_fontpackage_s g_sans23x27_package;
        #endif
@@ -427,7 +439,7 @@ incdir.bat
 ---------
 
   Different compilers have different conventions for specifying lists
-  of include file paths on the the compiler command line.  This incdir.sh
+  of include file paths on the compiler command line.  This incdir.sh
   bash script allows the build system to create include file paths without
   concern for the particular compiler in use.
 
@@ -489,7 +501,7 @@ kconfig.bat
   only a few options for the Windows user (see the top-level README.txt
   file).
 
-  You can, with some effort, run the the Cygwin kconfig-mconf tool directly
+  You can, with some effort, run the Cygwin kconfig-mconf tool directly
   in the CMD.exe shell.  In this case, you do not have to modify the
   .config file, but there are other complexities:  You need to
   temporarily set the Cgywin directories in the PATH variable and
@@ -504,7 +516,7 @@ kconfig.bat
   variables from the Cygwin kconfig-mconf running in the CMD.exe shell.
   The following change to the top-level Kconfig file seems to work around
   these problems:
-  
+
      config APPSDIR
           string
      -   option env="APPSDIR"
@@ -521,6 +533,8 @@ indent.sh
   This script can be used to indent .c and .h files in a manner similar
   to my coding NuttX coding style.  It doesn't do a really good job,
   however (see the comments at the top of the indent.sh file).
+
+  See astyle.sh above.  I suspect that it will do a better job.
 
 zipme.sh
 --------

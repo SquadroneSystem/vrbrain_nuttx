@@ -70,7 +70,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <sys/types.h>
@@ -119,7 +119,7 @@ CLabel::CLabel(CWidgetControl *pWidgetControl,
   m_vAlignment        = TEXT_ALIGNMENT_VERT_CENTER;
 
   // The border thickness is 1 pixel
-  
+
   m_borderSize.top    = 1;
   m_borderSize.right  = 1;
   m_borderSize.bottom = 1;
@@ -252,6 +252,8 @@ void CLabel::getPreferredDimensions(CRect &rect) const
  * Sets the font.
  *
  * @param font A pointer to the font to use.
+ *
+ * NOTE: This font is not deleted when the widget is destroyed!
  */
 
 void CLabel::setFont(CNxFont *font)
@@ -272,7 +274,7 @@ void CLabel::setFont(CNxFont *font)
  *
  * @see redraw()
  */
- 
+
 void CLabel::drawContents(CGraphicsPort *port)
 {
   // Get the drawing area (excluding the border)
@@ -318,17 +320,28 @@ void CLabel::drawContents(CGraphicsPort *port)
   CNxFont* font = getFont();
   int height = font->getHeight();
   int width = font->getStringWidth(m_text);
-    
+
   // Draw the background (excluding the border and the text area)
+  // Left
 
   port->drawFilledRect(rect.getX(), rect.getY(),
-                       pos.x - rect.getX(), rect.getHeight(), backColor); // Left
+                       pos.x - rect.getX(), rect.getHeight(), backColor);
+
+  // Right
+
   port->drawFilledRect(pos.x + width, rect.getY(),
-                       rect.getX2() - (pos.x + width) + 1, rect.getHeight(), backColor); // Right
-  port->drawFilledRect(pos.x, rect.getY(),
-                       width, pos.y - rect.getY(), backColor); // Top
-  port->drawFilledRect(pos.x, pos.y + height,
-                       width, rect.getY2() - (pos.y + height) + 1, backColor); // Bottom
+                       rect.getX2() - (pos.x + width) + 1,
+                       rect.getHeight(), backColor);
+
+  // Top
+
+  port->drawFilledRect(pos.x, rect.getY(), width, pos.y - rect.getY(),
+                       backColor);
+
+  // Bottom
+
+  port->drawFilledRect(pos.x, pos.y + height, width,
+                       rect.getY2() - (pos.y + height) + 1, backColor);
 #endif
 
   // Add the text using the selected color and background color
@@ -348,7 +361,7 @@ void CLabel::drawContents(CGraphicsPort *port)
 void CLabel::drawBorder(CGraphicsPort *port)
 {
   // Check if the widget indicates it should have an outline: That
-  // the outline is enabled and the this is not just a text-only
+  // (1) the outline is enabled and (2) that this is not just a text-only
   // redraw
 
   if (!isBorderless() && !isTextChange())
@@ -393,7 +406,7 @@ void CLabel::calculateTextPositionVertical(void)
     case TEXT_ALIGNMENT_VERT_TOP:
       m_align.y = 0;
       break;
- 
+
     case TEXT_ALIGNMENT_VERT_BOTTOM:
       m_align.y = height - getFont()->getHeight();
       break;
@@ -409,7 +422,7 @@ void CLabel::calculateTextPositionHorizontal(void)
 {
   CRect rect;
   getClientRect(rect);
-  
+
   nxgl_coord_t width = rect.getWidth();
 
   switch (m_hAlignment)

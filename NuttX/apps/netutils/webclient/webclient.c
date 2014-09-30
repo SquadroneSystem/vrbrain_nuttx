@@ -2,7 +2,7 @@
  * netutils/webclient/webclient.c
  * Implementation of the HTTP client.
  *
- *   Copyright (C) 2007, 2009, 2011-2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007, 2009, 2011-2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Based on uIP which also has a BSD style license:
@@ -65,14 +65,14 @@
 #ifdef CONFIG_HAVE_GETHOSTBYNAME
 #  include <netdb.h>
 #else
-#  include <apps/netutils/resolv.h>
+#  include <apps/netutils/dnsclient.h>
 #endif
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
 #include <nuttx/version.h>
-#include <apps/netutils/uiplib.h>
+#include <apps/netutils/netlib.h>
 #include <apps/netutils/webclient.h>
 
 #if defined(CONFIG_NETUTILS_CODECS)
@@ -347,7 +347,7 @@ static inline int wget_parseheaders(struct wget_s *ws)
                    * retain the current location.
                    */
 
-                  (void)uip_parsehttpurl(ws->line + strlen(g_httplocation), &ws->port,
+                  (void)netlib_parsehttpurl(ws->line + strlen(g_httplocation), &ws->port,
                                          ws->hostname, CONFIG_WEBCLIENT_MAXHOSTNAME,
                                          ws->filename, CONFIG_WEBCLIENT_MAXFILENAME);
                   nvdbg("New hostname='%s' filename='%s'\n", ws->hostname, ws->filename);
@@ -368,7 +368,7 @@ static inline int wget_parseheaders(struct wget_s *ws)
     }
 
 exit:
-  ws->offset = offset;
+  ws->offset = ++offset;
   ws->ndx    = ndx;
   return OK;
 }
@@ -412,7 +412,7 @@ static int wget_base(FAR const char *url, FAR char *buffer, int buflen,
   char *dest,post_size[8];
   int sockfd;
   int len,post_len;
-  int ret = OK;
+  int ret;
 
   /* Initialize the state structure */
 
@@ -423,7 +423,7 @@ static int wget_base(FAR const char *url, FAR char *buffer, int buflen,
 
   /* Parse the hostname (with optional port number) and filename from the URL */
 
-  ret = uip_parsehttpurl(url, &ws.port,
+  ret = netlib_parsehttpurl(url, &ws.port,
                          ws.hostname, CONFIG_WEBCLIENT_MAXHOSTNAME,
                          ws.filename, CONFIG_WEBCLIENT_MAXFILENAME);
   if (ret != 0)
@@ -548,7 +548,7 @@ static int wget_base(FAR const char *url, FAR char *buffer, int buflen,
 
       ws.state   = WEBCLIENT_STATE_STATUSLINE;
       redirected = false;
-      for(;;)
+      for (;;)
         {
           ws.datend = recv(sockfd, ws.buffer, ws.buflen, 0);
           if (ws.datend < 0)

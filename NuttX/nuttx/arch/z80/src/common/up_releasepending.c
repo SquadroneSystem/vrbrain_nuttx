@@ -46,7 +46,7 @@
 
 #include "chip/chip.h"
 #include "chip/switch.h"
-#include "os_internal.h"
+#include "sched/sched.h"
 #include "up_internal.h"
 
 /****************************************************************************
@@ -100,7 +100,7 @@ void up_release_pending(void)
 
            SAVE_IRQCONTEXT(rtcb);
 
-          /* Restore the exception context of the rtcb at the (new) head 
+          /* Restore the exception context of the rtcb at the (new) head
            * of the g_readytorun task list.
            */
 
@@ -116,13 +116,13 @@ void up_release_pending(void)
 
       /* Copy the exception context into the TCB of the task that
        * was currently active. if SAVE_USERCONTEXT returns a non-zero
-       * value, then this is really the previously running task 
+       * value, then this is really the previously running task
        * restarting!
        */
 
       else if (!SAVE_USERCONTEXT(rtcb))
         {
-          /* Restore the exception context of the rtcb at the (new) head 
+          /* Restore the exception context of the rtcb at the (new) head
            * of the g_readytorun task list.
            */
 

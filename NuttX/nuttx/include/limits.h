@@ -1,7 +1,7 @@
 /********************************************************************************
  * include/limits.h
  *
- *   Copyright (C) 2007-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -123,11 +123,22 @@
 #define _POSIX_OPEN_MAX       CONFIG_NFILE_DESCRIPTORS
 #define _POSIX_PATH_MAX       CONFIG_PATH_MAX
 #define _POSIX_PIPE_BUF       512
-#define _POSIX_SSIZE_MAX      INT_MAX
 #define _POSIX_STREAM_MAX     CONFIG_NFILE_STREAMS
 #define _POSIX_TZNAME_MAX     3
 
-/* Requred for sigqueue */
+#ifdef CONFIG_SMALL_MEMORY
+
+#define _POSIX_SSIZE_MAX      32767       /* See sys/types.h */
+#define _POSIX_SSIZE_MIN      -32768
+
+#else /* CONFIG_SMALL_MEMORY */
+
+#define _POSIX_SSIZE_MAX      2147483647  /* See sys/types.h */
+#define _POSIX_SSIZE_MIN      -2147483648
+
+#endif /* CONFIG_SMALL_MEMORY */
+
+/* Required for sigqueue */
 
 #define _POSIX_RTSIG_MAX      31
 #define _POSIX_SIGQUEUE_MAX   32
@@ -138,18 +149,19 @@
  *
  * _POSIX_TIMER_MAX is the per-process number of timers.
  *
- * _POSIX_CLOCKRES_MIN is the resolution of the CLOCK_REALTIME clock in nanoseconds.
- * CLOCK_REALTIME is controlled by the NuttX system time.  The default value is the
- * system timer which has a resolution of 10 milliseconds.  This default setting can
- * be overridden by defining the clock interval in milliseconds as CONFIG_MSEC_PER_TICK
- * in the board configuration file.
+ * _POSIX_CLOCKRES_MIN is the resolution of the CLOCK_REALTIME clock in
+ *    nanoseconds.  CLOCK_REALTIME is controlled by the NuttX system time.
+ *    The default value is the system timer which has a resolution of 1000
+ *    microseconds.  This default setting can be overridden by defining the
+ *    clock interval in microseconds as CONFIG_USEC_PER_TICK in the NuttX
+ *    configuration file.
  */
 
 #define _POSIX_DELAYTIMER_MAX 32
 #define _POSIX_TIMER_MAX      32
 
-#ifdef CONFIG_MSEC_PER_TICK
-# define _POSIX_CLOCKRES_MIN  ((CONFIG_MSEC_PER_TICK)*1000000)
+#ifdef CONFIG_USEC_PER_TICK
+# define _POSIX_CLOCKRES_MIN  ((CONFIG_USEC_PER_TICK)*1000)
 #else
 # define _POSIX_CLOCKRES_MIN  (10*1000000)
 #endif
@@ -184,8 +196,11 @@
 #define PATH_MAX       _POSIX_PATH_MAX
 #define PIPE_BUF       _POSIX_PIPE_BUF
 #define SSIZE_MAX      _POSIX_SSIZE_MAX
+#define SSIZE_MIN      _POSIX_SSIZE_MIN
 #define STREAM_MAX     _POSIX_STREAM_MAX
 #define TZNAME_MAX     _POSIX_TZNAME_MAX
+#define TZ_MAX_TIMES   CONFIG_LIBC_TZ_MAX_TIMES
+#define TZ_MAX_TYPES   CONFIG_LIBC_TZ_MAX_TYPES
 
 #define RTSIG_MAX      _POSIX_RTSIG_MAX
 #define SIGQUEUE_MAX   _POSIX_SIGQUEUE_MAX

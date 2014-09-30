@@ -48,6 +48,7 @@
 
 #include <nuttx/config.h>
 
+#include <sys/socket.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -55,9 +56,10 @@
 #include <unistd.h>
 #include <string.h>
 #include <semaphore.h>
-#include <sys/socket.h>
 
-#include <nuttx/net/uip/uip.h>
+#include <arpa/inet.h>
+
+#include <nuttx/net/ip.h>
 #include <apps/netutils/smtp.h>
 
 /****************************************************************************
@@ -87,7 +89,7 @@ struct smtp_state
   uint8_t      state;
   bool         connected;
   sem_t        sem;
-  uip_ipaddr_t smtpserver;
+  net_ipaddr_t smtpserver;
   const char  *localhostname;
   const char  *to;
   const char  *cc;
@@ -283,12 +285,12 @@ static inline int smtp_send_message(int sockfd, struct smtp_state *psmtp)
  *               configured.
  */
 
-void smtp_configure(void *handle, const char *lhostname,
-                    const uip_ipaddr_t *paddr)
+void smtp_configure(FAR void *handle, FAR const char *lhostname,
+                    FAR const net_ipaddr_t *paddr)
 {
-  struct smtp_state *psmtp = (struct smtp_state *)handle;
+  FAR struct smtp_state *psmtp = (FAR struct smtp_state *)handle;
   psmtp->localhostname = lhostname;
-  uip_ipaddr_copy(psmtp->smtpserver, paddr);
+  net_ipaddr_copy(psmtp->smtpserver, paddr);
 }
 
 /* Send an e-mail.

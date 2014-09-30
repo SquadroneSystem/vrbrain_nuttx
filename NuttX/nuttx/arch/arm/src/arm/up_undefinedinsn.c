@@ -38,17 +38,20 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+
 #include <stdint.h>
+#include <assert.h>
 #include <debug.h>
 
-#include "os_internal.h"
+#include <arch/irq.h>
+
 #include "up_internal.h"
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* Output debug info if stack dump is selected -- even if 
+/* Output debug info if stack dump is selected -- even if
  * debug is not selected.
  */
 

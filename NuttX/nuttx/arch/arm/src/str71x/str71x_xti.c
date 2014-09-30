@@ -50,7 +50,6 @@
 
 #include "chip.h"
 #include "up_arch.h"
-#include "os_internal.h"
 #include "up_internal.h"
 #include "str71x_internal.h"
 
@@ -205,9 +204,9 @@ int str71x_xticonfig(int irq, bool rising)
       /* Make sure that the interrupt is disabled */
 
       str71x_disable_xtiirq(irq);
- 
+
       /* Decide if we use the lower or upper regiser */
- 
+
       bit = irq - STR71X_IRQ_FIRSTXTI;
       ndx = 0;
       if (bit > 7)
@@ -257,7 +256,7 @@ void str71x_enable_xtiirq(int irq)
   if (irq >= STR71X_IRQ_FIRSTXTI && irq <= NR_IRQS)
     {
       /* Decide if we use the lower or upper regiser */
- 
+
       bit = irq - STR71X_IRQ_FIRSTXTI;
       ndx = 0;
       if (bit > 7)
@@ -297,7 +296,7 @@ void str71x_disable_xtiirq(int irq)
   if (irq >= STR71X_IRQ_FIRSTXTI && irq <= NR_IRQS)
     {
       /* Decide if we use the lower or upper regiser */
- 
+
       bit = irq - STR71X_IRQ_FIRSTXTI;
       ndx = 0;
       if (bit > 7)

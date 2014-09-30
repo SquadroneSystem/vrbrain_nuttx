@@ -259,7 +259,7 @@ static inline int nxmu_setup(FAR const char *mqname, FAR NX_DRIVERTYPE *dev,
 
   /* Initialize the mouse position */
 
-#ifdef CONFIG_NX_MOUSE
+#ifdef CONFIG_NX_XYINPUT
   nxmu_mouseinit(fe->be.vinfo.xres, fe->be.vinfo.yres);
 #endif
   return OK;
@@ -451,7 +451,7 @@ int nx_runinstance(FAR const char *mqname, FAR NX_DRIVERTYPE *dev)
            {
              FAR struct nxsvrmsg_getrectangle_s *getmsg = (FAR struct nxsvrmsg_getrectangle_s *)buffer;
              nxbe_getrectangle(getmsg->wnd, &getmsg->rect, getmsg->plane, getmsg->dest, getmsg->deststride);
-             
+
              if (getmsg->sem_done)
               {
                 sem_post(getmsg->sem_done);
@@ -476,7 +476,7 @@ int nx_runinstance(FAR const char *mqname, FAR NX_DRIVERTYPE *dev)
            {
              FAR struct nxsvrmsg_bitmap_s *bmpmsg = (FAR struct nxsvrmsg_bitmap_s *)buffer;
              nxbe_bitmap(bmpmsg->wnd, &bmpmsg->dest, bmpmsg->src, &bmpmsg->origin, bmpmsg->stride);
-             
+
              if (bmpmsg->sem_done)
               {
                 sem_post(bmpmsg->sem_done);
@@ -486,13 +486,22 @@ int nx_runinstance(FAR const char *mqname, FAR NX_DRIVERTYPE *dev)
 
          case NX_SVRMSG_SETBGCOLOR: /* Set the color of the background */
            {
-             FAR struct nxsvrmsg_setbgcolor_s *bgcolormsg = (FAR struct nxsvrmsg_setbgcolor_s *)buffer;
-             nxgl_colorcopy(fe.be.bgcolor, bgcolormsg->color);
-             nxbe_fill(&fe.be.bkgd, &fe.be.bkgd.bounds, bgcolormsg->color);
+             FAR struct nxsvrmsg_setbgcolor_s *bgcolormsg =
+               (FAR struct nxsvrmsg_setbgcolor_s *)buffer;
+
+             /* Has the background color changed? */
+
+             if (!nxgl_colorcmp(fe.be.bgcolor, bgcolormsg->color))
+               {
+                 /* Yes.. fill the background */
+
+                 nxgl_colorcopy(fe.be.bgcolor, bgcolormsg->color);
+                 nxbe_fill(&fe.be.bkgd, &fe.be.bkgd.bounds, bgcolormsg->color);
+               }
            }
            break;
 
-#ifdef CONFIG_NX_MOUSE
+#ifdef CONFIG_NX_XYINPUT
          case NX_SVRMSG_MOUSEIN: /* New mouse report from mouse client */
            {
              FAR struct nxsvrmsg_mousein_s *mousemsg = (FAR struct nxsvrmsg_mousein_s *)buffer;
@@ -509,7 +518,14 @@ int nx_runinstance(FAR const char *mqname, FAR NX_DRIVERTYPE *dev)
            break;
 #endif
 
-         /* Messages sent to the backgound window ***************************/
+         case NX_SVRMSG_REDRAWREQ: /* Request re-drawing of rectangular region */
+           {
+             FAR struct nxsvrmsg_redrawreq_s *redrawmsg = (FAR struct nxsvrmsg_redrawreq_s *)buffer;
+             nxfe_redrawreq(redrawmsg->wnd, &redrawmsg->rect);
+           }
+           break;
+
+         /* Messages sent to the background window **************************/
 
          case NX_CLIMSG_REDRAW: /* Re-draw the background window */
             {

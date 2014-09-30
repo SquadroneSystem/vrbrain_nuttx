@@ -1,7 +1,7 @@
 /****************************************************************************
  * include/stdio.h
  *
- *   Copyright (C) 2007-2009, 2011, 2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2011, 2013-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,8 @@
  ****************************************************************************/
 
 /* File System Definitions **************************************************/
+
+#define FILENAME_MAX _POSIX_NAME_MAX
 
 /* File system error values *************************************************/
 
@@ -124,6 +126,7 @@ int    fsetpos(FAR FILE *stream, FAR fpos_t *pos);
 long   ftell(FAR FILE *stream);
 size_t fwrite(FAR const void *ptr, size_t size, size_t n_items, FAR FILE *stream);
 FAR char *gets(FAR char *s);
+FAR char *gets_s(FAR char *s, rsize_t n);
 int    ungetc(int c, FAR FILE *stream);
 
 /* Operations on the stdout stream, buffers, paths, and the whole printf-family */
@@ -142,7 +145,7 @@ int    vfprintf(FAR FILE *stream, const char *format, va_list ap);
 int    vsprintf(FAR char *buf, const char *format, va_list ap);
 int    avsprintf(FAR char **ptr, const char *fmt, va_list ap);
 int    vsnprintf(FAR char *buf, size_t size, const char *format, va_list ap);
-int    vsscanf(char *buf, const char *s, va_list ap);
+int    vsscanf(FAR const char *buf, FAR const char *s, va_list ap);
 
 /* Operations on file descriptors including:
  *
@@ -157,10 +160,7 @@ int    vdprintf(int fd, FAR const char *fmt, va_list ap);
 
 /* Operations on paths */
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
 int    statfs(FAR const char *path, FAR struct statfs *buf);
-#pragma GCC diagnostic pop
 
 #undef EXTERN
 #if defined(__cplusplus)

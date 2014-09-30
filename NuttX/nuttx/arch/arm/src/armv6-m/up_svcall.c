@@ -53,7 +53,6 @@
 
 #include "svcall.h"
 #include "exc_return.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 /****************************************************************************
@@ -70,7 +69,7 @@
  */
 
 #if defined(CONFIG_DEBUG_SYSCALL) || defined(CONFIG_DEBUG_SVCALL)
-# define svcdbg(format, arg...) lldbg(format, ##arg)
+# define svcdbg(format, ...) lldbg(format, ##__VA_ARGS__)
 #else
 # define svcdbg(x...)
 #endif

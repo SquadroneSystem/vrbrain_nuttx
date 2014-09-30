@@ -61,7 +61,6 @@
 
 #include "chip.h"
 #include "up_arch.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 #include "lpc43_config.h"
@@ -126,6 +125,9 @@ static const struct uart_ops_s g_uart_ops =
   .receive        = up_receive,
   .rxint          = up_rxint,
   .rxavailable    = up_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
   .send           = up_send,
   .txint          = up_txint,
   .txready        = up_txready,
@@ -560,7 +562,7 @@ static inline void up_enablebreaks(struct up_dev_s *priv, bool enable)
 
 static int up_setup(struct uart_dev_s *dev)
 {
-#ifndef CONFIG_SUPPRESS_LPC43_UART_CONFIG
+#ifndef CONFIG_SUPPRESS_UART_CONFIG
   struct up_dev_s *priv = (struct up_dev_s*)dev->priv;
   uint32_t lcr;
 
@@ -617,7 +619,7 @@ static int up_setup(struct uart_dev_s *dev)
                (UART_FCR_RXTRIGGER_8|UART_FCR_TXRST|UART_FCR_RXRST|UART_FCR_FIFOEN));
 
   /* Enable Auto-RTS and Auto-CS Flow Control in the Modem Control Register */
-  
+
 #ifdef CONFIG_UART1_FLOWCONTROL
   if (priv->id == 1)
     {
@@ -896,7 +898,7 @@ static int up_interrupt(int irq, void *context)
  *       de-asserted (driven HIGH) once the last bit of data has been transmitted.
  *
  *     RS485/EIA-485 driver delay time -- Supported
- * 
+ *
  *       The driver delay time is the delay between the last stop bit leaving
  *       the TXFIFO and the de-assertion of the DIR pin. This delay time can be
  *       programmed in the 8-bit RS485DLY register. The delay time is in periods
@@ -931,21 +933,21 @@ static inline int up_set_rs485_mode(struct up_dev_s *priv,
   else
     {
       /* Set the RS-485/EIA-485 Control register:
-       * 
+       *
        *  NMMEN 0 = Normal Multidrop Mode (NMM) disabled
        *  RXDIS 0 = Receiver is not disabled
        *  AADEN 0 = Auto Address Detect (ADD) is disabled
        *  DCTRL 1 = Auto Direction Control is enabled
-       *  OINV  ? = Value control by user mode settings   
+       *  OINV  ? = Value control by user mode settings
        */
 
       regval = UART_RS485CTRL_DCTRL;
 
       /* Logic levels are controlled by the SER_RS485_RTS_ON_SEND and
-       * SER_RS485_RTS_AFTER_SEND bits in the mode flags. 
+       * SER_RS485_RTS_AFTER_SEND bits in the mode flags.
        * SER_RS485_RTS_AFTER_SEND is ignored.
        *
-       * By default, DIR will go logic low on send, but this can 
+       * By default, DIR will go logic low on send, but this can
        * be inverted.
        */
 

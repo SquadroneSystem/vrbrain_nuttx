@@ -1,10 +1,25 @@
 README.txt
-^^^^^^^^^^
+==========
 
 This is the README file for the NuttX port to the ZiLog ZNEO MCU.
 
+- Console output is on UART0.
+
+- NOTE: My board has a 20MHz crystal, but I have heard of other boards with
+  18.432MHz crystals.  If you board has a diff crystal installed, then
+  modify the system frequency in include/board.h.
+
+Contents
+========
+
+  - ZDS-II Compiler Versions
+  - Patches
+  - Serial Console
+  - Selecting Configurations
+  - Configuration Sub-directories
+
 ZDS-II Compiler Versions
-^^^^^^^^^^^^^^^^^^^^^^^^
+========================
 
 Version 4.10.2
 
@@ -34,6 +49,14 @@ Version 4.11.1
   81400 and 81459 or not.  It is unknown if the code will run without -reduceopt
   either. (Basically, it compiles with 4.11.1, but is untested with that version).
 
+Version 4.12.0
+
+  Never tested
+
+Version 5.0.0
+
+  Never tested
+
 Version 5.0.1
 
   On November 29, 2012, all of the z16f configurations were converted to use 5.0.1,
@@ -44,7 +67,7 @@ Version 5.0.1
   to modify the versioning in Make.defs and setenv.sh; if you want to build
   on a different platform, you will need to change the path in the ZDS binaries
   in those same files.
-  
+
 Other Versions
 
   If you use any version of ZDS-II other than 5.0.1 or if you install ZDS-II
@@ -53,33 +76,65 @@ Other Versions
   configs/z16f2800100zcog/*/Make.defs.  Simply edit these two files, changing
   5.0.1 to whatever.
 
-Issues
-^^^^^^
+Patches
+=======
 
-There are several, important open issues with the ZNEO port (8 as of this writing).
-See the TODO file in the top-level NuttX directory.  One of these should be
-mentioned here because it causes a failure to compile Nuttx:
+A bug has been found in the ZDS-II toolchain version 5.0.1.  a patch is
+available to work around the bug.  A summary of the nature the bug and
+instructions for applying the patch follow.
 
-  Description: The file drivers/mmcsd/mmcsd_sdio.c generates an internal compiler
-               error like:
- 
-               mmcsd\mmcsd_sdio.c
-               Internal Error(0503) On line 2524 of "MMCSD\MMCSD_SDIO.C"
-                   File <c3>, Args(562,46)
+Parameters are passed different to variadic functions (i.e., functions
+that accept a varying number of parameters) than to regular functions.  For
+most functions, parameters are passed in registers, beginning with R1.  But
+for variadic functions, all parameters must be passed on the stack.
 
-  Status:     Open.  Recommended workaround: remove mmcsd_sdio.c from
-              drivers/mmcsd/Make.defs.  There is no SDIO support for the Z16 anyway
-  Priority:   Low
+The logic works correctly for global functions, local functions, and most
+function pointers.  It does not work correctly for the case where a variadic
+function point is included within a structure.  In that case, the caller
+inappropriately passes the parameters in registers; the receiver will
+attempt to recover the parameters from the stack and a failure then follows.
 
-This is bug in ZDS-II.  It was discovered in version 4.11.0 and still exists
-in version 4.11.1.
+This bug prevents the use of NSH with the ZNEO.  However, a patch has been
+developed that works around the problem.  That patch can be found at
+configs/z16f2800100zcog/tools/zneo-zdsii-5_0_1-variadic-func-fix.patch.  In
+that directory is also a bash script that will apply that patch for you.
 
-Configuration Subdirectories
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The patch would be applied when NuttX is configured as follows:
 
-- source/ and include/
-    These directories contain common logic for all z16f2800100zcog
-    configurations.
+  cd tools
+  ./configure.sh z16f2800100zcog/nsh
+  cd ..
+  . ./setenv.sh
+  dopatch.sh
+  make
+
+The patch can also be removed with:
+
+  dopatch.sh -R
+
+See the section "Selecting Configurations" below.
+
+UPDATE:  2014-4-27:  The configs/16z/nsh example still does not run
+correctly.  This is believe to be caused by additional, undiagnosed
+compiler errors.  At present, these compiler bugs do not seem to effect
+the z16f2800100zcog.
+
+Serial Console
+==============
+
+By default, console output is on UART1 which corresponds to the DB9
+connector labelled CONSOLE.
+
+UART1 is also available on JP2:
+
+  MCU PIN     GPIO  JP2
+  Pin 86 TXD1 PD5   JP2 Pin 26
+  Pin 87 RXD1 PD4   JP2 Pin 27
+  Vcc               JP2 Pin 59
+  GND               JP2 Pins 19, 39, 46, 48, 56
+
+Selecting Configurations
+========================
 
 Variations on the basic z8f162800100zcog configuration are maintained
 in subdirectories.  To configure any specific configuration, do the
@@ -92,13 +147,25 @@ following steps:
 
 Where <sub-directory> is the specific board configuration that you
 wish to build.  The following board-specific configurations are
-available:
+available.  You may also need to apply a path to NuttX before making.
+Please refer the the section "Patches" above"
 
-ostest
-------
+Configuration Sub-directories
+=============================
 
-    This builds the examples/ostest application for execution from FLASH.
-    See examples/README.txt for information about ostest.
+source/ and include/
+--------------------
+
+  These directories contain common logic for all z16f2800100zcog
+  configurations.
+
+nsh
+---
+  nsh:
+    This configuration directory will built the NuttShell (NSH).  See
+    the NSH user manual in the documents directory (or online at nuttx.org).
+    See also the README.txt file in the nsh sub-directory for information
+    about using ZDS-II.
 
     NOTES:
 
@@ -125,7 +192,55 @@ ostest
         CONFIG_APPS_DIR="..\apps"
 
       NOTES:
-      
+
+      a. If you need to change the toolchain path used in Make.defs, you
+         will need to use the short 8.3 filenames to avoid spaces.  On my
+         PC, C:\PROGRA~1\ is is C:\Program Files\ and C:\PROGRA~2\ is
+         C:\Program Files (x86)\
+      b. I have not tried to use this configuration with the native
+         Windows build, but I would expect the same issues as is listed
+         for the ostest configuration..
+
+   STATUS:
+
+     1. Note that you must apply the ZNEO patch if you are using ZDS-II 5.0.1.
+        See the README.txt file in the parent directory for more information.
+        The configuration will run correctly with the patch applied.
+
+ostest
+------
+
+    This builds the examples/ostest application for execution from FLASH.
+    See the README.txt file in the ostest sub-directory for information
+    about using ZDS-II.  See also apps/examples/README.txt for information
+    about ostest.
+
+    NOTES:
+
+    1. This configuration uses the mconf-based configuration tool.  To
+       change this configuration using that tool, you should:
+
+       a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+          and misc/tools/
+
+       b. Execute 'make menuconfig' in nuttx/ in order to start the
+          reconfiguration process.
+
+    2. By default, this configuration assumes that you are using the
+       Cygwin environment on Windows.  An option is to use the native
+       CMD.exe window build as described in the top-level README.txt
+       file.  To set up that configuration:
+
+       -CONFIG_WINDOWS_CYGWIN=y
+       +CONFIG_WINDOWS_NATIVE=y
+
+       And after configuring, make sure that CONFIG_APPS_DIR uses
+       the back slash character.  For example:
+
+        CONFIG_APPS_DIR="..\apps"
+
+      NOTES:
+
       a. If you need to change the toolchain path used in Make.defs, you
          will need to use the short 8.3 filenames to avoid spaces.  On my
          PC, C:\PROGRA~1\ is is C:\Program Files\ and C:\PROGRA~2\ is
@@ -135,13 +250,10 @@ ostest
       c. At present, the native Windows build fails at the final link stages.
          The failure is due to problems in arch/z16/src/nuttx.linkcmd that
          is autogenerated by arch/z16/src/Makefile.  The basic problem
-         is the spurious spaces and and carrirage returns are generated at
+         is the spurious spaces and and carriage returns are generated at
          the end of the lines after a line continuation (\ ^M).  If these
          trailing bad characters are manually eliminated, then the build
          will succeed on the next try.
-      d. Hmmm... when last tested, there some missing .obj files in arch/z16/src.
-         A little additional TLC might be needed to get a reliable Windows
-         native build.
 
 pashello
 --------

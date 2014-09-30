@@ -1,7 +1,7 @@
 /****************************************************************************
  * binfmt/binfmt_exec.c
  *
- *   Copyright (C) 2009, 2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2009, 2013-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -75,12 +75,16 @@
  *
  * Description:
  *   This is a convenience function that wraps load_ and exec_module into
- *   one call.  If CONFIG_SCHED_ONEXIT is also defined, this function will
- *   automatically call schedule_unload() to unload the module when task
- *   exits.
+ *   one call.  If CONFIG_SCHED_ONEXIT and CONFIG_SCHED_HAVE_PARENT are
+ *   also defined, this function will automatically call schedule_unload()
+ *   to unload the module when task exits.
+ *
+ *   NOTE: This function is flawed and useless without CONFIG_SCHED_ONEXIT
+ *   and CONFIG_SCHED_HAVE_PARENT because there is then no mechanism to
+ *   unload the module once it exits.
  *
  * Input Parameter:
- *   filename - Fulll path to the binary to be loaded
+ *   filename - Full path to the binary to be loaded
  *   argv     - Argument list
  *   exports  - Table of exported symbols
  *   nexports - The number of symbols in exports
@@ -95,7 +99,7 @@
 int exec(FAR const char *filename, FAR char * const *argv,
          FAR const struct symtab_s *exports, int nexports)
 {
-#ifdef CONFIG_SCHED_ONEXIT
+#if defined(CONFIG_SCHED_ONEXIT) && defined(CONFIG_SCHED_HAVE_PARENT)
   FAR struct binary_s *bin;
   int pid;
   int ret;
@@ -112,6 +116,7 @@ int exec(FAR const char *filename, FAR char * const *argv,
   /* Load the module into memory */
 
   bin->filename = filename;
+  bin->argv     = argv;
   bin->exports  = exports;
   bin->nexports = nexports;
 
@@ -188,5 +193,5 @@ int exec(FAR const char *filename, FAR char * const *argv,
 #endif
 }
 
-#endif /* CONFIG_BINFMT_DISABLE */
+#endif /* !CONFIG_BINFMT_DISABLE */
 

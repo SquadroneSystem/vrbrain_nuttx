@@ -68,12 +68,12 @@
 #include <nuttx/fs/dirent.h>
 #include <nuttx/fs/fs.h>
 #include <nuttx/fs/nfs.h>
-#include <nuttx/net/uip/uip.h>
-#include <nuttx/net/uip/uip-udp.h>
-#include <nuttx/net/uip/uipopt.h>
+#include <nuttx/net/udp.h>
+#include <nuttx/net/netconfig.h>
 
 #include <net/if.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "nfs.h"
 #include "rpc.h"
@@ -1715,9 +1715,9 @@ static int nfs_bind(FAR struct inode *blkdriver, FAR const void *data,
 
   /* But don't let the buffer size exceed the MSS of the socket type */
 
-  if (buflen > UIP_UDP_MSS)
+  if (buflen > UDP_MSS)
     {
-      buflen = UIP_UDP_MSS;
+      buflen = UDP_MSS;
     }
 
   /* Create an instance of the mountpt state structure */
@@ -1847,7 +1847,7 @@ bad:
         {
           kfree(nmp->nm_rpcclnt);
         }
-        
+
       kfree(nmp);
     }
 

@@ -47,7 +47,7 @@
 
 #include "up_arch.h"
 #include "up_internal.h"
-#include "os_internal.h"
+#include "sched/sched.h"
 #include "chip.h"
 
 #ifdef CONFIG_ARCH_STACKDUMP
@@ -181,7 +181,7 @@ void up_dumpstate(void)
     }
 
   /* Get the limits on the interrupt stack memory. The near RAM memory map is as follows:
-   * 
+   *
    * 0x00400 - DATA		Size: Determined by linker
    *           BSS		Size: Determined by linker
    *           Interrupt stack	Size: CONFIG_ARCH_INTERRUPTSTACK

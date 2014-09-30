@@ -1,7 +1,7 @@
 /************************************************************************************
  * arch/arm/src/stm32/stm32_rtcc.c
  *
- *   Copyright (C) 2012-2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -484,6 +484,7 @@ static int rtc_setup(void)
 
       rtc_wprlock();
     }
+
   return ret;
 }
 
@@ -526,6 +527,7 @@ static int rtc_resume(void)
 
   putreg32((1 << 17), STM32_EXTI_PR);
 #endif
+
   return ret;
 }
 
@@ -575,6 +577,8 @@ int up_rtcinitialize(void)
 {
   uint32_t regval;
   int ret;
+  int maxretry = 10;
+  int nretry = 0;
 
   rtc_dumpregs("On reset");
 
@@ -590,27 +594,63 @@ int up_rtcinitialize(void)
 
   stm32_pwr_enablebkp();
 
-  /* Check if the one-time initialization of the RTC has already been performed.
-   * We can determine this by checking if the magic number has been writing to
-   * to back-up date register DR0.
+  /* Loop, attempting to initialize/resume the RTC.  This loop is necessary
+   * because it seems that occasionally it takes longer to initialize the RTC
+   * (the actual failure is in rtc_synchwait()).
    */
 
-  regval = getreg32(STM32_RTC_BK0R);
-  if (regval != RTC_MAGIC)
+  do
     {
-      /* Perform the one-time setup of the LSE clocking to the RTC */
+      /* Check if the one-time initialization of the RTC has already been
+       * performed. We can determine this by checking if the magic number
+       * has been writing to to back-up date register DR0.
+       */
 
-      ret = rtc_setup();
+      regval = getreg32(STM32_RTC_BK0R);
+      if (regval != RTC_MAGIC)
+        {
+          rtclldbg("Do setup\n");
 
-      /* Remember that the RTC is initialized */
+          /* Perform the one-time setup of the LSE clocking to the RTC */
 
-      putreg32(RTC_MAGIC, STM32_RTC_BK0R);
+          ret = rtc_setup();
+
+          /* Remember that the RTC is initialized */
+
+          putreg32(RTC_MAGIC, STM32_RTC_BK0R);
+        }
+      else
+        {
+          rtclldbg("Do resume\n");
+
+          /* RTC already set-up, just resume normal operation */
+
+          ret = rtc_resume();
+        }
+
+      /* Check that setup or resume returned successfully */
+
+      switch (ret)
+        {
+          case OK:
+            {
+              rtclldbg("setup/resume okay\n");
+              break;
+            }
+
+          default:
+            {
+              rtclldbg("setup/resume failed (%d)\n", ret);
+              break;
+            }
+        }
     }
-  else
-    {
-      /* RTC already set-up, just resume normal operation */
+  while (ret != OK && ++nretry < maxretry);
 
-      ret = rtc_resume();
+  if (ret != OK && nretry > 0)
+    {
+      rtclldbg("setup/resume ran %d times and failed with %d\n", nretry, ret);
+      return -ETIMEDOUT;
     }
 
   /* Configure RTC interrupt to catch alarm interrupts. All RTC interrupts are
@@ -644,7 +684,7 @@ int up_rtcinitialize(void)
  *   Get the current date and time from the date/time RTC.  This interface
  *   is only supported by the date/time RTC hardware implementation.
  *   It is used to replace the system timer.  It is only used by the RTOS during
- *   intialization to set up the system time when CONFIG_RTC and CONFIG_RTC_DATETIME
+ *   initialization to set up the system time when CONFIG_RTC and CONFIG_RTC_DATETIME
  *   are selected (and CONFIG_RTC_HIRES is not).
  *
  *   NOTE: Some date/time RTC hardware is capability of sub-second accuracy.  That

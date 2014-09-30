@@ -42,6 +42,8 @@
 
 /* Get NuttX configuration and NuttX-specific network IOCTL definitions */
 
+#include <netinet/in.h>
+
 #include <nuttx/config.h>
 #include <nuttx/fs/ioctl.h>
 #include <nuttx/net/ioctl.h>
@@ -91,7 +93,7 @@ struct ip_msfilter
 
 #else
 
-struct ip_msfilter  
+struct ip_msfilter
 {
    char imsf_name[IMSFNAMSIZ];     /* Network device name, e.g., "eth0" */
    struct in_addr imsf_multiaddr;  /* IP multicast address of group */

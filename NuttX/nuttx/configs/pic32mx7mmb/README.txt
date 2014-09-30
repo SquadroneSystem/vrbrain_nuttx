@@ -75,7 +75,7 @@ PIN CONFIGURATIONS                     SIGNAL NAME                ON-BOARD CONNE
  41 PMA11/AECRS/AN12/ERXD0/RB12        LCD-YU                     TFT display
  42 PMA10/AECOL/AN13/ERXD1/RB13        LCD-XL                     TFT display
  43 PMA1/AETXD3/AN14/ERXD2/PMALH/RB14  LCD-CS#                    TFT display, HDR2 pin 3
- 44 PMA0/AETXD2/AN15/CN12/ERXD3/OCFB/  LCD-RS                     TFT display       
+ 44 PMA0/AETXD2/AN15/CN12/ERXD3/OCFB/  LCD-RS                     TFT display
     PMALL/RB15
  45 VSS                                (grounded)                 ---
  46 VDD                                P32_VDD                    ---
@@ -138,8 +138,8 @@ PIN CONFIGURATIONS                     SIGNAL NAME                ON-BOARD CONNE
  85 VCAP/VCORE                         (capacitor to ground)      ---
  84 PMD15/CN16/ETXCLK/RD7              PMPD15                     TFT display, HDR1 pin 3
  83 PMD14/CN15/ETXEN/RD6               PMPD14                     TFT display, HDR1 pin 4
- 82 CN14/PMRD/RD5                      PMPRD                      
- 81 CN13/OC5/PMWR/RD4                  PMPWR                      
+ 82 CN14/PMRD/RD5                      PMPRD
+ 81 CN13/OC5/PMWR/RD4                  PMPWR
  80 PMD13/CN19/ETXD3/RD13              PMPD13                     TFT display, HDR1 pin 5
  79 PMD12/ETXD2/IC5/RD12               PMPD12                     TFT display, HDR1 pin 6
  78 OC4/RD3                            RD3                        HDR2 pin 5
@@ -236,7 +236,7 @@ Toolchains
 
   Windows Native Toolchains
   -------------------------
-  
+
   NOTE:  There are several limitations to using a Windows based toolchain in a
   Cygwin environment.  The three biggest are:
 
@@ -392,19 +392,15 @@ PIC32MX Configuration Options
     CONFIG_ENDIAN_BIG - define if big endian (default is little
        endian)
 
-    CONFIG_DRAM_SIZE - Describes the installed DRAM (CPU SRAM in this case):
+    CONFIG_RAM_SIZE - Describes the installed DRAM (CPU SRAM in this case):
 
-       CONFIG_DRAM_SIZE=(32*1024) (32Kb)
+       CONFIG_RAM_SIZE=(32*1024) (32Kb)
 
        There is an additional 32Kb of SRAM in AHB SRAM banks 0 and 1.
 
-    CONFIG_DRAM_START - The start address of installed DRAM
+    CONFIG_RAM_START - The start address of installed DRAM
 
-       CONFIG_DRAM_START=0xa0000000
-
-    CONFIG_ARCH_IRQPRIO - The PIC32MXx supports interrupt prioritization
-
-       CONFIG_ARCH_IRQPRIO=y
+       CONFIG_RAM_START=0xa0000000
 
     CONFIG_ARCH_LEDS - Use LEDs to show state. Unique to boards that
        have LEDs
@@ -485,7 +481,7 @@ PIC32MX Configuration Options
       CONFIG_PIC32MX_CODEWP - Default 1 (disabled)
     DEVCFG1: (All settings determined by selections in board.h)
     DEVCFG2: (All settings determined by selections in board.h)
-    DEVCFG3: 
+    DEVCFG3:
       CONFIG_PIC32MX_USBIDO - USB USBID Selection.  Default 1 if USB enabled
         (USBID pin is controlled by the USB module), but 0 (GPIO) otherwise.
       CONFIG_PIC32MX_VBUSIO - USB VBUSON Selection (Default 1 if USB enabled
@@ -565,16 +561,14 @@ PIC32MX Configuration Options
 
 PIC32MX specific PHY/Ethernet device driver settings
 
-    CONFIG_PHY_KS8721 - Selects the Micrel KS8721 PHY
-    CONFIG_PHY_DP83848C - Selects the National Semiconduction DP83848C PHY
-    CONFIG_PHY_LAN8720 - Selects the SMSC LAN8720 PHY
+    CONFIG_ETH0_PHY_KS8721 - Selects the Micrel KS8721 PHY
+    CONFIG_ETH0_PHY_DP83848C - Selects the National Semiconduction DP83848C PHY
+    CONFIG_ETH0_PHY_LAN8720 - Selects the SMSC LAN8720 PHY
     CONFIG_PHY_AUTONEG - Enable auto-negotion
     CONFIG_PHY_SPEED100 - Select 100Mbit vs. 10Mbit speed.
     CONFIG_PHY_FDUPLEX - Select full (vs. half) duplex
     CONFIG_NET_NTXDESC - Configured number of Tx descriptors. Default: 2
     CONFIG_NET_NRXDESC - Configured number of Rx descriptors. Default: 4
-    CONFIG_NET_PRIORITY - Ethernet interrupt priority.  The is default is
-      the higest priority.
     CONFIG_NET_WOL - Enable Wake-up on Lan (not fully implemented).
     CONFIG_NET_DUMPPACKET - Dump all received and transmitted packets.
       Also needs CONFIG_DEBUG.
@@ -609,228 +603,210 @@ selected as follow:
 
 Where <subdir> is one of the following:
 
-  ostest:
-  =======
-    Description.
-    ------------
-    This configuration directory, performs a simple OS test using
-    apps/examples/ostest.
-
-    Serial Output.
-    --------------
-    The OS test produces all of its test output on the serial console.
-    This configuration has UART1 enabled as a serial console.
-
   nsh:
-  ====
-    Description.
-    ------------
+
     This is the NuttShell (NSH) using the NSH startup logic at
     apps/examples/nsh.
 
-    Serial Output.
-    --------------
-    The OS test produces all of its test output on the serial console.
-    This configuration has UART1 enabled as a serial console.
-
-    SD Card Support
-    ---------------
-    SD card support is built into this example by default:
-  
-       CONFIG_PIC32MX_SPI1=y
-       CONFIG_NSH_ARCHINIT=y
-
-    The SD card can be mounted from the NSH command line as follows:
-
-       nsh> mount -t vfat /dev/mmcsd0 /mnt/sdcard
-       nsh> ls -l /mnt/sdcard
-       /mnt/sdcard:
-        -rw-rw-rw-      16 ATEST.TXT
-        -rw-rw-rw-   21170 TODO
-        -rw-rw-rw-      22 ANOTHER.TXT
-        -rw-rw-rw-      22 HI2148.TXT
-        -rw-rw-rw-      16 HiFromNotePad.txt
-
-    USB Configurations.
-    ------------------
-    USB device support is enabled by default in this configuration.
-    The following settings are defined by default (and can be set
-    to 'n' to disabled USB device support).
- 
-      CONFIG_USBDEV=y         : Enable basic USB device support
-      CONFIG_PIC32MX_USBDEV=y : Enable PIC32 USB device support
-      CONFIG_USBMSC=y         : USB supports a mass storage device.
-
-    In this configuration, NSH will support the following commands:
-
-      msconn  : Connect the mass storage device, exportint the SD
-                card as the USB mass storage logical unit.
-      msdis   : Disconnect the USB mass storage device
- 
-    NOTE: The SD card should *not* be mounted under NSH *and* exported
-    by the mass storage device!!! That can result in corruption of the
-    SD card format.  This is the sequence of commands that you should
-    used to work the the SD card safely:
-
-      mount -t vfat /dev/mmcsd0 /mnt/sdcard : Mount the SD card initially
-      ...
-      umount /mnt/sdcard   : Unmount the SD card before connecting
-      msconn               : Connect the USB MSC
-      ...
-      msdis                : Disconnect the USB MSC
-      mount -t vfat /dev/mmcsd0 /mnt/sdcard : Re-mount the SD card
-      ...
-      
-    Other USB other device configurations can be enabled and
-    included as NSH built-in built in functions.
-
-    examples/usbterm - This option can be enabled by uncommenting
-    the following line in the appconfig file:
-
-      CONFIGURED_APPS += examples/usbterm
-
-    And by enabling one of the USB serial devices:
-
-      CONFIG_USBMSC=n         : Disable USB mass storage device.
-      CONFIG_PL2303=y         : Enable the Prolifics PL2303 emulation
-      CONFIG_CDCACM=y         : or the CDC/ACM serial driver (not both)
-
-    examples/cdcacm -  The examples/cdcacm program can be included as an 
-    function by uncommenting the following line in the appconfig file:
-    
-      CONFIGURED_APPS += examples/cdcacm
-
-    and defining the following in your .config file:
-
-      CONFIG_USBMSC=n         : Disable USB mass storage device.
-      CONFIG_CDCACM=y         : Enable the CDCACM device
-
-    Networking Configurations.
-    --------------------------
-    Networking is enabled by default in this configuration:
-
-      CONFIG_NET=y              : Enable networking support
-      CONFIG_PIC32MX_ETHERNET=y : Enable the PIC32 Ethernet driver
-      CONFIG_NSH_TELNET=y       : Enable the Telnet NSH console (optional)
-
-    The default configuration has:
-
-      CONFIG_NSH_DHCPC=n                        : DHCP is disabled
-      CONFIG_NSH_IPADDR=(10<<24|0<<16|0<<8|2)   : Target IP address 10.0.0.2
-      CONFIG_NSH_DRIPADDR=(10<<24|0<<16|0<<8|1) : Host IP address 10.0.0.1
-
-    This will probably need to be customized for your network.
- 
     NOTES:
-    1. This logic will assume that a network is connected.  During its
-       initialization, it will try to negotiate the link speed.  If you have
-       no network connected when you reset the board, there will be a long
-       delay (maybe 30 seconds?) before anything happens.  That is the timeout
-       before the networking finally gives up and decides that no network is
-       available.
 
-    2. This example can support an FTP client.  In order to build in FTP client
-       support simply uncomment the following lines in the appconfig file (before
-       configuring) or in the apps/.config file (after configuring):
+    1. This configuration uses the mconf-based configuration tool.  To
+       change this configurations using that tool, you should:
 
-       #CONFIGURED_APPS += netutils/ftpc
-       #CONFIGURED_APPS += examples/ftpc
+       a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+          and misc/tools/
 
-    3. This example can support an FTP server.  In order to build in FTP server
-       support simply uncomment the following lines in the appconfig file (before
-       configuring) or in the apps/.config file (after configuring):
+       b. Execute 'make menuconfig' in nuttx/ in order to start the
+          reconfiguration process.
 
-       #CONFIGURED_APPS += netutils/ftpd
-       #CONFIGURED_APPS += examples/ftpd
+    2. Serial Output
 
-       And enable poll() support in the NuttX configuration file:
+       The OS test produces all of its test output on the serial console.
+       This configuration has UART1 enabled as a serial console.
 
-       CONFIG_DISABLE_POLL=n
+    3. SD Card Support
 
-  Using a RAM disk and the USB MSC device to the nsh configuration
-  ----------------------------------------------------------------
-  Here is an experimental change to examples/nsh that will create a RAM
-  disk and attempt to export that RAM disk as a USB mass storage device.
+       SD card support is built into this example by default:
 
-  1. Changes to nuttx/.config
+         CONFIG_PIC32MX_SPI1=y
+         CONFIG_NSH_ARCHINIT=y
 
-    a) Enable support for the PIC32 USB device
+       The SD card can be mounted from the NSH command line as follows:
 
-      -CONFIG_PIC32MX_USBDEV=n 
-      +CONFIG_PIC32MX_USBDEV=y
+         nsh> mount -t vfat /dev/mmcsd0 /mnt/sdcard
+         nsh> ls -l /mnt/sdcard
+         /mnt/sdcard:
+          -rw-rw-rw-      16 ATEST.TXT
+          -rw-rw-rw-   21170 TODO
+          -rw-rw-rw-      22 ANOTHER.TXT
+          -rw-rw-rw-      22 HI2148.TXT
+          -rw-rw-rw-      16 HiFromNotePad.txt
 
-    b) Enable NuttX USB device support
+    4. USB Configurations
 
-      -CONFIG_USBDEV=n
-      +CONFIG_USBDEV=y
+       USB device support is enabled by default in this configuration.
+       The following settings are defined by default (and can be set
+       to 'n' to disabled USB device support).
 
-    c) Enable the USB MSC class driver
+         CONFIG_USBDEV=y         : Enable basic USB device support
+         CONFIG_PIC32MX_USBDEV=y : Enable PIC32 USB device support
+         CONFIG_USBMSC=y         : USB supports a mass storage device.
 
-      -CONFIG_USBMSC=n
-      +CONFIG_USBMSC=y
+      In this configuration, NSH will support the following commands:
 
-    d) Use a RAM disk (instead of an SD card) as the USB MSC logical unit:
+         msconn  : Connect the mass storage device, exportint the SD
+                   card as the USB mass storage logical unit.
+         msdis   : Disconnect the USB mass storage device
 
-      -CONFIG_EXAMPLES_USBMSC_DEVPATH1="/dev/mmcsd0"
-      +CONFIG_EXAMPLES_USBMSC_DEVPATH1="/dev/ram0"
+       NOTE: The SD card should *not* be mounted under NSH *and* exported
+       by the mass storage device!!! That can result in corruption of the
+       SD card format.  This is the sequence of commands that you should
+       use to work with the SD card safely:
 
-  2. Changes to nuttx/.config.
+         mount -t vfat /dev/mmcsd0 /mnt/sdcard : Mount the SD card initially
+         ...
+         umount /mnt/sdcard   : Unmount the SD card before connecting
+         msconn               : Connect the USB MSC
+         ...
+         msdis                : Disconnect the USB MSC
+         mount -t vfat /dev/mmcsd0 /mnt/sdcard : Re-mount the SD card
+         ...
 
-    a) Enable building of the examples/usbstorage:
+       Other USB other device configurations can be enabled and
+       included as NSH built-in built in functions.
 
-      -# CONFIGURED_APPS += examples/usbstorage
-      +  CONFIGURED_APPS += examples/usbstorage
+       examples/usbterm - This option can be enabled by adding the
+       following to the NuttX configuration file:
 
-  3. When NSH first comes up, you must manually create the RAM disk
-     before exporting it:
+         CONFIG_EXAMPLES_USBTERM=y
 
-    a) Create a 64Kb RAM disk at /dev/ram0:
+       And by enabling one of the USB serial devices:
 
-      nsh> mkrd -s 512 128
+         CONFIG_USBMSC=n         : Disable USB mass storage device.
+         CONFIG_PL2303=y         : Enable the Prolifics PL2303 emulation
+         CONFIG_CDCACM=y         : or the CDC/ACM serial driver (not both)
 
-    b) Put a FAT file system on the RAM disk:
-  
-      nsh> mkfatfs /dev/ram0
+       system/cdcacm -  The system/cdcacm program can be included as an
+       function by adding the following to the NuttX configuration file:
 
-    b) Now the 'msconn' command will connect to the host and
-       export /dev/ram0 as the USB logical unit:
+         CONFIG_SYSTEM_CDCACM=y
 
-      nsh> msconn
+       and defining the following in your .config file:
 
-    NOTE:  This modification should be considered experimental.  IN the
-    little testing I have done with it, it appears functional.  But the
-    logic has not been stressed and there could still be lurking issues.
-    (There is a bug associated with this configuration listed in the
-    top-level TODO list).
+         CONFIG_USBMSC=n         : Disable USB mass storage device.
+         CONFIG_CDCACM=y         : Enable the CDCACM device
 
-  Adding LCD and graphics support to the nsh configuration:
-  --------------------------------------------------------
+    5. Networking Configurations
 
-    LCD support is already enabled in defconfig (nuttx/.config):
+       Networking is enabled by default in this configuration:
 
-      CONFIG_NX=y                          : Enable graphics suppport
-      CONFIG_PIC32MX_PMP=y                 : Enable parallel port support
-      CONFIG_LCD_MIO283QT2=y               : MIO283QT2 LCD support
+         CONFIG_NET=y              : Enable networking support
+         CONFIG_PIC32MX_ETHERNET=y : Enable the PIC32 Ethernet driver
+         CONFIG_NSH_TELNET=y       : Enable the Telnet NSH console (optional)
 
-    But you will have to enable a specific graphics example application
-    in order to see anything.
- 
-    appconfig (apps/.config):  Enable the application configurations that you
-    want to use.  Asexamples:
+       The default configuration has:
 
-      CONFIGURED_APPS += examples/nx       : Pick one or more
-      CONFIGURED_APPS += examples/nxhello  :
-      CONFIGURED_APPS += examples/nximage  :
-      CONFIGURED_APPS += examples/nxlines  :
+         CONFIG_NSH_DHCPC=n                        : DHCP is disabled
+         CONFIG_NSH_IPADDR=(10<<24|0<<16|0<<8|2)   : Target IP address 10.0.0.2
+         CONFIG_NSH_DRIPADDR=(10<<24|0<<16|0<<8|1) : Host IP address 10.0.0.1
 
-  Enabling touch screen support in the nsh configuaration
-  -------------------------------------------------------
+       This will probably need to be customized for your network.
 
-    In defconfig (or nuttx/.config), set:
+       NOTES:
 
-      CONFIG_INPUT=y                       : Enable input device support
-      CONFIG_SCHED_WORKQUEUE=y             : Work queue support needed
+       a. This logic will assume that a network is connected.  During its
+          initialization, it will try to negotiate the link speed.  If you have
+          no network connected when you reset the board, there will be a long
+          delay (maybe 30 seconds?) before anything happens.  That is the timeout
+          before the networking finally gives up and decides that no network is
+          available.
 
-    In appconfig (or apps/.config), uncomment:
+       b. This example can support an FTP client.  In order to build in FTP client
+          support simply add the following to the NuttX configuration file:
 
-      CONFIGURED_APPS += examples/touchscreen
+         CONFIG_NETUTILS_FTPC=y
+         CONFIG_EXAMPLES_FTPC=y
+
+       3. This example can support an FTP server.  In order to build in FTP server
+          support simply add the following to the NuttX configuration file:
+
+         CONFIG_NETUTILS_FTPD=y
+         CONFIG_SYSTEM_FTPD=y
+
+          And enable poll() support in the NuttX configuration file:
+
+          CONFIG_DISABLE_POLL=n
+
+    6. Using a RAM disk and the USB MSC device to the nsh configuration
+
+       Here is an experimental change to examples/nsh that will create a RAM
+       disk and attempt to export that RAM disk as a USB mass storage device.
+
+       1. Changes to nuttx/.config
+
+         a) Enable support for the PIC32 USB device
+
+           -CONFIG_PIC32MX_USBDEV=n
+           +CONFIG_PIC32MX_USBDEV=y
+
+         b) Enable NuttX USB device support
+
+           -CONFIG_USBDEV=n
+           +CONFIG_USBDEV=y
+
+         c) Enable the USB MSC class driver
+
+           -CONFIG_USBMSC=n
+           +CONFIG_USBMSC=y
+
+         d) Use a RAM disk (instead of an SD card) as the USB MSC logical unit:
+
+           -CONFIG_SYSTEM_USBMSC_DEVPATH1="/dev/mmcsd0"
+           +CONFIG_SYSTEM_USBMSC_DEVPATH1="/dev/ram0"
+
+       2. Changes to nuttx/.config.
+
+         a) Enable building of the system/usbmsc:
+
+            CONFIG_SYSTEM_USBMSC=y
+
+       3. When NSH first comes up, you must manually create the RAM disk
+          before exporting it:
+
+         a) Create a 64Kb RAM disk at /dev/ram0:
+
+           nsh> mkrd -s 512 128
+
+         b) Put a FAT file system on the RAM disk:
+
+           nsh> mkfatfs /dev/ram0
+
+         b) Now the 'msconn' command will connect to the host and
+            export /dev/ram0 as the USB logical unit:
+
+           nsh> msconn
+
+         NOTE:  This modification should be considered experimental.  IN the
+         little testing I have done with it, it appears functional.  But the
+         logic has not been stressed and there could still be lurking issues.
+         (There is a bug associated with this configuration listed in the
+         top-level TODO list).
+
+    7. Adding LCD and graphics support to the nsh configuration
+
+       LCD support is already enabled in defconfig (nuttx/.config):
+
+         CONFIG_NX=y                          : Enable graphics suppport
+         CONFIG_PIC32MX_PMP=y                 : Enable parallel port support
+         CONFIG_LCD_MIO283QT2=y               : MIO283QT2 LCD support
+
+       But you will have to enable a specific graphics example application
+       in the NuttX configuration file in order to see anything.
+
+    8. Enabling touch screen support in the nsh configuaration
+
+       In defconfig (or nuttx/.config), set:
+
+         CONFIG_INPUT=y                       : Enable input device support
+         CONFIG_SCHED_WORKQUEUE=y             : Work queue support needed
+         CONFIG_EXAMPLES_TOUCHSCREEN=y        : Touchscreen example code

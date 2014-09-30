@@ -48,7 +48,7 @@
 #include <nuttx/arch.h>
 #include <arch/board/board.h>
 
-#include "clock_internal.h"
+#include "clock/clock.h"
 #include "internal.h"
 #include "up_arch.h"
 
@@ -127,16 +127,18 @@ int up_timerisr(int irq, uint32_t * regs)
   if (tick++ > 100)
     {
       tick = 0;
-      up_statledoff();
+      lpc2378_statledoff();
     }
   else
-    up_statledon();
+    {
+      lpc2378_statledon();
+    }
 
   return 0;
 }
 
 /****************************************************************************
- * Function:  up_timerinit
+ * Function:  up_timer_initialize
  *
  * Description:
  *   This function is called during start-up to initialize
@@ -144,7 +146,7 @@ int up_timerisr(int irq, uint32_t * regs)
  *
  ****************************************************************************/
 
-void up_timerinit(void)
+void up_timer_initialize(void)
 {
   uint16_t mcr;
 
@@ -170,7 +172,6 @@ void up_timerinit(void)
   tmr_putreg32(0, TMR_PC_OFFSET);
 
   /* Set timer match register to get a TICK_PER_SEC rate See arch/board.h and
-   * sched/os_internal.h
    */
 
   tmr_putreg32(T0_TICKS_COUNT, TMR_MR0_OFFSET); /* 10ms Intterrupt */
@@ -190,10 +191,12 @@ void up_timerinit(void)
   /* Attach the timer interrupt vector */
 
 #ifdef CONFIG_VECTORED_INTERRUPTS
-  up_attach_vector(IRQ_SYSTIMER, PRIORITY_HIGHEST, (vic_vector_t) up_timerisr);
+  up_attach_vector(IRQ_SYSTIMER, ???, (vic_vector_t) up_timerisr);
 #else
   (void)irq_attach(IRQ_SYSTIMER, (xcpt_t) up_timerisr);
+#ifdef CONFIG_ARCH_IRQPRIO
   up_prioritize_irq(IRQ_SYSTIMER, PRIORITY_HIGHEST);
+#endif
 #endif
 
   /* And enable the system timer interrupt */

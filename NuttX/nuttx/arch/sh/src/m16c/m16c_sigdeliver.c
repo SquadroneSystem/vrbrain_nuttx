@@ -46,7 +46,7 @@
 #include <nuttx/irq.h>
 #include <nuttx/arch.h>
 
-#include "os_internal.h"
+#include "sched/sched.h"
 #include "up_internal.h"
 #include "up_arch.h"
 
@@ -92,7 +92,7 @@ void up_sigdeliver(void)
 
   int saved_errno = rtcb->pterrno;
 
-  up_ledon(LED_SIGNAL);
+  board_led_on(LED_SIGNAL);
 
   sdbg("rtcb=%p sigdeliver=%p sigpendactionq.head=%p\n",
         rtcb, rtcb->xcp.sigdeliver, rtcb->sigpendactionq.head);
@@ -135,7 +135,7 @@ void up_sigdeliver(void)
    * execution.
    */
 
-  up_ledoff(LED_SIGNAL);
+  board_led_off(LED_SIGNAL);
   up_fullcontextrestore(regs);
 #endif
 }

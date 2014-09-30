@@ -70,7 +70,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <sys/types.h>
@@ -161,9 +161,9 @@ CStringIterator *CNxString::newStringIterator() const
 /**
  * Copy the internal array to the supplied buffer.  The buffer must be
  * large enough to contain the full text in the string.  The
- * getByteCount() method can be used to obtain the length of the string.
+ * getAllocSize() method can be used to obtain the length of the string.
  * Unlike the CNxString class, the char array is null-terminated.
- * The buffer must be (getByteCount() + 2) bytes long, in order to
+ * The buffer must be (getAllocSize() + 2) bytes long, in order to
  * accommodate the terminator.
  *
  * @param buffer Buffer to copy the internal char array to.
@@ -274,7 +274,8 @@ void CNxString::append(const CNxString &text)
 
   FAR nxwidget_char_t       *dest = &m_text[m_stringLength];
   FAR const nxwidget_char_t *src  = text.getCharArray();
-  for (int i = 0; i <  text.getLength(); i++)
+
+  for (unsigned int i = 0; i < text.getLength(); i++)
     {
       *dest++ = *src++;
     }
@@ -328,6 +329,7 @@ void CNxString::insert(const CNxString &text, int index)
 
       FAR nxwidget_char_t       *dest = newText;
       FAR const nxwidget_char_t *src  = m_text;
+
       for (int i = 0; i < index; i++)
         {
           *dest++ = *src++;
@@ -336,7 +338,8 @@ void CNxString::insert(const CNxString &text, int index)
       // Insert the additional text into the new string
 
       src = text.getCharArray();
-      for (int i = 0; i < text.getLength(); i++)
+
+      for (unsigned int i = 0; i < text.getLength(); i++)
         {
           *dest++ = *src++;
         }
@@ -344,6 +347,7 @@ void CNxString::insert(const CNxString &text, int index)
       // Copy the end of the existing text the the newly allocated string
 
       src = &m_text[index];
+
       for (int i = index; i < m_stringLength; i++)
         {
           *dest++ = *src++;
@@ -355,7 +359,7 @@ void CNxString::insert(const CNxString &text, int index)
 
       delete[] m_text;
 
-      // Swap pointers 
+      // Swap pointers
 
       m_stringLength = newLength;
       m_text         = newText;
@@ -374,8 +378,9 @@ void CNxString::insert(const CNxString &text, int index)
       // Insert the additional text into the new string
 
       dest = &m_text[index];
-      src  = text.getCharArray();      
-      for (int i = 0; i < text.getLength(); i++)
+      src  = text.getCharArray();
+
+      for (unsigned int i = 0; i < text.getLength(); i++)
         {
           *dest++ = *src++;
         }
@@ -436,6 +441,7 @@ void CNxString::remove(const int startIndex, const int count)
 
   FAR nxwidget_char_t       *dest = &m_text[startIndex];
   FAR const nxwidget_char_t *src  = &m_text[endIndex];
+
   for (int i = m_stringLength - endIndex; i > 0; i--)
     {
       *dest++ = *src++;
@@ -677,6 +683,7 @@ CNxString& CNxString::operator=(const CNxString &string)
     {
       setText(string);
     }
+
   return *this;
 }
 
@@ -688,7 +695,7 @@ CNxString& CNxString::operator=(const CNxString &string)
  * @return This string.
  */
 
-CNxString& CNxString::operator=(const char *string)
+CNxString& CNxString::operator=(FAR const char *string)
 {
   setText(string);
   return *this;
@@ -741,7 +748,7 @@ void CNxString::allocateMemory(int nChars, bool preserve)
 
   // Do we already have enough memory allocated to contain this new size?
   // If so, we can avoid deallocating and allocating new memory by re-using the old
-  
+
   if (nBytesNeeded > m_allocatedSize)
     {
       // Not enough space in existing memory; allocate new memory

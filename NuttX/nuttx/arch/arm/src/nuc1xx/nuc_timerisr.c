@@ -46,7 +46,7 @@
 #include <arch/board/board.h>
 
 #include "nvic.h"
-#include "clock_internal.h"
+#include "clock/clock.h"
 #include "up_internal.h"
 #include "up_arch.h"
 
@@ -86,7 +86,7 @@
  *                  = 119,999
  *                  = 0x1d4bf
  *
- * Which fits within the maximum 14-bit reload value.
+ * Which fits within the maximum 24-bit reload value.
  */
 
 #define SYSTICK_RELOAD ((SYSTICK_CLOCK / CLK_TCK) - 1)
@@ -173,7 +173,7 @@ int up_timerisr(int irq, uint32_t *regs)
 }
 
 /****************************************************************************
- * Function:  up_timerinit
+ * Function:  up_timer_initialize
  *
  * Description:
  *   This function is called during start-up to initialize
@@ -181,7 +181,7 @@ int up_timerisr(int irq, uint32_t *regs)
  *
  ****************************************************************************/
 
-void up_timerinit(void)
+void up_timer_initialize(void)
 {
   uint32_t regval;
 

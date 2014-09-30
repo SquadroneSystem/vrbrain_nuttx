@@ -45,7 +45,6 @@
 #include <arch/irq.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
 #include "nvic.h"
 #include "up_internal.h"
 
@@ -56,7 +55,7 @@
 #undef DEBUG_MEMFAULTS         /* Define to debug memory management faults */
 
 #ifdef DEBUG_MEMFAULTS
-# define mfdbg(format, arg...) lldbg(format, ##arg)
+# define mfdbg(format, ...) lldbg(format, ##__VA_ARGS__)
 #else
 # define mfdbg(x...)
 #endif

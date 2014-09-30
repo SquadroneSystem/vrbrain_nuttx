@@ -54,10 +54,10 @@
 #include <unistd.h>
 
 #include <net/if.h>
-#include <nuttx/net/uip/uip.h>
-#include <nuttx/net/uip/uip-arp.h>
+#include <netinet/in.h>
 
-#include <apps/netutils/uiplib.h>
+#include <nuttx/net/arp.h>
+#include <apps/netutils/netlib.h>
 
 #ifdef CONFIG_EXAMPLES_TCPECHO_DHCPC
 #  include <arpa/inet.h>
@@ -70,7 +70,7 @@
 /* DHCPC may be used in conjunction with any other feature (or not) */
 
 #ifdef CONFIG_EXAMPLES_TCPECHO_DHCPC
-#  include <apps/netutils/resolv.h>
+#  include <apps/netutils/dnsclient.h>
 #  include <apps/netutils/dhcpc.h>
 #endif
 
@@ -121,7 +121,7 @@ static int tcpecho_netsetup()
   mac[3] = 0xad;
   mac[4] = 0xbe;
   mac[5] = 0xef;
-  uip_setmacaddr("eth0", mac);
+  netlib_setmacaddr("eth0", mac);
 #endif
 
   /* Set up our host address */
@@ -131,26 +131,26 @@ static int tcpecho_netsetup()
 #else
   addr.s_addr = HTONL(CONFIG_EXAMPLES_TCPECHO_IPADDR);
 #endif
-  uip_sethostaddr("eth0", &addr);
+  netlib_sethostaddr("eth0", &addr);
 
   /* Set up the default router address */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_TCPECHO_DRIPADDR);
-  uip_setdraddr("eth0", &addr);
+  netlib_setdraddr("eth0", &addr);
 
   /* Setup the subnet mask */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_TCPECHO_NETMASK);
-  uip_setnetmask("eth0", &addr);
+  netlib_setnetmask("eth0", &addr);
 
 #ifdef CONFIG_EXAMPLES_TCPECHO_DHCPC
   /* Set up the resolver */
 
-  resolv_init();
+  dns_bind();
 
   /* Get the MAC address of the NIC */
 
-  uip_getmacaddr("eth0", mac);
+  netlib_getmacaddr("eth0", mac);
 
   /* Set up the DHCPC modules */
 
@@ -170,21 +170,21 @@ static int tcpecho_netsetup()
       return ERROR;
     }
 
-  uip_sethostaddr("eth1", &ds.ipaddr);
+  netlib_sethostaddr("eth1", &ds.ipaddr);
 
   if (ds.netmask.s_addr != 0)
     {
-      uip_setnetmask("eth0", &ds.netmask);
+      netlib_setnetmask("eth0", &ds.netmask);
     }
 
   if (ds.default_router.s_addr != 0)
     {
-      uip_setdraddr("eth0", &ds.default_router);
+      netlib_setdraddr("eth0", &ds.default_router);
     }
 
   if (ds.dnsaddr.s_addr != 0)
     {
-      resolv_conf(&ds.dnsaddr);
+      dns_setserver(&ds.dnsaddr);
     }
 
   dhcpc_close(handle);
@@ -246,7 +246,7 @@ static int tcpecho_server(void)
 
   maxi = 0;                     /* max index into client[] array */
 
-  while(!stop)
+  while (!stop)
     {
       nready = poll(client, maxi+1, TCPECHO_POLLTIMEOUT);
 

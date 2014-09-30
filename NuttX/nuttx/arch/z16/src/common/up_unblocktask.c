@@ -45,8 +45,8 @@
 #include <nuttx/arch.h>
 
 #include "chip/chip.h"
-#include "os_internal.h"
-#include "clock_internal.h"
+#include "sched/sched.h"
+#include "clock/clock.h"
 #include "up_internal.h"
 
 /****************************************************************************
@@ -101,7 +101,7 @@ void up_unblock_task(FAR struct tcb_s *tcb)
    */
 
 #if CONFIG_RR_INTERVAL > 0
-  tcb->timeslice = CONFIG_RR_INTERVAL / MSEC_PER_TICK;
+  tcb->timeslice = MSEC2TICK(CONFIG_RR_INTERVAL);
 #endif
 
   /* Add the task in the correct location in the prioritized
@@ -113,7 +113,7 @@ void up_unblock_task(FAR struct tcb_s *tcb)
       /* The currently active task has changed! We need to do
        * a context switch to the new task.
        *
-       * Are we in an interrupt handler? 
+       * Are we in an interrupt handler?
        */
 
       if (IN_INTERRUPT)
@@ -124,7 +124,7 @@ void up_unblock_task(FAR struct tcb_s *tcb)
 
           SAVE_IRQCONTEXT(rtcb);
 
-          /* Restore the exception context of the rtcb at the (new) head 
+          /* Restore the exception context of the rtcb at the (new) head
            * of the g_readytorun task list.
            */
 
@@ -139,7 +139,7 @@ void up_unblock_task(FAR struct tcb_s *tcb)
         }
 
       /* We are not in an interrupt handler.  Copy the user C context
-       * into the TCB of the task that was previously active.  if 
+       * into the TCB of the task that was previously active.  if
        * SAVE_USERCONTEXT returns a non-zero value, then this is really the
        * previously running task restarting!
        */

@@ -73,8 +73,8 @@
 
 #include <nuttx/config.h>
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <cstdint>
+#include <cstdbool>
 
 #include "cnxwidget.hxx"
 #include "cgraphicsport.hxx"
@@ -100,7 +100,7 @@ using namespace NXWidgets;
 /**
  * Constructor.
  *
- * @param pWidgetControl The controllwing widget for the display
+ * @param pWidgetControl The controlling widget for the display
  * @param x The x coordinate of the widget.
  * @param y The y coordinate of the widget.
  * @param width The width of the widget.
@@ -158,43 +158,42 @@ CNxWidget::CNxWidget(CWidgetControl *pWidgetControl,
 
   // Dragging values
 
-  m_grabPointX          = 0;
-  m_grabPointY          = 0;
-  m_newX                = 0;
-  m_newY                = 0;
+  m_grabPointX            = 0;
+  m_grabPointY            = 0;
+  m_newX                  = 0;
+  m_newY                  = 0;
 
   // Set initial flag values
 
-  m_flags.clicked                   = false;
-  m_flags.dragging                  = false;
-  m_flags.hasFocus                  = false;
-  m_flags.deleted                   = false;
-  m_flags.drawingEnabled            = false;
-  m_flags.enabled                   = true;
-  m_flags.erased                    = true;
-  m_flags.visibleRegionCacheInvalid = true;
-  m_flags.hidden                    = false;
+  m_flags.clicked         = false;
+  m_flags.dragging        = false;
+  m_flags.hasFocus        = false;
+  m_flags.deleted         = false;
+  m_flags.drawingEnabled  = false;
+  m_flags.enabled         = true;
+  m_flags.erased          = true;
+  m_flags.hidden          = false;
 
   // Set hierarchy pointers
 
-  m_parent              = (CNxWidget *)NULL;
-  m_focusedChild        = (CNxWidget *)NULL;
+  m_parent                = (CNxWidget *)NULL;
+  m_focusedChild          = (CNxWidget *)NULL;
 
   // Double-click
 
   clock_gettime(CLOCK_REALTIME, &m_lastClickTime);
-  m_lastClickX          = 0;
-  m_lastClickY          = 0;
-  m_doubleClickBounds   = DOUBLE_CLICK_BOUNDS;
+  m_lastClickX            = 0;
+  m_lastClickY            = 0;
+  m_doubleClickBounds     = DOUBLE_CLICK_BOUNDS;
 
   // Set border size to 1 line
-  
-  m_borderSize.top      = 1;
-  m_borderSize.right    = 1;
-  m_borderSize.bottom   = 1;
-  m_borderSize.left     = 1;
 
-  m_widgetEventHandlers = new CWidgetEventHandlerList(this);
+  m_borderSize.top        = 1;
+  m_borderSize.right      = 1;
+  m_borderSize.bottom     = 1;
+  m_borderSize.left       = 1;
+
+  m_widgetEventHandlers   = new CWidgetEventHandlerList(this);
 }
 
 /**
@@ -294,7 +293,7 @@ nxgl_coord_t CNxWidget::getRelativeY(void) const
 /**
  * Has the widget been marked for deletion?  This function recurses up the widget
  * hierarchy and only returns true if all of the widgets in the ancestor
- * chain are not deleted.  
+ * chain are not deleted.
  *
  * Widgets marked for deletion are automatically deleted and should not be
  * interacted with.
@@ -329,14 +328,16 @@ bool CNxWidget::isDrawingEnabled(void) const
     {
       if (m_parent->isDrawingEnabled())
         {
-          // Drawing is enabled if the widget is drawable and not deleted
+          // Drawing is enabled if the widget is drawable, not deleted, and not hidden
 
-          return (m_flags.drawingEnabled && (!m_flags.deleted) && (!m_flags.hidden));
+          return (m_flags.drawingEnabled && !m_flags.deleted && !m_flags.hidden);
         }
     }
   else
     {
-      return (m_flags.drawingEnabled && (!m_flags.deleted) && (!m_flags.hidden));
+      // Drawing is enabled if the widget is drawable, not deleted, and not hidden
+
+      return (m_flags.drawingEnabled && !m_flags.deleted && !m_flags.hidden);
     }
 
   return false;
@@ -466,6 +467,8 @@ void CNxWidget::setBorderless(bool borderless)
  * Sets the font.
  *
  * @param font A pointer to the font to use.
+ *
+ * NOTE: This font is not deleted when the widget is destroyed!
  */
 
 void CNxWidget::setFont(CNxFont *font)
@@ -495,7 +498,7 @@ void CNxWidget::redraw(void)
       m_flags.erased = false;
 
       // Draw the children of the widget
-      
+
       drawChildren();
     }
 }
@@ -555,7 +558,7 @@ void CNxWidget::close(void)
 
       m_flags.deleted = true;
       m_flags.drawingEnabled = false;
-    
+
       // Unset clicked widget if necessary
 
       CNxWidget *clickedWidget = m_widgetControl->getClickedWidget();
@@ -680,7 +683,7 @@ bool CNxWidget::click(nxgl_coord_t x, nxgl_coord_t y)
  * @param y Y coordinate of the click.
  * @return True if the click is a double-click.
  */
- 
+
 bool CNxWidget::isDoubleClick(nxgl_coord_t x, nxgl_coord_t y)
 {
   // Check for a double-click
@@ -781,7 +784,7 @@ bool CNxWidget::release(nxgl_coord_t x, nxgl_coord_t y)
 
   onPreRelease(x, y);
 
-  // Now mark the widget as NOT clicked and stop draggin actions.
+  // Now mark the widget as NOT clicked and stop dragging actions.
 
   m_flags.clicked = false;
   stopDragging(x, y);
@@ -831,9 +834,9 @@ bool CNxWidget::release(nxgl_coord_t x, nxgl_coord_t y)
 
 bool CNxWidget::drag(nxgl_coord_t x, nxgl_coord_t y, nxgl_coord_t vX, nxgl_coord_t vY)
 {
-  if ((isEnabled()) && (m_flags.dragging))
+  if (isEnabled() && m_flags.dragging)
     {
-      if ((vX != 0) || (vY != 0))
+      if (vX != 0 || vY != 0)
         {
           onDrag(x, y, vX, vY);
           m_widgetEventHandlers->raiseDragEvent(x, y, vX, vY);
@@ -858,7 +861,7 @@ bool CNxWidget::keyPress(nxwidget_char_t key)
     {
       return false;
     }
-    
+
   // Raise keypress for this widget
 
   m_widgetEventHandlers->raiseKeyPressEvent(key);
@@ -886,7 +889,7 @@ bool CNxWidget::cursorControl(ECursorControl control)
     {
       return false;
     }
-    
+
   // Raise cursor control for this widget
 
   m_widgetEventHandlers->raiseCursorControlEvent(control);
@@ -931,7 +934,7 @@ bool CNxWidget::focus(void)
   if (!hadFocus)
     {
       onFocus();
-    
+
       m_widgetEventHandlers->raiseFocusEvent();
       return true;
     }
@@ -967,7 +970,7 @@ bool CNxWidget::blur(void)
   if (hadFocus)
     {
       onBlur();
-    
+
       m_widgetEventHandlers->raiseBlurEvent();
       return true;
     }
@@ -1046,7 +1049,7 @@ bool CNxWidget::moveTo(nxgl_coord_t x, nxgl_coord_t y)
             }
         }
     }
-      
+
   // Perform move if necessary
 
   if ((m_rect.getX() != x) || (m_rect.getY() != y))
@@ -1408,6 +1411,7 @@ const CNxWidget *CNxWidget::getChild(int index) const
     {
       return m_children[index];
     }
+
   return (CNxWidget *)NULL;
 }
 

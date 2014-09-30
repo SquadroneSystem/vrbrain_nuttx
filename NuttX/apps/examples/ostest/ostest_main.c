@@ -1,7 +1,7 @@
 /****************************************************************************
  * apps/examples/ostest/ostest_main.c
  *
- *   Copyright (C) 2007-2009, 2011-2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2007-2009, 2011-2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -306,7 +306,7 @@ static int user_main(int argc, char *argv[])
 #endif
 
   /* Top of test loop */
-  
+
 #if CONFIG_EXAMPLES_OSTEST_LOOPS > 1
   for (i = 0; i < CONFIG_EXAMPLES_OSTEST_LOOPS; i++)
 #elif CONFIG_EXAMPLES_OSTEST_LOOPS == 0
@@ -322,7 +322,7 @@ static int user_main(int argc, char *argv[])
 #endif
 
 #ifdef  CONFIG_ARCH_FPU
-  /* Check that the FPU is properly supported during context switching */
+      /* Check that the FPU is properly supported during context switching */
 
       printf("\nuser_main: FPU test\n");
       fpu_test();
@@ -387,7 +387,7 @@ static int user_main(int argc, char *argv[])
 #endif
 #endif
 
-#if !defined(CONFIG_DISABLE_SIGNALS) && !defined(CONFIG_DISABLE_PTHREAD) && !defined(CONFIG_DISABLE_CLOCK)
+#if !defined(CONFIG_DISABLE_SIGNALS) && !defined(CONFIG_DISABLE_PTHREAD)
       /* Verify pthreads and condition variable timed waits */
 
       printf("\nuser_main: timed wait test\n");
@@ -403,7 +403,7 @@ static int user_main(int argc, char *argv[])
       check_test_memory_usage();
 #endif
 
-#if !defined(CONFIG_DISABLE_MQUEUE) && !defined(CONFIG_DISABLE_PTHREAD) && !defined(CONFIG_DISABLE_CLOCK)
+#if !defined(CONFIG_DISABLE_MQUEUE) && !defined(CONFIG_DISABLE_PTHREAD)
       /* Verify pthreads and message queues */
 
       printf("\nuser_main: timed message queue test\n");
@@ -568,6 +568,6 @@ int ostest_main(int argc, FAR char *argv[])
       printf("ostest_main: Started user_main at PID=%d\n", result);
     }
 
-  printf("ostest_main: Exitting\n");
+  printf("ostest_main: Exiting\n");
   return 0;
 }

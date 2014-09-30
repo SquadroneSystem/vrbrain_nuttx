@@ -45,7 +45,6 @@
 #include <nuttx/arch.h>
 
 #include "chip/chip.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 /***************************************************************************
@@ -81,13 +80,13 @@
 void z16f_sysexec(FAR chipreg_t *regs)
 {
   uint16_t excp;
-  
+
   /* Save that register reference so that it can be used for built-in
    * diagnostics.
    */
 
   current_regs = regs;
- 
+
   /* The cause of the system exception is indicated in the SYSEXCPH&L
    * registers
    */

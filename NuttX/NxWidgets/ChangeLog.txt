@@ -345,7 +345,7 @@
 * NxWidgets::CNxWidgets:  Allow overriding of the checkCollision() method.
   From Petteri Aimonen (2013-4-22).
 
-1.8 2013-xx-xx Gregory Nutt <gnutt@nuttx.org>
+1.8 2013-06-14 Gregory Nutt <gnutt@nuttx.org>
 
 * NxWM::CMediaPlayer: shell application for an MP3 Media Player with
   Kconfig settings to enable it.  I plan to write this app to help
@@ -362,7 +362,7 @@
   should be 100, not 50, to be consistent with other default priorities.
 * NxWidgets::CGlyphSliderHorizontal and NxWidgets::CGlyphSliderHorizontalGrip:
   New widgets added by Ken Pettit (2013-5-15).
-* NxWidgets/UnitTests/CGlyphSliderHorizontal:  Addes a unit test for the
+* NxWidgets/UnitTests/CGlyphSliderHorizontal:  Adds a unit test for the
   NxWidgets::CGlyphSliderHorizontal class. From Ken Pettit (2013-5-17) .
 * NxWidgets::CGlyphSliderHorizontal:  Fix a drawing error.  From Ken
   Pettit (2013-5-17).
@@ -379,3 +379,157 @@
   state due to e.g. powerdown or other manual intervention.  From
   Petteri Aimonen (2013-6-4).
 
+1.9 2013-10-28 Gregory Nutt <gnutt@nuttx.org>
+
+* NxWM::CCalibration.cxx/hxx:  If CONFIG_NXWM_CALIBRATION_MESSAGES is
+  defined then CCalibration will provide some instructions in the center
+  of the display (2013-10-14).
+* NxWM::CCalibration.cxx/hxx:  Add options to collect and average
+  multiple samples at each location.  Also logic to discard the most
+  extreme samples before averaging (2013-10-14).
+* NxWidgets::CScaledImage:  This new class is a wrapper for an class
+  the exports IBitMap.  It will perform scaling via bi-linear interpolation
+  so that images can be scaled to any size desired (2013-10-15).
+* NxWM::CTaskbar:: Can now be configured to scale taskbar icons using
+  NxWidgets::CScaledImage (2013-10-15)
+* NxWidgets/libnxwidgets/src/glyph_nxlogo320x320.cxx:  Add a big, 320x320
+  NuttX logo image.  The older, smaller NuttX logo was renamed from
+  nxlogo to nxlogo160x160 in all places (2015-10-15).
+* NxWM::CCalibration and NxWM::CTouchscreen:  Add a complex touchscreen
+  scaling algorithm to handling the case where the measured X values also
+  vary with y position (and vice versa) (2013-10-17).
+
+1.10 2013-12-07 Gregory Nutt <gnutt@nuttx.org>
+
+* Kconfig and UnitTests/nxwm:  Add logic to enable saving and recovering
+  touchscreen calibration data.  This depends upon having platform-dependent
+  support for storage of configuration data.  Portions suggested by
+  Ken Pettit (2013-10-30).
+* NxWM:Calibration:  Saving of calibration data must be performed in
+  CCalibration, not in UnitTests/nxwm.  Why?  Because the touchscreen
+  calibration could also be initiated from other ways other than through
+  the one-time, start-up initialization logic (2013-10-30).
+
+1.11 2014-01-30 Gregory Nutt <gnutt@nuttx.org>
+
+* NxWidgets/Kconfig and NxWidgets::CNxServer:  Server initialization can
+  now be disabled in the configuration (in fact, it is disabled by default).
+  This is because in the kernel build mode, the NX server must be initialized
+  in kernel mode by the RTOS before applications using the server run in
+  user mode.
+* NxWm: Added CONFIG_NXWM_NXCONSOLE that can be used to disable the NxConsole
+  window (2013-12-30).
+* NxWm::CTouchscreen: Added CONFIG_NXWM_TOUCHSCREEN_DEVINIT that can be used
+  to suppress calls to initialize the touchscreen device from the listener
+  thread.  This is necessary if the kernel mode build is used: In that case,
+  the touchscreen must be initialized in kernel space before NxWM is started
+  (2013-12-30).
+
+1.12 2014-08-15 Gregory Nutt <gnutt@nuttx.org>
+
+* libnxwidgets/include/nxconfig.hxx and libnxwidgets/src/cscaledbitmap.cxx:
+  Fix typo RBG -> RGB.  This makes NxWidgets incompatible with versions of
+  NuttX 7.2 and below.
+* nxwm/src/glyph_*.cxx: Rename all ICON glyph files to include the size of the
+  ICON as part of the file name.  This is in preparation for supporting a
+  set of larger ICONs (2014-7-12).
+* nxwm/src/glyph_play48x48.cxx:  Add a larger NxWM play icon (2014-7-12).
+* nxwm/src/glyph_caclulator47x49.cxx:  Add a larger NxWM calculator icon
+  (2014-7-13).
+* nxwm/src/glyph_cmd49x43.cxx: Add a larger NxWM NxConsole icon (2014-7-13).
+* nxwm/src/glyph_calibration48x42.cxx:  Add a larger NxWM Calibration icon
+  (2014-7-13).
+* nxwm/src/glyph_minimize42x42.cxx: Add a larger NxWM minimize icon
+  (2014-7-13).
+* nxwm/src/glyph_stop42x42.cxx: Add a larger NxWM close icon (2014-8-13).
+* nxwm/src/glyph_mediaplayer44x50.cxx: Add a larger NxWM media player icon
+  (2014-7-14).
+* Kconfig, nxwm/include/nxwmconfig.hxx, nxwm/src/capplicationwindow.cxx:
+  Toolbar font ID can now be separately configured (2014-7-14).
+* nxwm/src/cmediaplayer.cxx: Will now dynamically position player controls
+  based on the display and image sizes (2014-7-14).
+* nxwm/src/glyph_mediagrip30x30.cxx and glyph_mplayer_controls43x41.cxx: Add
+  larger images for the media player (2014-7-14).
+* Kconfig, nxwm/src/cmediaplayer.cxx: Add options to manage spacing of media
+  player buttons and borders vs. borderless buttons (2014-7-14).
+* NxWidgets::CImage: Fix setImageLeft and setImageTop methods (2014-7-14).
+* NxWidget::CImage: Now supports helper methods to align images in the
+  widget region (2014-7-14).
+* NxWM::CMediaPlayer now uses the new CImage methods to align media controls
+  in buttons (2014-7-14).
+* NxWidgets::CStickyImage:  A version of CImage that sticks in the selected
+  state when clicked (2014-7-15).
+* NxMW::CMediaPlayer: Now supports a pause button (2014-7-15).
+* NxMW::CMediaPlayer: Fix some memory leaks (2014-7-16).
+* NxMW::CMediaPlayer: Change spacing, make text region big enough to support
+  a multi-line, scrollable region (2014-7-16).
+* NxMW::CMediaPlayer: Correctly catch the volume level change event
+  (2014-7-16).
+* NxMW::CMediaPlayer: Convert CLabel to a CListBox to support selection of
+  one of many media files to play.  This should be a CScrollingTextBox to
+  support an indefinitely large number of media files (2014-7-16).
+* NxWidgets::CGraphicsPort:  Fix drawBitmapGreyScale method.  Actually drew
+  nothing because of several errors in positioning and buffer usage
+  (2014-7-17)
+* NxWidgets::CImage:  Should not attempt to draw the "empty" regions at the
+  top and the bottom of the image box in greyscale (2014-7-17).
+* NxWM::CMediaPlayer:  Fix some state-related bugs introduced yesterday.
+  Improved state-related button displayes.  Now correctly catches and
+  handles file selection events (2014-7-17).
+* NxWidgets::CImage:  Cannot use NxWidgets::CGraphicsPort:drawBitmapGreyScale()
+  because it does not respect transparent or background colors in its current
+  form.  The end result is that makes the image background grey as well as the
+  image (2014-7-17).
+* NxWM::CMediaPlayer:  State variable was left in a bad state and caused some
+  problems down the road (2014-7-17).
+* NxWidgets::CGlyphSliderHorizontal: No longer uses a hard-coded slider
+  height; the slider height is now provided as a parameter, replacing the
+  widget height which is now calculated from the glip image height
+  (2014-7-17).
+* NxWM::CMediaPlayer:  Now calculates the volume slider height from the grip
+  image height (2014-7-17).
+* NxWM::CApplicationWindow:  Created the custom font for the toolbar title,
+  but never used it! (2014-7-17).
+* NxWidgets::CNxString:  Make destructor virtual.  From Petteri Aimonen
+  (2014-7-22).
+* NxWidgets::CTaskbar:  Fix type of return value fromopenRawWindow()
+  method.  From Petteri Aimonen (2014-7-22).
+* NxWidgets::CTabPanel:  Modify behavior in showPage() method.  Eliminate a
+  duplicate redraw that caused flickering; re-order some logic so that
+  widgets are hidden before operated on.  From Petteri Aimonen (2014-7-22).
+* NxWidgets:CTabPanel:  Make CTabPanel raise action event when tab is
+  changed.  Also add a function for getting the currently selected tab
+  index.  From Petteri Aimonen (2014-7-22).
+* NxWidgets::CNxTimer:  Make CNxTimer stop itself before destruction.
+  Otherwise a call to an invalid work queue entry may occur.  From Petteri
+  Aimonen (2014-7-22).
+* NxWidgets/Kconfig: Add configuration options to filter CMediaPlayer files
+  based on extension (2014-7-23)
+* NxWM::CMediaPlayer:  Add logic to read files from the media mountpoint,
+  filter them by extension, and display the file names in the listbox (2014-7-23).
+* NxWM::CMediaPlayer:  Beginning integration of NxPlayer into Nxwm::MediaPlayer.
+  Gets handle, sets device, and releases handle.  Lots more to be done
+  (2014-7-23).
+* NxWidgets::CNxString: Add a getAllocSize() method to make it easier to
+  convert CNxStrings to NUL-terminated C strings (2014-7-24).
+* NxWM::IApplicationFactory: dd a do-nothing, virtual destructor to
+  eliminate a warning (2014-7-24).
+* NxWM::CMediaPlayer: Lots of changes to integrate with Ken's NxPlayer
+  (2014-7-24).
+* NxWM::CMediaPlayer: Revise state logic.  We need an additional state for
+  the case where a file is selected, but playing has not yet start.  Several
+  other state-related fixes (2014-7-25).
+* NxWM::CMediaPlayer:  Need to remember last text box selection or else each
+  new Value Change event from the volume slider is confused with a new file
+  selection (2014-7-27).
+* NxWM::CMediaPlayer: Correct handling of increments to sub-sampling rate
+  (2014-7-27).
+* XWidgets::CNxWidget: Remove an unused bit field (2014-7-28).
+* NxWM::CMediaPlayer: Add a CLabel that show the current fast forward/rewind
+  speed (2014-7-28).
+* NxWM::CKeyboard: Add support for a USB keyboard as the NxConsole and text
+  widget input.  Not fully functional as of this initial check-in.  Basic
+  functionality is there, but there are conditions were the keyboard gets
+  lost (2014-7-30).
+
+1.13 2014-xx-xx Gregory Nutt <gnutt@nuttx.org>

@@ -46,7 +46,7 @@
 #include <nuttx/arch.h>
 
 #include "chip/chip.h"
-#include "clock_internal.h"
+#include "clock/clock.h"
 #include "up_internal.h"
 
 /***************************************************************************
@@ -79,7 +79,7 @@ int up_timerisr(int irq, chipreg_t *regs)
   volatile uint8_t reg;
 
   /* Read the appropropriate timer0 registr to clear the interrupt */
-  
+
 #ifdef _EZ80F91
   reg = inp(EZ80_TMR0_IIR);
 #else
@@ -91,7 +91,7 @@ int up_timerisr(int irq, chipreg_t *regs)
   /* Process timer interrupt */
 
   sched_process_timer();
-   
+
  /* Architecture specific hook into the timer interrupt handler */
 
 #ifdef CONFIG_ARCH_TIMERHOOK
@@ -102,7 +102,7 @@ int up_timerisr(int irq, chipreg_t *regs)
 }
 
 /***************************************************************************
- * Function:  up_timerinit
+ * Function:  up_timer_initialize
  *
  * Description:
  *   This function is called during start-up to initialize the timer
@@ -110,7 +110,7 @@ int up_timerisr(int irq, chipreg_t *regs)
  *
  ***************************************************************************/
 
-void up_timerinit(void)
+void up_timer_initialize(void)
 {
   uint16_t reload;
   uint8_t  reg;
@@ -147,7 +147,7 @@ void up_timerinit(void)
   outp(EZ80_TMR0_RRL, (uint8_t)(reload));
 
   /* Clear any pending timer interrupts */
-  
+
 #if defined(_EZ80F91)
   reg = inp(EZ80_TMR0_IIR);
 #elif defined(_EZ80L92) || defined(_EZ80F92) ||defined(_EZ80F93)

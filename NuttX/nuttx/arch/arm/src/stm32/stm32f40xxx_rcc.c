@@ -1,7 +1,7 @@
 /****************************************************************************
  * arch/arm/src/stm32/stm32f40xxx_rcc.c
  *
- *   Copyright (C) 2011-2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2011-2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,6 +51,10 @@
 
 #define HSERDY_TIMEOUT (100 * CONFIG_BOARD_LOOPSPERMSEC)
 
+/* Same for HSI */
+
+#define HSIRDY_TIMEOUT HSERDY_TIMEOUT
+
 /****************************************************************************
  * Private Data
  ****************************************************************************/
@@ -81,12 +85,12 @@ static inline void rcc_reset(void)
 
   putreg32(0x00000000, STM32_RCC_CFGR);
 
-  /* Reset HSEON, CSSON and PLLON bits */
+  /* Reset HSION, HSEON, CSSON and PLLON bits */
 
   regval  = getreg32(STM32_RCC_CR);
-  regval &= ~(RCC_CR_HSEON|RCC_CR_CSSON|RCC_CR_PLLON);
+  regval &= ~(RCC_CR_HSION|RCC_CR_HSEON|RCC_CR_CSSON|RCC_CR_PLLON);
   putreg32(regval, STM32_RCC_CR);
- 
+
   /* Reset PLLCFGR register to reset default */
 
   putreg32(RCC_PLLCFG_RESET, STM32_RCC_PLLCFG);
@@ -197,8 +201,13 @@ static inline void rcc_enableahb1(void)
 #ifdef CONFIG_STM32_OTGHS
   /* USB OTG HS */
 
-  regval |= (RCC_AHB1ENR_OTGHSEN|RCC_AHB1ENR_OTGHSULPIEN);
+#ifdef CONFIG_STM32_OTGFS2
+  regval |= RCC_AHB1ENR_OTGHSEN;
+#else
+  regval |= RCC_AHB1ENR_OTGHSULPIEN;
 #endif
+
+#endif  /* CONFIG_STM32_OTGHS */
 
   putreg32(regval, STM32_RCC_AHB1ENR);   /* Enable peripherals */
 }
@@ -567,6 +576,12 @@ static inline void rcc_enableapb2(void)
   regval |= RCC_APB2ENR_SPI6EN;
 #endif
 
+#ifdef CONFIG_STM32_LTDC
+  /* LTDC clock enable */
+
+  regval |= RCC_APB2ENR_LTDCEN;
+#endif
+
   putreg32(regval, STM32_RCC_APB2ENR);   /* Enable peripherals */
 }
 
@@ -575,7 +590,7 @@ static inline void rcc_enableapb2(void)
  *
  * Description:
  *   Called to change to new clock based on settings in board.h
- * 
+ *
  *   NOTE:  This logic would need to be extended if you need to select low-
  *   power clocking modes!
  ****************************************************************************/
@@ -586,8 +601,29 @@ static void stm32_stdclockconfig(void)
   uint32_t regval;
   volatile int32_t timeout;
 
+#ifdef STM32_BOARD_USEHSI
+  /* Enable Internal High-Speed Clock (HSI) */
+
+  regval  = getreg32(STM32_RCC_CR);
+  regval |= RCC_CR_HSION;           /* Enable HSI */
+  putreg32(regval, STM32_RCC_CR);
+
+  /* Wait until the HSI is ready (or until a timeout elapsed) */
+
+  for (timeout = HSIRDY_TIMEOUT; timeout > 0; timeout--)
+  {
+    /* Check if the HSIRDY flag is the set in the CR */
+
+    if ((getreg32(STM32_RCC_CR) & RCC_CR_HSIRDY) != 0)
+      {
+        /* If so, then break-out with timeout > 0 */
+
+        break;
+      }
+  }
+#else /* if STM32_BOARD_USEHSE */
   /* Enable External High-Speed Clock (HSE) */
- 
+
   regval  = getreg32(STM32_RCC_CR);
   regval |= RCC_CR_HSEON;           /* Enable HSE */
   putreg32(regval, STM32_RCC_CR);
@@ -605,6 +641,7 @@ static void stm32_stdclockconfig(void)
         break;
       }
   }
+#endif
 
   /* Check for a timeout.  If this timeout occurs, then we are hosed.  We
    * have no real back-up plan, although the following logic makes it look
@@ -622,7 +659,7 @@ static void stm32_stdclockconfig(void)
       putreg32(regval, STM32_RCC_APB1ENR);
 
       regval  = getreg32(STM32_PWR_CR);
-#if defined(CONFIG_STM32_STM32F427)
+#if defined(CONFIG_STM32_STM32F427) || defined(CONFIG_STM32_STM32F429)
       regval &= ~PWR_CR_VOS_MASK;
       regval |= PWR_CR_VOS_SCALE_1;
 #else
@@ -631,7 +668,7 @@ static void stm32_stdclockconfig(void)
       putreg32(regval, STM32_PWR_CR);
 
       /* Set the HCLK source/divider */
- 
+
       regval = getreg32(STM32_RCC_CFGR);
       regval &= ~RCC_CFGR_HPRE_MASK;
       regval |= STM32_RCC_CFGR_HPRE;
@@ -643,7 +680,7 @@ static void stm32_stdclockconfig(void)
       regval &= ~RCC_CFGR_PPRE2_MASK;
       regval |= STM32_RCC_CFGR_PPRE2;
       putreg32(regval, STM32_RCC_CFGR);
-  
+
       /* Set the PCLK1 divider */
 
       regval = getreg32(STM32_RCC_CFGR);
@@ -653,8 +690,13 @@ static void stm32_stdclockconfig(void)
 
       /* Set the PLL dividers and multiplers to configure the main PLL */
 
+#ifdef STM32_BOARD_USEHSI
+      regval = (STM32_PLLCFG_PLLM | STM32_PLLCFG_PLLN |STM32_PLLCFG_PLLP |
+                RCC_PLLCFG_PLLSRC_HSI | STM32_PLLCFG_PLLQ);
+#else /* if STM32_BOARD_USEHSE */
       regval = (STM32_PLLCFG_PLLM | STM32_PLLCFG_PLLN |STM32_PLLCFG_PLLP |
                 RCC_PLLCFG_PLLSRC_HSE | STM32_PLLCFG_PLLQ);
+#endif
       putreg32(regval, STM32_RCC_PLLCFG);
 
       /* Enable the main PLL */
@@ -662,11 +704,31 @@ static void stm32_stdclockconfig(void)
       regval = getreg32(STM32_RCC_CR);
       regval |= RCC_CR_PLLON;
       putreg32(regval, STM32_RCC_CR);
- 
+
       /* Wait until the PLL is ready */
-  
-      while ((getreg32(STM32_RCC_CR) & RCC_CR_PLLRDY) == 0);
- 
+
+      while ((getreg32(STM32_RCC_CR) & RCC_CR_PLLRDY) == 0)
+        {
+        }
+
+#if defined(CONFIG_STM32_STM32F429)
+      /* Enable the Over-drive to extend the clock frequency to 180 Mhz */
+
+      regval  = getreg32(STM32_PWR_CR);
+      regval |= PWR_CR_ODEN;
+      putreg32(regval, STM32_PWR_CR);
+      while ((getreg32(STM32_PWR_CSR) & PWR_CSR_ODRDY) == 0)
+        {
+        }
+
+      regval = getreg32(STM32_PWR_CR);
+      regval |= PWR_CR_ODSWEN;
+      putreg32(regval, STM32_PWR_CR);
+      while ((getreg32(STM32_PWR_CSR) & PWR_CSR_ODSWRDY) == 0)
+        {
+        }
+#endif
+
       /* Enable FLASH prefetch, instruction cache, data cache, and 5 wait states */
 
 #ifdef CONFIG_STM32_FLASH_PREFETCH
@@ -684,8 +746,10 @@ static void stm32_stdclockconfig(void)
       putreg32(regval, STM32_RCC_CFGR);
 
       /* Wait until the PLL source is used as the system clock source */
-  
-      while ((getreg32(STM32_RCC_CFGR) & RCC_CFGR_SWS_MASK) != RCC_CFGR_SWS_PLL);
+
+      while ((getreg32(STM32_RCC_CFGR) & RCC_CFGR_SWS_MASK) != RCC_CFGR_SWS_PLL)
+        {
+        }
     }
 }
 #endif

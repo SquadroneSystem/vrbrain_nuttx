@@ -70,11 +70,11 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <cstdint>
+#include <cstdbool>
 #include <cstring>
 
 #include "clistdata.hxx"
@@ -207,7 +207,7 @@ void CListData::removeAllItems(void)
     {
       delete m_items[i];
     }
-  
+
   m_items.clear();
   raiseDataChangedEvent();
 }
@@ -230,7 +230,7 @@ const int CListData::getSelectedIndex(void) const
           return i;
         }
     }
-  
+
   return -1;
 }
 

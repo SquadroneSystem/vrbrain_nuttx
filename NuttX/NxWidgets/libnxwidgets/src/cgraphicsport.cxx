@@ -70,7 +70,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <sys/types.h>
@@ -80,7 +80,7 @@
 #include <debug.h>
 
 #include <nuttx/nx/nxglib.h>
-#include <nuttx/rgbcolors.h>
+#include <nuttx/video/rgbcolors.h>
 
 #include "nxconfig.hxx"
 #include "inxwindow.hxx"
@@ -192,11 +192,8 @@ void CGraphicsPort::drawHorizLine(nxgl_coord_t x, nxgl_coord_t y,
                                   nxgl_coord_t width, nxgl_mxpixel_t color)
 {
   FAR struct nxgl_rect_s dest;
-  nxgl_coord_t halfwidth;
 
   // Express the line as a rectangle
-
-  halfwidth = width >> 1;
 
   dest.pt1.x = x;
   dest.pt1.y = y;
@@ -401,7 +398,7 @@ void CGraphicsPort::drawBitmap(nxgl_coord_t x, nxgl_coord_t y,
                          bitmapY * bitmap->stride +
                          ((bitmapX * bitmap->bpp + 7) >> 3);
   FAR nxwidget_pixel_t *srcPtr  = (nxwidget_pixel_t *)srcLine;
-  
+
   // Loop until all rows have been displayed
 
   nxgl_coord_t firstX = x;
@@ -534,6 +531,11 @@ void CGraphicsPort::drawBitmapGreyScale(nxgl_coord_t x, nxgl_coord_t y,
   // Working buffer.  Holds one converted row from the bitmap
 
   FAR nxwidget_pixel_t *run = new nxwidget_pixel_t[width];
+  if (!run)
+    {
+      gvdbg("ERROR: Failed to allocated run buffer\n");
+      return;
+    }
 
   // Pointer to the beginning of the first source row
 
@@ -542,8 +544,8 @@ void CGraphicsPort::drawBitmapGreyScale(nxgl_coord_t x, nxgl_coord_t y,
   // Setup non-changing blit parameters
 
   struct nxgl_point_s origin;
-  origin.x   = 0;
-  origin.y   = 0;
+  origin.x   = x;
+  origin.y   = y;
 
   struct nxgl_rect_s dest;
   dest.pt1.x = x;
@@ -552,7 +554,7 @@ void CGraphicsPort::drawBitmapGreyScale(nxgl_coord_t x, nxgl_coord_t y,
   dest.pt2.y = y;
 
   // Convert each row to greyscale and send it to the display
-   
+
   for (int row = 0; row < height; row++)
     {
       // Convert the next row
@@ -565,24 +567,25 @@ void CGraphicsPort::drawBitmapGreyScale(nxgl_coord_t x, nxgl_coord_t y,
           // Get the next RGB pixel and break out the individual components
 
           nxwidget_pixel_t rgb = *runSrc++;
-          nxwidget_pixel_t r = RGB2RED(rgb);
-          nxwidget_pixel_t g = RGB2GREEN(rgb);
-          nxwidget_pixel_t b = RGB2BLUE(rgb);
+          nxwidget_pixel_t r   = RGB2RED(rgb);
+          nxwidget_pixel_t g   = RGB2GREEN(rgb);
+          nxwidget_pixel_t b   = RGB2BLUE(rgb);
 
           // A truly accurate greyscale conversion would be complex.  Let's
           // just average.
- 
+
           nxwidget_pixel_t avg = (r + g + b) / 3;
           *runDest++ = MKRGB(avg, avg, avg);
         }
 
       // Now blit the single row
 
-      (void)m_pNxWnd->bitmap(&dest, (FAR void *)bitmap->data, &origin, bitmap->stride);
+      (void)m_pNxWnd->bitmap(&dest, run, &origin, bitmap->stride);
 
        // Setup for the next source row
 
        y++;
+       origin.y   = y;
        dest.pt1.y = y;
        dest.pt2.y = y;
 
@@ -679,9 +682,9 @@ void CGraphicsPort::drawText(struct nxgl_point_s *pos, CRect *bound,
 {
   nxgl_mxpixel_t savedColor = font->getColor();
   font->setColor(color);
-  
+
   _drawText(pos, bound, font, string, startIndex, length, background, false);
-  
+
   font->setColor(savedColor);
 }
 
@@ -727,7 +730,7 @@ void CGraphicsPort::_drawText(struct nxgl_point_s *pos, CRect *bound,
       background = m_backColor;
     }
 #endif
-    
+
   // Allocate a bit of memory to hold the largest rendered font
 
   unsigned int bmWidth   = ((unsigned int)font->getMaxWidth() * CONFIG_NXWIDGETS_BPP + 7) >> 3;
@@ -740,7 +743,7 @@ void CGraphicsPort::_drawText(struct nxgl_point_s *pos, CRect *bound,
 
   struct nxgl_rect_s boundingBox;
   bound->getNxRect(&boundingBox);
-  
+
   // Loop setup
 
   struct SBitmap bitmap;
@@ -796,7 +799,7 @@ void CGraphicsPort::_drawText(struct nxgl_point_s *pos, CRect *bound,
               // If we have been given a background color, use it to fill the array.
               // Otherwise initialize the bitmap memory by reading from the display.
               // The font renderer always renders the fonts on a transparent background.
-              
+
               if (!transparent)
                 {
                   // Set the glyph memory to the background color
@@ -829,7 +832,7 @@ void CGraphicsPort::_drawText(struct nxgl_point_s *pos, CRect *bound,
             }
         }
 
-      // Adjust the X position for the next character in the string        
+      // Adjust the X position for the next character in the string
 
       pos->x += fontWidth;
     }

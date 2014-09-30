@@ -316,7 +316,7 @@ LEDs
   - The LED is not illuminated until the ZKit-ARM completes initialization.
 
     If the LED is stuck in the OFF state, this means that the ZKit-ARM did not
-    complete intialization.
+    complete initializeation.
 
   - Each time the OS enters an interrupt (or a signal) it will turn the LED OFF and
     restores its previous stated upon return from the interrupt (or signal).
@@ -376,19 +376,15 @@ ZKit-ARM Configuration Options
     CONFIG_ENDIAN_BIG - define if big endian (default is little
        endian)
 
-    CONFIG_DRAM_SIZE - Describes the installed DRAM (CPU SRAM in this case):
+    CONFIG_RAM_SIZE - Describes the installed DRAM (CPU SRAM in this case):
 
-       CONFIG_DRAM_SIZE=(32*1024) (32Kb)
+       CONFIG_RAM_SIZE=(32*1024) (32Kb)
 
        There is an additional 32Kb of SRAM in AHB SRAM banks 0 and 1.
 
-    CONFIG_DRAM_START - The start address of installed DRAM
+    CONFIG_RAM_START - The start address of installed DRAM
 
-       CONFIG_DRAM_START=0x10000000
-
-    CONFIG_ARCH_IRQPRIO - The LPC17xx supports interrupt prioritization
-
-       CONFIG_ARCH_IRQPRIO=y
+       CONFIG_RAM_START=0x10000000
 
     CONFIG_ARCH_LEDS - Use LEDs to show state. Unique to boards that
        have LEDs
@@ -476,7 +472,7 @@ ZKit-ARM Configuration Options
   LPC17xx specific PHY/Ethernet device driver settings.  These setting
   also require CONFIG_NET and CONFIG_LPC17_ETHERNET.
 
-    CONFIG_PHY_KS8721 - Selects Micrel KS8721 PHY
+    CONFIG_ETH0_PHY_KS8721 - Selects Micrel KS8721 PHY
     CONFIG_PHY_AUTONEG - Enable auto-negotion
     CONFIG_PHY_SPEED100 - Select 100Mbit vs. 10Mbit speed.
     CONFIG_PHY_FDUPLEX - Select full (vs. half) duplex
@@ -484,8 +480,6 @@ ZKit-ARM Configuration Options
     CONFIG_NET_EMACRAM_SIZE - Size of EMAC RAM.  Default: 16Kb
     CONFIG_NET_NTXDESC - Configured number of Tx descriptors. Default: 18
     CONFIG_NET_NRXDESC - Configured number of Rx descriptors. Default: 18
-    CONFIG_NET_PRIORITY - Ethernet interrupt priority.  The is default is
-      the higest priority.
     CONFIG_NET_WOL - Enable Wake-up on Lan (not fully implemented).
     CONFIG_NET_REGDEBUG - Enabled low level register debug.  Also needs
       CONFIG_DEBUG.
@@ -549,7 +543,7 @@ Where <subdir> is one of the following:
     apps/examples/README.txt for information about the examples.
 
     NOTES:
- 
+
     1. This configuration uses the mconf-based configuration tool.  To
        change this configuration using that tool, you should:
 
@@ -569,7 +563,7 @@ Where <subdir> is one of the following:
     the apps/examples/thttpd application.
 
     NOTES:
- 
+
     1. This configuration uses the mconf-based configuration tool.  To
        change this configuration using that tool, you should:
 

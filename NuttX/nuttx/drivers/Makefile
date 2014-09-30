@@ -1,7 +1,7 @@
 ############################################################################
 # drivers/Makefile
 #
-#   Copyright (C) 2007-2012 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2007-2014 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -62,16 +62,25 @@ include power$(DELIM)Make.defs
 include sensors$(DELIM)Make.defs
 include sercomm$(DELIM)Make.defs
 include serial$(DELIM)Make.defs
+include spi$(DELIM)Make.defs
 include syslog$(DELIM)Make.defs
 include usbdev$(DELIM)Make.defs
 include usbhost$(DELIM)Make.defs
+include video$(DELIM)Make.defs
 include wireless$(DELIM)Make.defs
 
 ifneq ($(CONFIG_NFILE_DESCRIPTORS),0)
   CSRCS += dev_null.c dev_zero.c loop.c
 
 ifneq ($(CONFIG_DISABLE_MOUNTPOINT),y)
-  CSRCS += ramdisk.c rwbuffer.c
+  CSRCS += ramdisk.c
+ifneq ($(CONFIG_DRVR_WRITEBUFFER),y)
+  CSRCS += rwbuffer.c
+else
+ifneq ($(CONFIG_DRVR_READAHEAD),y)
+  CSRCS += rwbuffer.c
+endif
+endif
 endif
 
 ifeq ($(CONFIG_CAN),y)
@@ -84,6 +93,10 @@ endif
 
 ifeq ($(CONFIG_WATCHDOG),y)
   CSRCS += watchdog.c
+endif
+
+ifeq ($(CONFIG_TIMER),y)
+  CSRCS += timer.c
 endif
 endif
 

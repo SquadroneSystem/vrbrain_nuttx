@@ -47,7 +47,7 @@
 
 #include "chip.h"
 #include "up_arch.h"
-#include "clock_internal.h"
+#include "clock/clock.h"
 #include "up_internal.h"
 
 #include "str71x_internal.h"
@@ -156,7 +156,7 @@ int up_timerisr(int irq, uint32_t *regs)
 }
 
 /****************************************************************************
- * Function:  up_timerinit
+ * Function:  up_timer_initialize
  *
  * Description:
  *   This function is called during start-up to initialize
@@ -164,7 +164,7 @@ int up_timerisr(int irq, uint32_t *regs)
  *
  ****************************************************************************/
 
-void up_timerinit(void)
+void up_timer_initialize(void)
 {
   irqstate_t flags;
 
@@ -198,9 +198,11 @@ void up_timerinit(void)
   putreg16(OCAR_VALUE, STR71X_TIMER0_OCAR);
   putreg16(0xfffc, STR71X_TIMER0_CNTR);
 
+#ifdef CONFIG_ARCH_IRQPRIO
   /* Set the timer interrupt priority */
 
   up_prioritize_irq(STR71X_IRQ_SYSTIMER, CONFIG_TIM_PRI);
+#endif
 
   /* Attach the timer interrupt vector */
 

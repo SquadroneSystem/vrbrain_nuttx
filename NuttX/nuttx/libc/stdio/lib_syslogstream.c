@@ -43,7 +43,7 @@
 #include <assert.h>
 #include <errno.h>
 
-#include <nuttx/syslog.h>
+#include <nuttx/syslog/syslog.h>
 
 #include "lib_internal.h"
 
@@ -119,5 +119,3 @@ void lib_syslogstream(FAR struct lib_outstream_s *stream)
 }
 
 #endif /* CONFIG_SYSLOG */
-
-

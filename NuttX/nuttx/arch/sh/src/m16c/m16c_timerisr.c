@@ -46,7 +46,7 @@
 #include <nuttx/arch.h>
 #include <arch/board/board.h>
 
-#include "clock_internal.h"
+#include "clock/clock.h"
 #include "up_internal.h"
 #include "up_arch.h"
 
@@ -136,7 +136,7 @@ int up_timerisr(int irq, uint32_t *regs)
 }
 
 /****************************************************************************
- * Function:  up_timerinit
+ * Function:  up_timer_initialize
  *
  * Description:
  *   This function is called during start-up to initialize
@@ -144,7 +144,7 @@ int up_timerisr(int irq, uint32_t *regs)
  *
  ****************************************************************************/
 
-void up_timerinit(void)
+void up_timer_initialize(void)
 {
   /* Make sure that no timers are running and that all timer interrupts are
    * disabled.
@@ -161,13 +161,13 @@ void up_timerinit(void)
   putreg8(0, M16C_TB2IC);
 
   /* Set up timer 0 mode register for timer mode with the calculated prescaler value */
- 
+
   putreg8(M16C_TA0MODE_CONFIG, M16C_TA0MR);
 
   /* Set the calculated reload value */
 
   putreg16(M16C_RELOAD_VALUE, M16C_TA0);
- 
+
   /* Attach the interrupt handler */
 
   irq_attach(M16C_SYSTIMER_IRQ, (xcpt_t)up_timerisr);
@@ -175,7 +175,7 @@ void up_timerinit(void)
   /* Enable timer interrupts */
 
   putreg8(1, M16C_TA0IC);
-  
+
   /* Set the interrupt priority */
 
   putreg8(M16C_TA0_PRIO, M16C_TA0IC);

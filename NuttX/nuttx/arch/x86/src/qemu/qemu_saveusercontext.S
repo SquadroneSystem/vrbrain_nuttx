@@ -34,10 +34,6 @@
  **************************************************************************/
 
 /**************************************************************************
- * Conditional Compilation Options
- **************************************************************************/
-
-/**************************************************************************
  * Included Files
  **************************************************************************/
 
@@ -161,7 +157,7 @@ up_saveusercontext:
 	 * function when context is switch back to this thread.  The non-zero
 	 * return value is the indication that we have been resumed.
 	 */
- 
+
 	movl	$1, (4*REG_EAX)(%eax)
 
 	/* Get and save the interrupt state */

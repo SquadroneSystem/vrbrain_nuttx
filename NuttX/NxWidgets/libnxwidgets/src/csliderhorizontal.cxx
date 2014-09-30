@@ -1,7 +1,7 @@
 /****************************************************************************
  * NxWidgets/libnxwidgets/src/csliderhorizontal.cxx
  *
- *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <stdint.h>
@@ -137,7 +137,7 @@ CSliderHorizontal::CSliderHorizontal(CWidgetControl *pWidgetControl,
  * @param value The new value.
  */
 
-void CSliderHorizontal::setValue(const nxgl_coord_t value)
+void CSliderHorizontal::setValue(const int value)
 {
   setValueWithBitshift((int32_t)value << 16);
 }
@@ -155,14 +155,14 @@ void CSliderHorizontal::setValueWithBitshift(const int32_t value)
 {
   CRect rect;
   getClientRect(rect);
-  
+
   // Can the grip move?
 
   if ((rect.getWidth() > m_grip->getWidth()) && (m_maximumValue != m_minimumValue))
     {
       int32_t newValue = value;
       int32_t maxValue = getPhysicalMaximumValueWithBitshift();
-    
+
       // Limit to max/min values
 
       if (newValue > maxValue)
@@ -174,13 +174,13 @@ void CSliderHorizontal::setValueWithBitshift(const int32_t value)
         {
           newValue = m_minimumValue << 16;
         }
-    
+
       uint32_t scrollRatio = newValue / m_contentSize;
       int32_t newGripX     = m_gutterWidth * scrollRatio;
       newGripX            += newGripX & 0x8000;
       newGripX           >>= 16;
       newGripX            += rect.getX();
-    
+
       m_grip->moveTo(newGripX, rect.getY());
 
       // Update stored value if necessary
@@ -395,7 +395,7 @@ void CSliderHorizontal::resizeGrip(void)
       // height) of the gutter.  Each position in the gutter needs to be
       // reduced in value.
     }
-  
+
   m_grip->resize(gripSize, rect.getHeight());
 }
 

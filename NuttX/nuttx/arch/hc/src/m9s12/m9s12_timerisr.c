@@ -46,7 +46,7 @@
 #include <nuttx/arch.h>
 #include <arch/board/board.h>
 
-#include "clock_internal.h"
+#include "clock/clock.h"
 #include "up_internal.h"
 #include "up_arch.h"
 
@@ -75,7 +75,7 @@
 
 #define MIN_PRER    1024 /* 2**10, B=1 */
 #define MAX_PRER   65536 /* 2**16, B=7 */
- 
+
 #define MIN_MODCNT     1 /* A=0 */
 #define MAX_MODCNT    16 /* A=15 */
 
@@ -152,7 +152,7 @@ int up_timerisr(int irq, uint32_t *regs)
 }
 
 /****************************************************************************
- * Function:  up_timerinit
+ * Function:  up_timer_initialize
  *
  * Description:
  *   This function is called during start-up to initialize the system timer
@@ -160,7 +160,7 @@ int up_timerisr(int irq, uint32_t *regs)
  *
  ****************************************************************************/
 
-void up_timerinit(void)
+void up_timer_initialize(void)
 {
   uint32_t tmp;
   uint8_t  regval;

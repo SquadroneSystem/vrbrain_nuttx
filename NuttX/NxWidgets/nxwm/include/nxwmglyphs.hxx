@@ -1,7 +1,7 @@
 /****************************************************************************
  * NxWidgets/nxwm/include/nxwmconfig.hxx
  *
- *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include "nxconfig.hxx"
@@ -69,9 +69,7 @@ namespace NxWM
   extern const struct NXWidgets::SRlePaletteBitmap g_mplayerVolBitmap;
 #endif
   extern const struct NXWidgets::SRlePaletteBitmap g_minimizeBitmap;
-  extern const struct NXWidgets::SRlePaletteBitmap g_nshBitmap;
   extern const struct NXWidgets::SRlePaletteBitmap g_playBitmap;
-  extern const struct NXWidgets::SRlePaletteBitmap g_startBitmap;
   extern const struct NXWidgets::SRlePaletteBitmap g_stopBitmap;
 }
 

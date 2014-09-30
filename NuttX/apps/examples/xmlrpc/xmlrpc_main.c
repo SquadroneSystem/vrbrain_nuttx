@@ -1,6 +1,6 @@
 /****************************************************************************
  * apps/examples/xmlrpc/xmlrpc_main.c
- * 
+ *
  *   Copyright (C) 2012 Max Holtzberg. All rights reserved.
  *   Author: Max Holtzberg <mh@uvc.de>
  *
@@ -9,34 +9,34 @@
  *    an-embeddable-lightweight-xml-rpc-server/184405364
  *
  *  Copyright (c) 2002 Cogito LLC.  All rights reserved.
- * 
- *  Redistribution and use in source and binary forms, with or 
- *  without modification, is hereby granted without fee provided 
+ *
+ *  Redistribution and use in source and binary forms, with or
+ *  without modification, is hereby granted without fee provided
  *  that the following conditions are met:
- * 
- *    1.  Redistributions of source code must retain the above 
- *        copyright notice, this list of conditions and the 
+ *
+ *    1.  Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the
  *        following disclaimer.
  *    2.  Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the 
- *        following disclaimer in the documentation and/or other 
+ *        copyright notice, this list of conditions and the
+ *        following disclaimer in the documentation and/or other
  *        materials provided with the distribution.
- *    3.  Neither the name of Cogito LLC nor the names of its 
- *        contributors may be used to endorse or promote products 
- *        derived from this software without specific prior 
+ *    3.  Neither the name of Cogito LLC nor the names of its
+ *        contributors may be used to endorse or promote products
+ *        derived from this software without specific prior
  *        written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY COGITO LLC AND CONTRIBUTERS 'AS IS' 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED 
- * TO, THE IMPLIED WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A 
- * PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COGITO LLC 
- * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
- * SPECIAL, EXEMPLARAY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED 
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+ *
+ * THIS SOFTWARE IS PROVIDED BY COGITO LLC AND CONTRIBUTERS 'AS IS'
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COGITO LLC
+ * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARAY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
@@ -63,10 +63,10 @@
 #include <unistd.h>
 
 #include <net/if.h>
-#include <nuttx/net/uip/uip.h>
-#include <nuttx/net/uip/uip-arp.h>
+#include <netinet/in.h>
 
-#include <apps/netutils/uiplib.h>
+#include <nuttx/net/arp.h>
+#include <apps/netutils/netlib.h>
 #include <apps/netutils/xmlrpc.h>
 
 #ifdef CONFIG_EXAMPLES_XMLRPC_DHCPC
@@ -80,7 +80,7 @@
 /* DHCPC may be used in conjunction with any other feature (or not) */
 
 #ifdef CONFIG_EXAMPLES_XMLRPC_DHCPC
-#  include <apps/netutils/resolv.h>
+#  include <apps/netutils/dnsclient.h>
 #  include <apps/netutils/dhcpc.h>
 #endif
 
@@ -286,7 +286,7 @@ static int xmlrpc_netinit(void)
   mac[3] = 0xad;
   mac[4] = 0xbe;
   mac[5] = 0xef;
-  uip_setmacaddr("eth0", mac);
+  netlib_setmacaddr("eth0", mac);
 #endif
 
   /* Set up our host address */
@@ -296,26 +296,26 @@ static int xmlrpc_netinit(void)
 #else
   addr.s_addr = HTONL(CONFIG_EXAMPLES_XMLRPC_IPADDR);
 #endif
-  uip_sethostaddr("eth0", &addr);
+  netlib_sethostaddr("eth0", &addr);
 
   /* Set up the default router address */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_XMLRPC_DRIPADDR);
-  uip_setdraddr("eth0", &addr);
+  netlib_setdraddr("eth0", &addr);
 
   /* Setup the subnet mask */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_XMLRPC_NETMASK);
-  uip_setnetmask("eth0", &addr);
+  netlib_setnetmask("eth0", &addr);
 
 #ifdef CONFIG_EXAMPLES_XMLRPC_DHCPC
   /* Set up the resolver */
 
-  resolv_init();
+  dns_bind();
 
   /* Get the MAC address of the NIC */
 
-  uip_getmacaddr("eth0", mac);
+  netlib_getmacaddr("eth0", mac);
 
   /* Set up the DHCPC modules */
 
@@ -331,21 +331,21 @@ static int xmlrpc_netinit(void)
     {
       struct dhcpc_state ds;
       (void)dhcpc_request(handle, &ds);
-      uip_sethostaddr("eth1", &ds.ipaddr);
+      netlib_sethostaddr("eth1", &ds.ipaddr);
 
       if (ds.netmask.s_addr != 0)
         {
-          uip_setnetmask("eth0", &ds.netmask);
+          netlib_setnetmask("eth0", &ds.netmask);
         }
 
       if (ds.default_router.s_addr != 0)
         {
-          uip_setdraddr("eth0", &ds.default_router);
+          netlib_setdraddr("eth0", &ds.default_router);
         }
 
       if (ds.dnsaddr.s_addr != 0)
         {
-          resolv_conf(&ds.dnsaddr);
+          dns_setserver(&ds.dnsaddr);
         }
 
       dhcpc_close(handle);

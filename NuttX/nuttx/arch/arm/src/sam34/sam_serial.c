@@ -1,7 +1,7 @@
 /****************************************************************************
  * arch/arm/src/sam34/sam_serial.c
  *
- *   Copyright (C) 2010, 2012-2013 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2010, 2012-2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,11 +57,13 @@
 
 #include "up_arch.h"
 #include "up_internal.h"
-#include "os_internal.h"
 
 #include "chip.h"
-#if defined(CONFIG_ARCH_CHIP_SAM3U) || defined(CONFIG_ARCH_CHIP_SAM4S)
-#  include "chip/sam3u_uart.h"
+
+#if defined(CONFIG_ARCH_CHIP_SAM3U) || defined(CONFIG_ARCH_CHIP_SAM3X) || \
+    defined(CONFIG_ARCH_CHIP_SAM3A) || defined(CONFIG_ARCH_CHIP_SAM4CM) || \
+    defined(CONFIG_ARCH_CHIP_SAM4S) || defined(CONFIG_ARCH_CHIP_SAM4E)
+#  include "chip/sam_uart.h"
 #elif defined(CONFIG_ARCH_CHIP_SAM4L)
 #  include "chip/sam4l_usart.h"
 #else
@@ -149,7 +151,10 @@
 #  undef CONFIG_USART2_SERIAL_CONSOLE
 #  define HAVE_CONSOLE 1
 #else
-#  warning "No valid CONFIG_USARTn_SERIAL_CONSOLE Setting"
+#  ifndef CONFIG_NO_SERIAL_CONSOLE
+#    warning "No valid CONFIG_USARTn_SERIAL_CONSOLE Setting"
+#  endif
+
 #  undef CONFIG_UART0_SERIAL_CONSOLE
 #  undef CONFIG_UART1_SERIAL_CONSOLE
 #  undef CONFIG_USART0_SERIAL_CONSOLE
@@ -309,12 +314,16 @@
 
 /* Select MCU-specific settings
  *
- * For the SAM3U, the USARTs are driven by the main clock.
+ * For the SAM3U, SAM3A, SAM3X, SAM4E and SAM4S the USARTs are driven by the
+ *   main clock.  (This could also be the MCK/8 or an external clock but
+ *   those options have not yet been necessary).
  * For the SAM4L, the USARTs are driven by CLK_USART (undivided) which is
  *   selected by the PBADIVMASK register.
  */
 
-#if defined(CONFIG_ARCH_CHIP_SAM3U) || defined(CONFIG_ARCH_CHIP_SAM4S)
+#if defined(CONFIG_ARCH_CHIP_SAM3U) || defined(CONFIG_ARCH_CHIP_SAM3X) || \
+    defined(CONFIG_ARCH_CHIP_SAM3A) || defined(CONFIG_ARCH_CHIP_SAM4CM) || \
+    defined(CONFIG_ARCH_CHIP_SAM4S) || defined(CONFIG_ARCH_CHIP_SAM4E)
 #  define SAM_MR_USCLKS    UART_MR_USCLKS_MCK   /* Source = Main clock */
 #  define SAM_USART_CLOCK  BOARD_MCK_FREQUENCY  /* Frequency of the main clock */
 #elif defined(CONFIG_ARCH_CHIP_SAM4L)
@@ -332,7 +341,6 @@ struct up_dev_s
 {
   uint32_t usartbase; /* Base address of USART registers */
   uint32_t baud;      /* Configured baud */
-  uint32_t imr;       /* Saved interrupt mask bits value */
   uint32_t sr;        /* Saved status bits */
   uint8_t  irq;       /* IRQ associated with this USART */
   uint8_t  parity;    /* 0=none, 1=odd, 2=even */
@@ -372,6 +380,9 @@ static const struct uart_ops_s g_uart_ops =
   .receive        = up_receive,
   .rxint          = up_rxint,
   .rxavailable    = up_rxavailable,
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  .rxflowcontrol  = NULL,
+#endif
   .send           = up_send,
   .txint          = up_txint,
   .txready        = up_txready,
@@ -608,36 +619,14 @@ static inline void up_serialout(struct up_dev_s *priv, int offset, uint32_t valu
 }
 
 /****************************************************************************
- * Name: up_enableint
- ****************************************************************************/
-
-static inline void up_enableint(struct up_dev_s *priv)
-{
-  up_serialout(priv, SAM_UART_IER_OFFSET, priv->imr);
-}
-
-/****************************************************************************
- * Name: up_disableint
- ****************************************************************************/
-
-static inline void up_disableint(struct up_dev_s *priv)
-{
-  up_serialout(priv, SAM_UART_IDR_OFFSET, ~priv->imr);
-}
-
-/****************************************************************************
  * Name: up_restoreusartint
  ****************************************************************************/
 
-static void up_restoreusartint(struct up_dev_s *priv, uint32_t imr)
+static inline void up_restoreusartint(struct up_dev_s *priv, uint32_t imr)
 {
-  /* Save the interrupt mask */
+  /* Restore the previous interrupt state */
 
-  priv->imr = imr;
-
-  /* And re-enable interrrupts previoulsy disabled by up_disableallints */
-
-  up_enableint(priv);
+  up_serialout(priv, SAM_UART_IMR_OFFSET, imr);
 }
 
 /****************************************************************************
@@ -646,17 +635,22 @@ static void up_restoreusartint(struct up_dev_s *priv, uint32_t imr)
 
 static void up_disableallints(struct up_dev_s *priv, uint32_t *imr)
 {
+  irqstate_t flags;
+
+  /* The following must be atomic */
+
+  flags = irqsave();
   if (imr)
     {
       /* Return the current interrupt mask */
 
-      *imr = priv->imr;
+      *imr = up_serialin(priv, SAM_UART_IMR_OFFSET);
     }
 
   /* Disable all interrupts */
 
-  priv->imr = 0;
-  up_disableint(priv);
+  up_serialout(priv, SAM_UART_IDR_OFFSET, UART_INT_ALLINTS);
+  irqrestore(flags);
 }
 
 /****************************************************************************
@@ -750,8 +744,13 @@ static int up_setup(struct uart_dev_s *dev)
 
   up_serialout(priv, SAM_UART_MR_OFFSET, regval);
 
-  /* Configure the console baud.  NOTE: Oversampling by 8 is not supported.
-   * This may limit BAUD rates for lower USART clocks.
+  /* Configure the console baud:
+   *
+   *   Fbaud   = USART_CLOCK / (16 * divisor)
+   *   divisor = USART_CLOCK / (16 * Fbaud)
+   *
+   * NOTE: Oversampling by 8 is not supported. This may limit BAUD rates
+   * for lower USART clocks.
    */
 
   regval  = (SAM_USART_CLOCK + (priv->baud << 3))/(priv->baud << 4);
@@ -855,6 +854,7 @@ static int up_interrupt(int irq, void *context)
   struct uart_dev_s *dev = NULL;
   struct up_dev_s   *priv;
   uint32_t           pending;
+  uint32_t           imr;
   int                passes;
   bool               handled;
 
@@ -903,6 +903,7 @@ static int up_interrupt(int irq, void *context)
     {
       PANIC();
     }
+
   priv = (struct up_dev_s*)dev->priv;
 
   /* Loop until there are no characters to be transferred or, until we have
@@ -916,8 +917,9 @@ static int up_interrupt(int irq, void *context)
 
       /* Get the UART/USART status (we are only interested in the unmasked interrupts). */
 
-      priv->sr = up_serialin(priv, SAM_UART_SR_OFFSET); /* Save for error reporting */
-      pending  = priv->sr & priv->imr;                  /* Mask out disabled interrupt sources */
+      priv->sr = up_serialin(priv, SAM_UART_SR_OFFSET);  /* Save for error reporting */
+      imr      = up_serialin(priv, SAM_UART_IMR_OFFSET); /* Interrupt mask */
+      pending  = priv->sr & imr;                        /* Mask out disabled interrupt sources */
 
       /* Handle an incoming, receive byte.  RXRDY: At least one complete character
        * has been received and US_RHR has not yet been read.
@@ -931,19 +933,20 @@ static int up_interrupt(int irq, void *context)
            handled = true;
         }
 
-      /* Handle outgoing, transmit bytes. XRDY: There is no character in the
+      /* Handle outgoing, transmit bytes. TXRDY: There is no character in the
        * US_THR.
        */
 
       if ((pending & UART_INT_TXRDY) != 0)
         {
-           /* Transmit data regiser empty ... process outgoing bytes */
+           /* Transmit data register empty ... process outgoing bytes */
 
            uart_xmitchars(dev);
            handled = true;
         }
     }
-    return OK;
+
+  return OK;
 }
 
 /****************************************************************************
@@ -1031,14 +1034,12 @@ static void up_rxint(struct uart_dev_s *dev, bool enable)
        */
 
 #ifndef CONFIG_SUPPRESS_SERIAL_INTS
-      priv->imr |= UART_INT_RXRDY;
-      up_enableint(priv);
+      up_serialout(priv, SAM_UART_IER_OFFSET, UART_INT_RXRDY);
 #endif
     }
   else
     {
-      priv->imr &= ~UART_INT_RXRDY;
-      up_disableint(priv);
+      up_serialout(priv, SAM_UART_IDR_OFFSET, UART_INT_RXRDY);
     }
 }
 
@@ -1091,22 +1092,21 @@ static void up_txint(struct uart_dev_s *dev, bool enable)
        */
 
 #ifndef CONFIG_SUPPRESS_SERIAL_INTS
-      priv->imr |= UART_INT_TXRDY;
-      up_enableint(priv);
+      up_serialout(priv, SAM_UART_IER_OFFSET, UART_INT_TXRDY);
 
       /* Fake a TX interrupt here by just calling uart_xmitchars() with
        * interrupts disabled (note this may recurse).
        */
 
       uart_xmitchars(dev);
+
 #endif
     }
   else
     {
       /* Disable the TX interrupt */
 
-      priv->imr &= ~UART_INT_TXRDY;
-      up_disableint(priv);
+      up_serialout(priv, SAM_UART_IDR_OFFSET, UART_INT_TXRDY);
     }
 
   irqrestore(flags);
@@ -1175,6 +1175,9 @@ void up_earlyserialinit(void)
 #ifdef TTYS4_DEV
   up_disableallints(TTYS4_DEV.priv, NULL);
 #endif
+#ifdef TTYS5_DEV
+  up_disableallints(TTYS5_DEV.priv, NULL);
+#endif
 
   /* Configuration whichever one is the console */
 
@@ -1216,64 +1219,9 @@ void up_serialinit(void)
 #ifdef TTYS4_DEV
   (void)uart_register("/dev/ttyS4", &TTYS4_DEV);
 #endif
-}
-
-/****************************************************************************
- * Name: up_putc
- *
- * Description:
- *   Provide priority, low-level access to support OS debug  writes
- *
- ****************************************************************************/
-
-int up_putc(int ch)
-{
-#ifdef HAVE_CONSOLE
-  struct up_dev_s *priv = (struct up_dev_s*)CONSOLE_DEV.priv;
-  uint32_t imr;
-
-  up_disableallints(priv, &imr);
-
-  /* Check for LF */
-
-  if (ch == '\n')
-    {
-      /* Add CR */
-
-      up_lowputc('\r');
-    }
-
-  up_lowputc(ch);
-  up_restoreusartint(priv, imr);
+#ifdef TTYS5_DEV
+  (void)uart_register("/dev/ttyS5", &TTYS5_DEV);
 #endif
-  return ch;
-}
-
-#else /* USE_SERIALDRIVER */
-
-/****************************************************************************
- * Name: up_putc
- *
- * Description:
- *   Provide priority, low-level access to support OS debug writes
- *
- ****************************************************************************/
-
-int up_putc(int ch)
-{
-#ifdef HAVE_CONSOLE
-  /* Check for LF */
-
-  if (ch == '\n')
-    {
-      /* Add CR */
-
-      up_lowputc('\r');
-    }
-
-  up_lowputc(ch);
-#endif
-  return ch;
 }
 
 #endif /* USE_SERIALDRIVER */

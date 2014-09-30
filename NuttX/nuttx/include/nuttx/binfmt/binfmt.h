@@ -1,7 +1,7 @@
 /****************************************************************************
  * include/nuttx/binfmt/binfmt.h
  *
- *   Copyright (C) 2009, 2012 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2009, 2012, 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -136,14 +136,27 @@ struct binary_s
 
   uint8_t priority;                    /* Task execution priority */
   size_t stacksize;                    /* Size of the stack in bytes (unallocated) */
+
+  /* Unload module callback */
+
+  CODE int (*unload)(FAR struct binary_s *bin);
 };
 
 /* This describes one binary format handler */
 
 struct binfmt_s
 {
-  FAR struct binfmt_s *next;             /* Supports a singly-linked list */
-  int (*load)(FAR struct binary_s *bin); /* Verify and load binary into memory */
+  /* Supports a singly-linked list */
+
+  FAR struct binfmt_s *next;
+
+  /* Verify and load binary into memory */
+
+  CODE int (*load)(FAR struct binary_s *bin);
+
+  /* Unload module callback */
+
+  CODE int (*unload)(FAR struct binary_s *bin);
 };
 
 /****************************************************************************
@@ -224,7 +237,7 @@ int load_module(FAR struct binary_s *bin);
  *
  ****************************************************************************/
 
-int unload_module(FAR const struct binary_s *bin);
+int unload_module(FAR struct binary_s *bin);
 
 /****************************************************************************
  * Name: exec_module
@@ -246,7 +259,7 @@ int exec_module(FAR const struct binary_s *bin);
  *
  * Description:
  *   If CONFIG_SCHED_HAVE_PARENT is defined, this function may be called by
- *   the parent of the the newly created task to automatically unload the
+ *   the parent of the newly created task to automatically unload the
  *   module when the task exits.  This assumes that (1) the caller is the
  *   parent of the created task, (2) that bin was allocated with kmalloc()
  *   or friends.  It will also automatically free the structure with kfree()
@@ -273,9 +286,13 @@ int schedule_unload(pid_t pid, FAR struct binary_s *bin);
  *
  * Description:
  *   This is a convenience function that wraps load_ and exec_module into
- *   one call.  If CONFIG_SCHED_ONEXIT is also defined, this function will
- *   automatically call schedule_unload() to unload the module when task
- *   exits.
+ *   one call.  If CONFIG_SCHED_ONEXIT and CONFIG_SCHED_HAVE_PARENT are
+ *   also defined, this function will automatically call schedule_unload()
+ *   to unload the module when task exits.
+ *
+ *   NOTE: This function is flawed and useless without CONFIG_SCHED_ONEXIT
+ *   and CONFIG_SCHED_HAVE_PARENT because there is then no mechanism to
+ *   unload the module once it exits.
  *
  * Input Parameter:
  *   filename - Fulll path to the binary to be loaded
@@ -333,7 +350,7 @@ EXEPATH_HANDLE exepath_init(void);
  *
  * Input Parameters:
  *   handle - The handle value returned by exepath_init
- *   relpath - The relative path to the file to be found. 
+ *   relpath - The relative path to the file to be found.
  *
  * Returned Value:
  *   On success, a non-NULL pointer to a null-terminated string is provided.

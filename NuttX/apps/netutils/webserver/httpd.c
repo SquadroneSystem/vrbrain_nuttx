@@ -61,8 +61,9 @@
 #  include <pthread.h>
 #endif
 
-#include <nuttx/net/uip/uip.h>
-#include <apps/netutils/uiplib.h>
+#include <arpa/inet.h>
+
+#include <apps/netutils/netlib.h>
 #include <apps/netutils/httpd.h>
 
 #include "httpd.h"
@@ -72,11 +73,13 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#if !defined(CONFIG_NETUTILS_HTTPD_SCRIPT_DISABLE) && defined(CONFIG_NETUTILS_HTTPD_SENDFILE)
+#if !defined(CONFIG_NETUTILS_HTTPD_SCRIPT_DISABLE) && \
+    defined(CONFIG_NETUTILS_HTTPD_SENDFILE)
 #  error "Script support and CONFIG_NETUTILS_HTTPD_SENDFILE are mutually exclusive"
 #endif
 
-#if defined(CONFIG_NETUTILS_HTTPD_SENDFILE) && defined(CONFIG_NETUTILS_HTTPD_MMAP)
+#if defined(CONFIG_NETUTILS_HTTPD_SENDFILE) && \
+    defined(CONFIG_NETUTILS_HTTPD_MMAP)
 #  error "CONFIG_NETUTILS_HTTPD_SENDFILE and CONFIG_NETUTILS_HTTPD_MMAP are mutually exclusive"
 #endif
 
@@ -114,7 +117,7 @@
 #  endif
 #endif
 
-#if !defined(CONFIG_NETUTILS_HTTPD_SENDFILE) && !defined(CONFIG_NETUTILS_HTTPD_MMAP)
+#ifdef CONFIG_NETUTILS_HTTPD_CLASSIC
 #  ifndef CONFIG_NETUTILS_HTTPD_INDEX
 #    ifndef CONFIG_NETUTILS_HTTPD_SCRIPT_DISABLE
 #      define CONFIG_NETUTILS_HTTPD_INDEX "index.shtml"
@@ -134,12 +137,14 @@
 
 static int httpd_open(const char *name, struct httpd_fs_file *file)
 {
-#if defined(CONFIG_NETUTILS_HTTPD_SENDFILE)
-  return httpd_sendfile_open(name, file);
+#if defined(CONFIG_NETUTILS_HTTPD_CLASSIC)
+  return httpd_fs_open(name, file);
 #elif defined(CONFIG_NETUTILS_HTTPD_MMAP)
   return httpd_mmap_open(name, file);
+#elif defined(CONFIG_NETUTILS_HTTPD_SENDFILE)
+  return httpd_sendfile_open(name, file);
 #else
-  return httpd_fs_open(name, file);
+#  error "No file handling method"
 #endif
 }
 
@@ -155,7 +160,8 @@ static int httpd_openindex(struct httpd_state *pstate)
     }
 
   ret = httpd_open(pstate->ht_filename, &pstate->ht_file);
-#if defined(CONFIG_NETUTILS_HTTPD_SENDFILE) || defined(CONFIG_NETUTILS_HTTPD_MMAP)
+#if defined(CONFIG_NETUTILS_HTTPD_SENDFILE) || \
+    defined(CONFIG_NETUTILS_HTTPD_MMAP)
 #  if defined(CONFIG_NETUTILS_HTTPD_INDEX)
   if (ret == ERROR && errno == EISDIR)
     {
@@ -172,12 +178,14 @@ static int httpd_openindex(struct httpd_state *pstate)
 
 static int httpd_close(struct httpd_fs_file *file)
 {
-#if defined(CONFIG_NETUTILS_HTTPD_SENDFILE)
-  return httpd_sendfile_close(file);
+#if defined(CONFIG_NETUTILS_HTTPD_CLASSIC)
+  return OK;
 #elif defined(CONFIG_NETUTILS_HTTPD_MMAP)
   return httpd_mmap_close(file);
+#elif defined(CONFIG_NETUTILS_HTTPD_SENDFILE)
+  return httpd_sendfile_close(file);
 #else
-  return OK;
+#  error "No file handling method"
 #endif
 }
 
@@ -246,7 +254,7 @@ static int handle_script(struct httpd_state *pstate)
 
               send(pstate->ht_sockfd, pstate->ht_file.data, pstate->ht_file.len, 0);
 
-              httpd_close(&pstate->ht_file);
+              (void)httpd_close(&pstate->ht_file);
             }
           else
             {
@@ -306,6 +314,7 @@ static int handle_script(struct httpd_state *pstate)
           pstate->ht_file.len  -= len;
         }
     }
+
   return OK;
 }
 #endif
@@ -335,8 +344,9 @@ static int send_headers(struct httpd_state *pstate, int status, int len)
 {
   const char *mime;
   const char *ptr;
-  char cl[32];
-  char s[128];
+  char contentlen[HTTPD_MAX_CONTENTLEN];
+  char header[HTTPD_MAX_HEADERLEN];
+  int hdrlen;
   int i;
 
   static const struct
@@ -380,7 +390,8 @@ static int send_headers(struct httpd_state *pstate, int status, int len)
 
   if (len >= 0)
     {
-      (void) snprintf(cl, sizeof cl, "Content-Length: %d\r\n", len);
+      (void)snprintf(contentlen, HTTPD_MAX_CONTENTLEN,
+                     "Content-Length: %d\r\n", len);
     }
 #ifndef CONFIG_NETUTILS_HTTPD_KEEPALIVE_DISABLE
   else
@@ -394,26 +405,32 @@ static int send_headers(struct httpd_state *pstate, int status, int len)
       /* TODO: here we "SHOULD" include a Retry-After header */
     }
 
-  i = snprintf(s, sizeof s,
-    "HTTP/1.0 %d %s\r\n"
-#ifndef CONFIG_NETUTILS_HTTPD_SERVERHEADER_DISABLE
-    "Server: uIP/NuttX http://nuttx.org/\r\n"
-#endif
-    "Connection: %s\r\n"
-    "Content-type: %s\r\n"
-    "%s"
-    "\r\n",
-    status,
-    status >= 400 ? "Error" : "OK",
-#ifndef CONFIG_NETUTILS_HTTPD_KEEPALIVE_DISABLE
-    pstate->ht_keepalive ? "keep-alive" : "close",
-#else
-    "close",
-#endif
-    mime,
-    len >= 0 ? cl : "");
+  /* Construct the header.
+   *
+   * REVISIT:  Wouldn't asprintf be a better option than a large stack
+   * array?
+   */
 
-  return send_chunk(pstate, s, i);
+  hdrlen = snprintf(header, HTTPD_MAX_HEADERLEN,
+                    "HTTP/1.0 %d %s\r\n"
+#ifndef CONFIG_NETUTILS_HTTPD_SERVERHEADER_DISABLE
+                    "Server: uIP/NuttX http://nuttx.org/\r\n"
+#endif
+                    "Connection: %s\r\n"
+                    "Content-type: %s\r\n"
+                    "%s"
+                    "\r\n",
+                    status,
+                    status >= 400 ? "Error" : "OK",
+#ifndef CONFIG_NETUTILS_HTTPD_KEEPALIVE_DISABLE
+                    pstate->ht_keepalive ? "keep-alive" : "close",
+#else
+                    "close",
+#endif
+                    mime,
+                    len >= 0 ? contentlen : "");
+
+  return send_chunk(pstate, header, hdrlen);
 }
 
 static int httpd_senderror(struct httpd_state *pstate, int status)
@@ -454,13 +471,15 @@ static int httpd_senderror(struct httpd_state *pstate, int status)
     }
   else
     {
+#ifdef CONFIG_NETUTILS_HTTPD_CLASSIC
+      ret = send_chunk(pstate, pstate->ht_file.data, pstate->ht_file.len);
+#else
 #ifdef CONFIG_NETUTILS_HTTPD_SENDFILE
       ret = httpd_sendfile_send(pstate->ht_sockfd, &pstate->ht_file);
-#else
-      ret = send_chunk(pstate, pstate->ht_file.data, pstate->ht_file.len);
+#endif
 #endif
 
-      (void) httpd_close(&pstate->ht_file);
+      (void)httpd_close(&pstate->ht_file);
     }
 
   return ret;
@@ -514,7 +533,6 @@ static int httpd_sendfile(struct httpd_state *pstate)
         }
 
       ret = handle_script(pstate);
-
       goto done;
     }
 #endif
@@ -524,16 +542,16 @@ static int httpd_sendfile(struct httpd_state *pstate)
       goto done;
     }
 
+#ifdef CONFIG_NETUTILS_HTTPD_CLASSIC
+      ret = send_chunk(pstate, pstate->ht_file.data, pstate->ht_file.len);
+#else
 #ifdef CONFIG_NETUTILS_HTTPD_SENDFILE
       ret = httpd_sendfile_send(pstate->ht_sockfd, &pstate->ht_file);
-#else
-      ret = send_chunk(pstate, pstate->ht_file.data, pstate->ht_file.len);
+#endif
 #endif
 
 done:
-
   (void)httpd_close(&pstate->ht_file);
-
   return ret;
 }
 
@@ -693,7 +711,7 @@ static inline int httpd_parse(struct httpd_state *pstate)
     }
   while (state != STATE_BODY);
 
-#if !defined(CONFIG_NETUTILS_HTTPD_SENDFILE) && !defined(CONFIG_NETUTILS_HTTPD_MMAP)
+#ifdef CONFIG_NETUTILS_HTTPD_CLASSIC
   if (0 == strcmp(pstate->ht_filename, "/"))
     {
       strncpy(pstate->ht_filename, "/" CONFIG_NETUTILS_HTTPD_INDEX, strlen("/" CONFIG_NETUTILS_HTTPD_INDEX));
@@ -775,14 +793,14 @@ static void single_server(uint16_t portno, pthread_startroutine_t handler, int s
   socklen_t addrlen;
   int listensd;
   int acceptsd;
-#ifdef CONFIG_NET_HAVE_SOLINGER
+#ifdef CONFIG_NET_SOLINGER
   struct linger ling;
 #endif
 #if CONFIG_NETUTILS_HTTPD_TIMEOUT > 0
   struct timeval tv;
 #endif
 
-  listensd = uip_listenon(portno);
+  listensd = netlib_listenon(portno);
   if (listensd < 0)
     {
       return;
@@ -798,14 +816,14 @@ static void single_server(uint16_t portno, pthread_startroutine_t handler, int s
       if (acceptsd < 0)
         {
           ndbg("accept failure: %d\n", errno);
-          break;;
+          break;
         }
 
       nvdbg("Connection accepted -- serving sd=%d\n", acceptsd);
 
       /* Configure to "linger" until all data is sent when the socket is closed */
 
-#ifdef CONFIG_NET_HAVE_SOLINGER
+#ifdef CONFIG_NET_SOLINGER
       ling.l_onoff  = 1;
       ling.l_linger = 30;     /* timeout is seconds */
       if (setsockopt(acceptsd, SOL_SOCKET, SO_LINGER, &ling, sizeof(struct linger)) < 0)
@@ -831,8 +849,13 @@ static void single_server(uint16_t portno, pthread_startroutine_t handler, int s
 
       /* Handle the request. This blocks until complete. */
 
-      (void) httpd_handler((void*)acceptsd);
+      (void)httpd_handler((void*)acceptsd);
     }
+
+  /* Close the sockets */
+
+  close(acceptsd);
+  close(listensd);
 }
 #endif
 
@@ -855,7 +878,7 @@ int httpd_listen(void)
 #ifdef CONFIG_NETUTILS_HTTPD_SINGLECONNECT
   single_server(HTONS(80), httpd_handler, CONFIG_NETUTILS_HTTPDSTACKSIZE);
 #else
-  uip_server(HTONS(80), httpd_handler, CONFIG_NETUTILS_HTTPDSTACKSIZE);
+  netlib_server(HTONS(80), httpd_handler, CONFIG_NETUTILS_HTTPDSTACKSIZE);
 #endif
 
   /* the server accept loop only returns on errors */
@@ -874,7 +897,7 @@ int httpd_listen(void)
 
 void httpd_init(void)
 {
-#if !defined(CONFIG_NETUTILS_HTTPD_MMAP) && !defined(CONFIG_NETUTILS_HTTPD_SENDFILE)
+#ifdef CONFIG_NETUTILS_HTTPD_CLASSIC
   httpd_fs_init();
 #endif
 }

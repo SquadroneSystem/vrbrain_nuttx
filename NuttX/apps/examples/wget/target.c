@@ -36,7 +36,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <stdint.h>
@@ -46,10 +46,8 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 
-#include <nuttx/net/uip/uip.h>
-
-#include <apps/netutils/uiplib.h>
-#include <apps/netutils/resolv.h>
+#include <apps/netutils/netlib.h>
+#include <apps/netutils/dnsclient.h>
 #include <apps/netutils/webclient.h>
 
 /****************************************************************************
@@ -125,26 +123,26 @@ int wget_main(int argc, char *argv[])
   mac[3] = 0xad;
   mac[4] = 0xbe;
   mac[5] = 0xef;
-  uip_setmacaddr("eth0", mac);
+  netlib_setmacaddr("eth0", mac);
 #endif
 
   /* Set up our host address */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_WGET_IPADDR);
-  uip_sethostaddr("eth0", &addr);
+  netlib_sethostaddr("eth0", &addr);
 
   /* Set up the default router address */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_WGET_DRIPADDR);
-  uip_setdraddr("eth0", &addr);
+  netlib_setdraddr("eth0", &addr);
 
   /* Setup the subnet mask */
 
   addr.s_addr = HTONL(CONFIG_EXAMPLES_WGET_NETMASK);
-  uip_setnetmask("eth0", &addr);
+  netlib_setnetmask("eth0", &addr);
 
   /* Then start the server */
-  
+
   wget(CONFIG_EXAMPLES_WGET_URL, g_iobuffer, 512, callback, NULL);
   return 0;
 }

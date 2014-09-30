@@ -55,7 +55,6 @@
 #include <arch/io.h>
 
 #include "chip/chip.h"
-#include "os_internal.h"
 #include "up_internal.h"
 
 #include "z180_config.h"
@@ -114,6 +113,9 @@ static const struct uart_ops_s g_uart_ops =
   z180_receive,        /* receive */
   z180_rxint,          /* rxint */
   z180_rxavailable,    /* rxavailable */
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  NULL,                /* rxflowcontrol */
+#endif
   z180_send,           /* send */
   z180_txint,          /* txint */
   z180_txready,        /* txready */
@@ -278,7 +280,7 @@ static uart_dev_t g_escca_port =
  */
 
 #undef CONSOLE_DEV
-#undef TTYS0_DEV 
+#undef TTYS0_DEV
 #undef TTYS1_DEV
 
 #if defined(CONFIG_Z180_SCC_SERIAL_CONSOLE)

@@ -401,6 +401,9 @@ static const struct uart_ops_s g_uartops =
   NULL,                 /* receive */
   usbser_rxint,         /* rxinit */
   NULL,                 /* rxavailable */
+#ifdef CONFIG_SERIAL_IFLOWCONTROL
+  NULL,                 /* rxflowcontrol */
+#endif
   NULL,                 /* send */
   usbser_txint,         /* txinit */
   NULL,                 /* txready */
@@ -1904,6 +1907,7 @@ static void usbclass_disconnect(FAR struct usbdevclass_driver_s *driver,
 
   priv->serdev.xmit.head = 0;
   priv->serdev.xmit.tail = 0;
+  priv->rxhead = 0;
   irqrestore(flags);
 
   /* Perform the soft connect function so that we will we can be

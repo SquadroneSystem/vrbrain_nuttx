@@ -60,7 +60,7 @@ o Advanced motion control, featuring: eight Pulse Width Modulation (PWM)
   generator blocks, each with one 16-bit counter, two PWM comparators, a
   PWM signal generator, a dead-band generator, and an interrupt/ADC-trigger
   selector; two PWM fault inputs to promote low-latency shutdown; two
-  Quadrature Encoder Interface (QEI) modules, with position integrator to 
+  Quadrature Encoder Interface (QEI) modules, with position integrator to
   rack encoder position and velocity capture using built-in timer
 o Two ARM FiRM-compliant watchdog timers; six 32-bit general-purpose timers
   (up to twelve 16-bit); six wide 64-bit general-purpose timers (up to twelve
@@ -86,7 +86,7 @@ PIN SIGNAL(S)                                LanchPad Function
  20 PA3/SSIOFSS                              GPIO, J2 pin 9
  21 PA4/SSIORX                               GPIO, J2 pin 8
  22 PA5/SSIOTX                               GPIO, J1 pin 8
- 23 PA6/I2CLSCL                              GPIO, J1 pin 9 
+ 23 PA6/I2CLSCL                              GPIO, J1 pin 9
  24 PA7/I2CLSDA                              GPIO, J1 pin 10
 
  45 PB0/T2CCP0/U1Rx                          GPIO, J1 pin 3
@@ -155,7 +155,7 @@ Using OpenOCD and GDB with an FT2232 JTAG emulator
       git fetch http://openocd.zylin.com/openocd refs/changes/22/922/14 && git checkout FETCH_HEAD
       ./bootstrap
       ./configure --enable-maintainer-mode --enable-ti-icdi
-      make 
+      make
       sudo make install
 
     For additional help, see http://processors.wiki.ti.com/index.php/Stellaris_Launchpad_with_OpenOCD_and_Linux
@@ -164,7 +164,7 @@ Using OpenOCD and GDB with an FT2232 JTAG emulator
 
     I have been using the on-board In-Circuit Debug Interface (ICDI) interface.
     OpenOCD requires a configuration file.  I keep the one I used last here:
-    
+
       configs/lm4f120-launchpad/tools/lm4f120-launchpad.cfg
 
     However, the "correct" configuration script to use with OpenOCD may
@@ -180,7 +180,7 @@ Using OpenOCD and GDB with an FT2232 JTAG emulator
     There is also a script on the tools/ directory that I use to start
     the OpenOCD daemon on my system called oocd.sh.  That script will
     probably require some modifications to work in another environment:
-  
+
     - Possibly the value of OPENOCD_PATH and TARGET_PATH
     - It assumes that the correct script to use is the one at
       configs/lm4f120-launchpad/tools/lm4f120-launchpad.cfg
@@ -195,7 +195,7 @@ Using OpenOCD and GDB with an FT2232 JTAG emulator
     The relative path to the oocd.sh script is configs/lm4f120-launchpad/tools,
     but that should have been added to your PATH variable when you sourced
     the setenv.sh script.
-    
+
     Note that OpenOCD needs to be run with administrator privileges in
     some environments (sudo).
 
@@ -223,11 +223,11 @@ Using OpenOCD and GDB with an FT2232 JTAG emulator
        .config file).
     2. The MCU must be halted prior to loading code using 'mon reset'
        as described below.
- 
+
     OpenOCD will support several special 'monitor' commands.  These
     GDB commands will send comments to the OpenOCD monitor.  Here
     are a couple that you will need to use:
-  
+
      (gdb) monitor reset
      (gdb) monitor halt
 
@@ -314,7 +314,7 @@ IDEs
 
   NuttX is built using command-line make.  It can be used with an IDE, but some
   effort will be required to create the project.
-  
+
   Makefile Build
   --------------
   Under Eclipse, it is pretty easy to set up an "empty makefile project" and
@@ -337,7 +337,7 @@ IDEs
      on the command line.
 
   Startup files will probably cause you some headaches.  The NuttX startup file
-  is arch/arm/src/lm/lm_vectors.S.
+  is arch/arm/src/tiva/tiva_vectors.S.
 
 NuttX EABI "buildroot" Toolchain
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -409,7 +409,7 @@ NXFLAT Toolchain
   tools -- just the NXFLAT tools.  The buildroot with the NXFLAT tools can
   be downloaded from the NuttX SourceForge download site
   (https://sourceforge.net/projects/nuttx/files/).
- 
+
   This GNU toolchain builds and executes in the Linux or Cygwin environment.
 
   1. You must have already configured Nuttx in <some-dir>/nuttx.
@@ -473,43 +473,43 @@ Serial Console
   By default, all configurations use UART0 which connects to the USB VCOM
   on the DEBUG port on the LM4F120 LaunchPad:
 
-    UART0 RX - PA.0
-    UART0 TX - PA.1
+    UART0 RX  - PA.0
+    UART0 TX  - PA.1
 
   However, if you use an external RS232 driver, then other options are
   available.  UART1 has option pin settings and flow control capabilities
   that are not available with the other UARTS::
 
-    UART1 RX - PB.0 or PC.4 (Need disambiguation in board.h)
-    UART1 TX - PB.1 or PC.5 ("  " "            " "" "     ")
+    UART1 RX  - PB.0 or PC.4 (Need disambiguation in board.h)
+    UART1 TX  - PB.1 or PC.5 ("  " "            " "" "     ")
 
     UART1_RTS - PF.0 or PC.4
     UART1_CTS - PF.1 or PC.5
 
   NOTE: board.h currently selects PB.0, PB.1, PF.0 and PF.1 for UART1, but
-  that can be changed by editting board.h
+  that can be changed by editing board.h
 
   UART2-5, 7 are also available, UART2 is not recommended because it shares
   some pin usage with USB device mode.  UART6 is not available because its
   only RX/TX pin options are dedicated to USB support.
 
-    UART2 RX - PD.6
-    UART2 TX - PD.7 (Also used for USB VBUS detection)
+    UART2 RX  - PD.6
+    UART2 TX  - PD.7 (Also used for USB VBUS detection)
 
-    UART3 RX - PC.6
-    UART3 TX - PC.7
+    UART3 RX  - PC.6
+    UART3 TX  - PC.7
 
-    UART4 RX - PC.4
-    UART4 TX - PC.5
+    UART4 RX  - PC.4
+    UART4 TX  - PC.5
 
-    UART5 RX - PE.4
-    UART5 TX - PE.5
+    UART5 RX  - PE.4
+    UART5 TX  - PE.5
 
-    UART6 RX - PD.4, Not available.  Dedicated for USB_DM
-    UART6 TX - PD.5, Not available.  Dedicated for USB_DP
+    UART6 RX  - PD.4, Not available.  Dedicated for USB_DM
+    UART6 TX  - PD.5, Not available.  Dedicated for USB_DP
 
-    UART7 RX - PE.0
-    UART7 TX - PE.1
+    UART7 RX  - PE.0
+    UART7 TX  - PE.1
 
 USB Device Controller Functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -526,7 +526,7 @@ USB Device Controller Functions
 
   Debugging with JTAG/SWD
 
-    The FT2232 USB device performs JTAG/SWD serial operations under the control 
+    The FT2232 USB device performs JTAG/SWD serial operations under the control
     of the debugger or the Luminary Flash Programmer.  It also operate as an
     In-Circuit Debugger Interface (ICDI), allowing debugging of any external
     target board.  Debugging modes:
@@ -590,17 +590,13 @@ LM4F120 LaunchPad Configuration Options
     CONFIG_ENDIAN_BIG - define if big endian (default is little
        endian)
 
-    CONFIG_DRAM_SIZE - Describes the installed DRAM (SRAM in this case):
+    CONFIG_RAM_SIZE - Describes the installed DRAM (SRAM in this case):
 
-       CONFIG_DRAM_SIZE=0x00010000 (64Kb)
+       CONFIG_RAM_SIZE=0x00010000 (64Kb)
 
-    CONFIG_DRAM_START - The start address of installed DRAM
+    CONFIG_RAM_START - The start address of installed DRAM
 
-       CONFIG_DRAM_START=0x20000000
-
-    CONFIG_ARCH_IRQPRIO - The LM4F120 supports interrupt prioritization
-
-       CONFIG_ARCH_IRQPRIO=y
+       CONFIG_RAM_START=0x20000000
 
     CONFIG_ARCH_LEDS - Use LEDs to show state. Unique to boards that
        have LEDs
@@ -626,16 +622,16 @@ LM4F120 LaunchPad Configuration Options
   Additional interrupt support can be disabled if desired to reduce memory
   footprint.
 
-    CONFIG_LM_DISABLE_GPIOA_IRQS=n
-    CONFIG_LM_DISABLE_GPIOB_IRQS=n
-    CONFIG_LM_DISABLE_GPIOC_IRQS=n
-    CONFIG_LM_DISABLE_GPIOD_IRQS=n
-    CONFIG_LM_DISABLE_GPIOE_IRQS=n
-    CONFIG_LM_DISABLE_GPIOF_IRQS=n
-    CONFIG_LM_DISABLE_GPIOG_IRQS=n
-    CONFIG_LM_DISABLE_GPIOH_IRQS=n
-    CONFIG_LM_DISABLE_GPIOJ_IRQS=y
- 
+    CONFIG_TIVA_DISABLE_GPIOA_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOB_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOC_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOD_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOE_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOF_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOG_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOH_IRQS=n
+    CONFIG_TIVA_DISABLE_GPIOJ_IRQS=y
+
   LM4F120 specific device driver settings
 
     CONFIG_UARTn_SERIAL_CONSOLE - selects the UARTn for the
@@ -659,18 +655,18 @@ LM4F120 LaunchPad Configuration Options
       value is large, then larger values of this setting may cause
       Rx FIFO overrun errors.  Default: half of the Tx FIFO size (4).
 
-    CONFIG_LM_ETHERNET - This must be set (along with CONFIG_NET)
+    CONFIG_TIVA_ETHERNET - This must be set (along with CONFIG_NET)
       to build the Stellaris Ethernet driver
-    CONFIG_LM_ETHLEDS - Enable to use Ethernet LEDs on the board.
-    CONFIG_LM_BOARDMAC - If the board-specific logic can provide
-      a MAC address (via lm_ethernetmac()), then this should be selected.
-    CONFIG_LM_ETHHDUPLEX - Set to force half duplex operation
-    CONFIG_LM_ETHNOAUTOCRC - Set to suppress auto-CRC generation
-    CONFIG_LM_ETHNOPAD - Set to suppress Tx padding
-    CONFIG_LM_MULTICAST - Set to enable multicast frames
-    CONFIG_LM_PROMISCUOUS - Set to enable promiscuous mode
-    CONFIG_LM_BADCRC - Set to enable bad CRC rejection.
-    CONFIG_LM_DUMPPACKET - Dump each packet received/sent to the console.
+    CONFIG_TIVA_ETHLEDS - Enable to use Ethernet LEDs on the board.
+    CONFIG_TIVA_BOARDMAC - If the board-specific logic can provide
+      a MAC address (via tiva_ethernetmac()), then this should be selected.
+    CONFIG_TIVA_ETHHDUPLEX - Set to force half duplex operation
+    CONFIG_TIVA_ETHNOAUTOCRC - Set to suppress auto-CRC generation
+    CONFIG_TIVA_ETHNOPAD - Set to suppress Tx padding
+    CONFIG_TIVA_MULTICAST - Set to enable multicast frames
+    CONFIG_TIVA_PROMISCUOUS - Set to enable promiscuous mode
+    CONFIG_TIVA_BADCRC - Set to enable bad CRC rejection.
+    CONFIG_TIVA_DUMPPACKET - Dump each packet received/sent to the console.
 
 Configurations
 ^^^^^^^^^^^^^^
@@ -693,7 +689,7 @@ Where <subdir> is one of the following:
     builtin applications are selected.
 
     NOTES:
- 
+
     1. This configuration uses the mconf-based configuration tool.  To
        change this configuration using that tool, you should:
 
@@ -706,27 +702,6 @@ Where <subdir> is one of the following:
     2. By default, this configuration uses the CodeSourcery toolchain
        for Windows and builds under Cygwin (or probably MSYS).  That
        can easily be reconfigured, of course.
-
-       CONFIG_HOST_LINUX=y                 : Linux (Cygwin under Windows okay too).
-       CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y : Buildroot (arm-nuttx-elf-gcc)
-       CONFIG_RAW_BINARY=y                 : Output formats: ELF and raw binary
-
-  ostest:
-    This configuration directory, performs a simple OS test using
-    examples/ostest. The configuration enables the serial VCOM interfaces
-    on UART0. 
-
-    NOTES:
-    1. This configuration uses the mconf-based configuration tool.  To
-       change this configuration using that tool, you should:
-
-       a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
-          and misc/tools/
-
-       b. Execute 'make menuconfig' in nuttx/ in order to start the
-          reconfiguration process.
-
-    2. Default platform/toolchain:
 
        CONFIG_HOST_LINUX=y                 : Linux (Cygwin under Windows okay too).
        CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y : Buildroot (arm-nuttx-elf-gcc)

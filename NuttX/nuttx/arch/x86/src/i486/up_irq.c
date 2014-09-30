@@ -51,7 +51,6 @@
 #include <arch/io.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
 #include "up_internal.h"
 #include "qemu_internal.h"
 
@@ -106,7 +105,7 @@ static void idt_outb(uint8_t val, uint16_t addr)
  *   combine several sources of interrupt onto one or more CPU lines, while
  *   allowing priority levels to be assigned to its interrupt outputs. When
  *   the device has multiple interrupt outputs to assert, it will assert them
- *   in the order of their relative priority. 
+ *   in the order of their relative priority.
  *
  ****************************************************************************/
 
@@ -119,7 +118,7 @@ static void up_remappic(void)
 
   /* If the PIC has been reset, it must be initialized with 2 to 4 Initialization
    * Command Words (ICW) before it will accept and process Interrupt Requests. The
-   * following outlines the four possible Initialization Command Words. 
+   * following outlines the four possible Initialization Command Words.
    */
 
   /* Remap the irq table for primary:
@@ -150,7 +149,7 @@ static void up_remappic(void)
  * Name up_idtentry
  *
  * Description:
- *   Initialize one IDT entry. 
+ *   Initialize one IDT entry.
  *
  ****************************************************************************/
 
@@ -293,7 +292,7 @@ void up_disable_irq(int irq)
 {
   unsigned int regaddr;
   uint8_t      regbit;
- 
+
   if (irq >= IRQ0)
     {
       /* Map the IRQ IMR regiser to a PIC and a bit number */
@@ -331,7 +330,7 @@ void up_enable_irq(int irq)
 {
   unsigned int regaddr;
   uint8_t      regbit;
- 
+
   if (irq >= IRQ0)
     {
       /* Map the IRQ IMR regiser to a PIC and a bit number */

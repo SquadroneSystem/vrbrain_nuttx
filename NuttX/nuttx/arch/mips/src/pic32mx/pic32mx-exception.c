@@ -50,7 +50,6 @@
 #include <arch/pic32mx/cp0.h>
 
 #include "up_arch.h"
-#include "os_internal.h"
 
 #include "pic32mx-int.h"
 #include "pic32mx-internal.h"
@@ -94,7 +93,7 @@ uint32_t *pic32mx_exception(uint32_t *regs)
    * processing an interrupt.
    */
 
-  up_ledon(LED_INIRQ);
+  board_led_on(LED_INIRQ);
 
 #ifdef CONFIG_DEBUG
   /* Get the cause of the exception from the CAUSE register */

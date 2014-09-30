@@ -1,7 +1,7 @@
 ############################################################################
 # net/Makefile
 #
-#   Copyright (C) 2007, 2008, 2011-2012 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2007, 2008, 2011-2014 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,57 +39,46 @@ ifeq ($(CONFIG_NET),y)
 
 # Basic networking support
 
-SOCK_ASRCS =
-SOCK_CSRCS = bind.c connect.c getsockname.c recv.c recvfrom.c socket.c \
-		  sendto.c net_sockets.c net_close.c net_dup.c net_dup2.c net_clone.c \
-		  net_vfcntl.c
+NET_ASRCS   =
+NET_CSRCS   = net_initialize.c
 
-# TCP/IP support
+# Socket support
 
-ifeq ($(CONFIG_NET_TCP),y)
-SOCK_CSRCS += send.c listen.c accept.c net_monitor.c
-endif
-
-# Socket options
-
-ifeq ($(CONFIG_NET_SOCKOPTS),y)
-SOCK_CSRCS += setsockopt.c getsockopt.c 
-ifneq ($(CONFIG_DISABLE_CLOCK),y)
-SOCK_CSRCS += net_timeo.c net_dsec2timeval.c net_timeval2dsec.c
-ifneq ($(CONFIG_NET_SLIP),y)
-SOCK_CSRCS += net_arptimer.c
-endif
-endif
-endif
-
-# Support for network access using streams
-
-ifneq ($(CONFIG_NFILE_STREAMS),0)
-SOCK_CSRCS += net_checksd.c 
-endif
+SOCK_ASRCS  =
+SOCK_CSRCS  =
 
 # Support for operations on network devices
 
 NETDEV_ASRCS =
-NETDEV_CSRCS = netdev_register.c netdev_ioctl.c net_poll.c netdev_txnotify.c \
-		  netdev_findbyname.c netdev_findbyaddr.c netdev_count.c \
-		  netdev_foreach.c netdev_unregister.c netdev_sem.c
+NETDEV_CSRCS =
 
-include uip/Make.defs
+VPATH =
+DEPPATH = --dep-path .
+
+include socket/Make.defs
+include netdev/Make.defs
+include iob/Make.defs
+include arp/Make.defs
+include icmp/Make.defs
+include igmp/Make.defs
+include tcp/Make.defs
+include udp/Make.defs
+include pkt/Make.defs
+include devif/Make.defs
+include route/Make.defs
+include utils/Make.defs
 endif
 
-ASRCS		= $(SOCK_ASRCS) $(NETDEV_ASRCS) $(UIP_ASRCS)
+ASRCS		= $(SOCK_ASRCS) $(NETDEV_ASRCS) $(NET_ASRCS)
 AOBJS		= $(ASRCS:.S=$(OBJEXT))
 
-CSRCS		= $(SOCK_CSRCS) $(NETDEV_CSRCS) $(UIP_CSRCS)
+CSRCS		= $(SOCK_CSRCS) $(NETDEV_CSRCS) $(NET_CSRCS)
 COBJS		= $(CSRCS:.c=$(OBJEXT))
 
 SRCS		= $(ASRCS) $(CSRCS)
 OBJS		= $(AOBJS) $(COBJS)
 
 BIN		= libnet$(LIBEXT)
-
-VPATH		= uip
 
 all:	$(BIN)
 
@@ -104,7 +93,7 @@ $(BIN): $(OBJS)
 
 .depend: Makefile $(SRCS)
 ifeq ($(CONFIG_NET),y)
-	$(Q) $(MKDEP) --dep-path . --dep-path uip "$(CC)" -- $(CFLAGS) -- $(SRCS) >Make.dep
+	$(Q) $(MKDEP) $(DEPPATH) "$(CC)" -- $(CFLAGS) -- $(SRCS) >Make.dep
 endif
 	$(Q) touch $@
 

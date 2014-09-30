@@ -70,7 +70,7 @@
 /****************************************************************************
  * Included Files
  ****************************************************************************/
- 
+
 #include <nuttx/config.h>
 
 #include <sys/types.h>
@@ -78,8 +78,8 @@
 #include <stdbool.h>
 
 #include <nuttx/nx/nxglib.h>
-#include <nuttx/fb.h>
-#include <nuttx/rgbcolors.h>
+#include <nuttx/video/fb.h>
+#include <nuttx/video/rgbcolors.h>
 
 #include "nxconfig.hxx"
 #include "cbitmap.hxx"
@@ -138,7 +138,7 @@ static const uint32_t g_screenFlipUpGlyph[] =
 #endif
 
 /****************************************************************************
- * Public Bitmap Structure Defintions
+ * Public Bitmap Structure Definitions
  ****************************************************************************/
 
 const struct SBitmap NXWidgets::g_screenFlipUp =
