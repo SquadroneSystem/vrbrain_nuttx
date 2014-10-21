@@ -234,6 +234,12 @@ private:
 	int			set_excitement(unsigned enable);
 
 	/**
+	 * Set the sensor temperature compensation.
+	 *
+	 */
+	int			set_temperature_compensation(unsigned enable);
+
+	/**
 	 * Set the sensor range.
 	 *
 	 * Sets the internal range to handle at least the argument in Gauss.
@@ -739,6 +745,9 @@ HMC5883::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case MAGIOCCALIBRATE:
 		return calibrate(filp, arg);
+
+	case MAGIOCCOMPENSATION:
+		return set_temperature_compensation(arg);
 
 	case MAGIOCEXSTRAP:
 		return set_excitement(arg);
@@ -1346,6 +1355,33 @@ int HMC5883::set_excitement(unsigned enable)
 	return !(_conf_reg == conf_reg_ret);
 }
 
+int HMC5883::set_temperature_compensation(unsigned enable)
+{
+	int ret;
+
+	ret = read_reg(ADDR_CONF_A, _conf_reg);
+
+	if (OK != ret)
+		perf_count(_comms_errors);
+
+	if (enable > 0) {
+		_conf_reg |= 0x80;
+
+	} else {
+		_conf_reg &= ~0x80;
+	}
+
+    ret = write_reg(ADDR_CONF_A, _conf_reg);
+
+	if (OK != ret)
+		perf_count(_comms_errors);
+
+	uint8_t conf_reg_ret;
+	read_reg(ADDR_CONF_A, conf_reg_ret);
+
+	return !(_conf_reg == conf_reg_ret);
+}
+
 int
 HMC5883::write_reg(uint8_t reg, uint8_t val)
 {
@@ -1404,12 +1440,13 @@ const int ERROR = -1;
 HMC5883	*g_dev_int = nullptr;
 HMC5883	*g_dev_ext = nullptr;
 
-void	hmc5883_usage();
+void	usage();
 void	start(enum Rotation rotation, enum BusSensor bustype);
 void	test(enum BusSensor bustype);
 void	reset(enum BusSensor bustype);
 void	info(enum BusSensor bustype);
-int	calibrate(enum BusSensor bustype);
+int		calibrate(enum BusSensor bustype);
+int		compensation(enum BusSensor bustype, unsigned enable);
 
 /**
  * Start the driver.
@@ -1559,7 +1596,6 @@ test(enum BusSensor bustype)
 	errx(0, "PASS");
 }
 
-
 /**
  * Automatic scale calibration.
  *
@@ -1635,6 +1671,42 @@ int calibrate(enum BusSensor bustype)
 }
 
 /**
+ * Set temperature compensation.
+ */
+int compensation(enum BusSensor bustype, unsigned enable)
+{
+	int ret;
+	const char *path;
+
+    switch (bustype) {
+    case TYPE_BUS_SENSOR_INTERNAL:
+    	path = HMC5883L_DEVICE_PATH_INT;
+    	break;
+    case TYPE_BUS_SENSOR_EXTERNAL:
+    	path = HMC5883L_DEVICE_PATH_EXT;
+    	break;
+    }
+
+	int fd = open(path, O_RDONLY);
+
+	if (fd < 0)
+		err(1, "%s open failed (try 'hmc5983 start' if the driver is not running", path);
+
+	if (OK != (ret = ioctl(fd, MAGIOCCOMPENSATION, enable))) {
+		warnx("failed to set sensor temperature compensation");
+	}
+
+	close(fd);
+
+	if (ret == OK) {
+		errx(0, "PASS");
+
+	} else {
+		errx(1, "FAIL");
+	}
+}
+
+/**
  * Reset the driver.
  */
 void
@@ -1693,18 +1765,19 @@ info(enum BusSensor bustype)
 	exit(0);
 }
 
-} // namespace
-
 void
-hmc5883_usage()
+usage()
 {
-	warnx("missing command: try 'start', 'info', 'test', 'reset', 'status', 'calibrate'");
+	warnx("missing command: try 'start', 'info', 'test', 'reset', 'status', 'calibrate', 'compensation'");
 	warnx("options:");
 	warnx("    -R rotation");
 	warnx("    -X only external bus");
 	warnx("    -I only internal bus");
 	warnx("    -C calibrate on start");
+	warnx("    -T temperature compensation");
 }
+
+} // namespace
 
 int
 hmc5883_main(int argc, char *argv[])
@@ -1713,8 +1786,9 @@ hmc5883_main(int argc, char *argv[])
 	enum Rotation rotation = ROTATION_NONE;
 	enum BusSensor bustype = TYPE_BUS_SENSOR_NONE;
     bool calibrate = false;
+    bool temp_compensation = false;
 
-	while ((ch = getopt(argc, argv, "XIR:C")) != EOF) {
+	while ((ch = getopt(argc, argv, "XIR:CT:")) != EOF) {
 		switch (ch) {
 		case 'R':
 			rotation = (enum Rotation)atoi(optarg);
@@ -1728,8 +1802,11 @@ hmc5883_main(int argc, char *argv[])
 		case 'C':
 			calibrate = true;
 			break;
+		case 'T':
+			temp_compensation = atoi(optarg);
+			break;
 		default:
-			hmc5883_usage();
+			hmc5883::usage();
 			exit(0);
 		}
 	}
@@ -1741,6 +1818,12 @@ hmc5883_main(int argc, char *argv[])
 	 */
 	if (!strcmp(verb, "start")) {
 		hmc5883::start(rotation, bustype);
+		if (hmc5883::compensation(bustype, temp_compensation) == 0) {
+			errx(0, "set temperature compensation successful");
+
+		} else {
+			errx(1, "set temperature compensation failed");
+		}
 		if (calibrate) {
 			if (hmc5883::calibrate(bustype) == 0) {
 				errx(0, "calibration successful");
@@ -1781,5 +1864,17 @@ hmc5883_main(int argc, char *argv[])
 		}
 	}
 
-	errx(1, "unrecognized command, try 'start', 'test', 'reset' 'calibrate' or 'info'");
+	/*
+	 * Set temperature compensation
+	 */
+	if (!strcmp(verb, "compensation")) {
+		if (hmc5883::compensation(bustype, temp_compensation) == 0) {
+			errx(0, "set temperature compensation successful");
+
+		} else {
+			errx(1, "set temperature compensation failed");
+		}
+	}
+
+	errx(1, "unrecognized command, try 'start', 'test', 'reset' 'calibrate' 'compensation' or 'info'");
 }

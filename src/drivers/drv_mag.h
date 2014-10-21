@@ -132,4 +132,7 @@ ORB_DECLARE(sensor_mag);
 /** determine if mag is external or onboard */
 #define MAGIOCGEXTERNAL		_MAGIOC(11)
 
+/** perform set temperature compensation */
+#define MAGIOCCOMPENSATION	_MAGIOC(12)
+
 #endif /* _DRV_MAG_H */
