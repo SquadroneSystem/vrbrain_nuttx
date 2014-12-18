@@ -206,11 +206,6 @@ __EXPORT int nsh_archinitialize(void)
 	message("\n");
 
 	/* configure always-on ADC pins */
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-	stm32_configgpio(GPIO_ADC1_IN1);
-	stm32_configgpio(GPIO_ADC1_IN2);
-	stm32_configgpio(GPIO_ADC1_IN3);
-#endif
 	stm32_configgpio(GPIO_ADC1_IN10);
 
 
@@ -267,7 +262,11 @@ __EXPORT int nsh_archinitialize(void)
 	SPI_SETFREQUENCY(spi1, 10000000);
 	SPI_SETBITS(spi1, 8);
 	SPI_SETMODE(spi1, SPIDEV_MODE3);
-	SPI_SELECT(spi1, GPIO_SPI_CS_EXP_WIFI, false);
+#if CONFIG_ACCEL_GYRO_TYPE(ACCEL_GYRO_EXTERNAL)
+	SPI_SELECT(spi1, GPIO_SPI_CS_EXP_MPU6000, false);
+	SPI_SELECT(spi1, GPIO_SPI_CS_EXP_MS5611, false);
+	SPI_SELECT(spi1, GPIO_SPI_CS_EXP_HMC5983, false);
+#endif
 	SPI_SELECT(spi1, GPIO_SPI_CS_MS5611, false);
 	up_udelay(20);
 
@@ -289,7 +288,9 @@ __EXPORT int nsh_archinitialize(void)
 	SPI_SETFREQUENCY(spi2, 10000000);
 	SPI_SETBITS(spi2, 8);
 	SPI_SETMODE(spi2, SPIDEV_MODE3);
+#if CONFIG_ACCEL_GYRO_TYPE(ACCEL_GYRO_ONBOARD)
 	SPI_SELECT(spi2, GPIO_SPI_CS_MPU6000, false);
+#endif
 
 	message("[boot] Successfully initialized SPI port 2\n");
 
