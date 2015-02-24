@@ -1,0 +1,12 @@
+{
+    "board_id": 5210, 
+    "magic": "HBRAINv10", 
+    "description": "Firmware for the HEXO+ VRBRAIN board", 
+    "image": "", 
+    "build_time": 0, 
+    "summary": "HBRAIN",
+    "version": "1.0",
+    "image_size": 0,
+    "git_identity": "",
+    "board_revision": 0
+}
