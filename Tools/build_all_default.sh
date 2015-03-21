@@ -2,6 +2,7 @@
 
 make clean
 
+make hbrain-v00_default
 make hbrain-v10_default
 make vrbrain-v45_default
 
