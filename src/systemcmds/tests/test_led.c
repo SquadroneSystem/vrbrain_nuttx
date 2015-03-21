@@ -129,249 +129,7 @@ int test_led(int argc, char *argv[])
 	ioctl(fd, LED_ON, LED_BLUE);
 	ioctl(fd, LED_OFF, LED_AMBER);
 	
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
-
-	if (ioctl(fd, LED_ON, LED_AMBER) ||
-	    ioctl(fd, LED_ON, LED_BLUE) ||
-	    ioctl(fd, LED_ON, LED_GREEN) ||
-	    ioctl(fd, LED_ON, LED_EXT1) ||
-	    ioctl(fd, LED_ON, LED_EXT2) ||
-	    ioctl(fd, LED_ON, LED_EXT3)) {
-
-		printf("\tLED: ioctl fail\n");
-		return ERROR;
-	}
-
-	/* let them blink for fun */
-	ioctl(fd, LED_OFF, LED_AMBER);
-	ioctl(fd, LED_OFF, LED_BLUE);
-	ioctl(fd, LED_OFF, LED_GREEN);
-	ioctl(fd, LED_OFF, LED_EXT1);
-	ioctl(fd, LED_OFF, LED_EXT2);
-	ioctl(fd, LED_OFF, LED_EXT3);
-
-	int i;
-	uint8_t ledon = 0;
-
-	printf("\tTest LED AMBER\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_AMBER);
-
-		} else {
-			ioctl(fd, LED_ON, LED_AMBER);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_AMBER);
-
-	ledon = 0;
-	printf("\tTest LED BLUE\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_BLUE);
-
-		} else {
-			ioctl(fd, LED_ON, LED_BLUE);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_BLUE);
-
-	ledon = 0;
-	printf("\tTest LED GREEN\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_GREEN);
-
-		} else {
-			ioctl(fd, LED_ON, LED_GREEN);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_GREEN);
-
-	ledon = 0;
-	printf("\tTest LED EXT 1\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_EXT1);
-
-		} else {
-			ioctl(fd, LED_ON, LED_EXT1);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_EXT1);
-
-	ledon = 0;
-	printf("\tTest LED EXT 2\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_EXT2);
-
-		} else {
-			ioctl(fd, LED_ON, LED_EXT2);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_EXT2);
-
-	ledon = 0;
-	printf("\tTest LED EXT 3\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_EXT3);
-
-		} else {
-			ioctl(fd, LED_ON, LED_EXT3);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_EXT3);
-
-	/* Go back to default */
-	ioctl(fd, LED_OFF, LED_AMBER);
-	ioctl(fd, LED_OFF, LED_BLUE);
-	ioctl(fd, LED_OFF, LED_GREEN);
-	ioctl(fd, LED_OFF, LED_EXT1);
-	ioctl(fd, LED_OFF, LED_EXT2);
-	ioctl(fd, LED_OFF, LED_EXT3);
-
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
-
-	if (ioctl(fd, LED_ON, LED_AMBER) ||
-	    ioctl(fd, LED_ON, LED_BLUE) ||
-	    ioctl(fd, LED_ON, LED_GREEN) ||
-	    ioctl(fd, LED_ON, LED_EXT1) ||
-	    ioctl(fd, LED_ON, LED_EXT2) ||
-	    ioctl(fd, LED_ON, LED_EXT3)) {
-
-		printf("\tLED: ioctl fail\n");
-		return ERROR;
-	}
-
-	/* let them blink for fun */
-	ioctl(fd, LED_OFF, LED_AMBER);
-	ioctl(fd, LED_OFF, LED_BLUE);
-	ioctl(fd, LED_OFF, LED_GREEN);
-	ioctl(fd, LED_OFF, LED_EXT1);
-	ioctl(fd, LED_OFF, LED_EXT2);
-	ioctl(fd, LED_OFF, LED_EXT3);
-
-	int i;
-	uint8_t ledon = 0;
-
-	printf("\tTest LED AMBER\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_AMBER);
-
-		} else {
-			ioctl(fd, LED_ON, LED_AMBER);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_AMBER);
-
-	ledon = 0;
-	printf("\tTest LED BLUE\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_BLUE);
-
-		} else {
-			ioctl(fd, LED_ON, LED_BLUE);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_BLUE);
-
-	ledon = 0;
-	printf("\tTest LED GREEN\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_GREEN);
-
-		} else {
-			ioctl(fd, LED_ON, LED_GREEN);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_GREEN);
-
-	ledon = 0;
-	printf("\tTest LED EXT 1\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_EXT1);
-
-		} else {
-			ioctl(fd, LED_ON, LED_EXT1);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_EXT1);
-
-	ledon = 0;
-	printf("\tTest LED EXT 2\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_EXT2);
-
-		} else {
-			ioctl(fd, LED_ON, LED_EXT2);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_EXT2);
-
-	ledon = 0;
-	printf("\tTest LED EXT 3\n");
-	for (i = 0; i < 10; i++) {
-		if (ledon) {
-			ioctl(fd, LED_OFF, LED_EXT3);
-
-		} else {
-			ioctl(fd, LED_ON, LED_EXT3);
-		}
-
-		ledon = !ledon;
-		usleep(1000000);
-	}
-	ioctl(fd, LED_OFF, LED_EXT3);
-
-	/* Go back to default */
-	ioctl(fd, LED_OFF, LED_AMBER);
-	ioctl(fd, LED_OFF, LED_BLUE);
-	ioctl(fd, LED_OFF, LED_GREEN);
-	ioctl(fd, LED_OFF, LED_EXT1);
-	ioctl(fd, LED_OFF, LED_EXT2);
-	ioctl(fd, LED_OFF, LED_EXT3);
-
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
 
 	if (ioctl(fd, LED_ON, LED_AMBER) ||
 	    ioctl(fd, LED_ON, LED_BLUE) ||
@@ -940,41 +698,43 @@ int test_led(int argc, char *argv[])
 	ioctl(fd, LED_OFF, LED_EXT1);
 	ioctl(fd, LED_OFF, LED_EXT2);
 
-#elif defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#elif defined(CONFIG_ARCH_BOARD_HBRAIN_V00)
 
-	if (ioctl(fd, LED_ON, LED_AMBER) ||
+	if (ioctl(fd, LED_ON, LED_RED) ||
 	    ioctl(fd, LED_ON, LED_BLUE) ||
 	    ioctl(fd, LED_ON, LED_GREEN) ||
 	    ioctl(fd, LED_ON, LED_EXT1) ||
-	    ioctl(fd, LED_ON, LED_EXT2)) {
+	    ioctl(fd, LED_ON, LED_EXT2) ||
+	    ioctl(fd, LED_ON, LED_EXT3)) {
 
 		printf("\tLED: ioctl fail\n");
 		return ERROR;
 	}
 
 	/* let them blink for fun */
-	ioctl(fd, LED_OFF, LED_AMBER);
+	ioctl(fd, LED_OFF, LED_RED);
 	ioctl(fd, LED_OFF, LED_BLUE);
 	ioctl(fd, LED_OFF, LED_GREEN);
 	ioctl(fd, LED_OFF, LED_EXT1);
 	ioctl(fd, LED_OFF, LED_EXT2);
+	ioctl(fd, LED_OFF, LED_EXT3);
 
 	int i;
 	uint8_t ledon = 0;
 
-	printf("\tTest LED AMBER\n");
+	printf("\tTest LED RED\n");
 	for (i = 0; i < 10; i++) {
 		if (ledon) {
-			ioctl(fd, LED_OFF, LED_AMBER);
+			ioctl(fd, LED_OFF, LED_RED);
 
 		} else {
-			ioctl(fd, LED_ON, LED_AMBER);
+			ioctl(fd, LED_ON, LED_RED);
 		}
 
 		ledon = !ledon;
 		usleep(1000000);
 	}
-	ioctl(fd, LED_OFF, LED_AMBER);
+	ioctl(fd, LED_OFF, LED_RED);
 
 	ledon = 0;
 	printf("\tTest LED BLUE\n");
@@ -1036,44 +796,66 @@ int test_led(int argc, char *argv[])
 	}
 	ioctl(fd, LED_OFF, LED_EXT2);
 
+	ledon = 0;
+	printf("\tTest LED EXT 3\n");
+	for (i = 0; i < 10; i++) {
+		if (ledon) {
+			ioctl(fd, LED_OFF, LED_EXT3);
+
+		} else {
+			ioctl(fd, LED_ON, LED_EXT3);
+		}
+
+		ledon = !ledon;
+		usleep(1000000);
+	}
+	ioctl(fd, LED_OFF, LED_EXT3);
+
 	/* Go back to default */
-	ioctl(fd, LED_OFF, LED_AMBER);
+	ioctl(fd, LED_OFF, LED_RED);
 	ioctl(fd, LED_OFF, LED_BLUE);
 	ioctl(fd, LED_OFF, LED_GREEN);
 	ioctl(fd, LED_OFF, LED_EXT1);
 	ioctl(fd, LED_OFF, LED_EXT2);
+	ioctl(fd, LED_OFF, LED_EXT3);
 
-#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
+#elif defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 
-	if (ioctl(fd, LED_ON, LED_AMBER) ||
+	if (ioctl(fd, LED_ON, LED_RED) ||
 	    ioctl(fd, LED_ON, LED_BLUE) ||
-	    ioctl(fd, LED_ON, LED_GREEN)) {
+	    ioctl(fd, LED_ON, LED_GREEN) ||
+	    ioctl(fd, LED_ON, LED_EXT1) ||
+	    ioctl(fd, LED_ON, LED_EXT2) ||
+	    ioctl(fd, LED_ON, LED_EXT3)) {
 
 		printf("\tLED: ioctl fail\n");
 		return ERROR;
 	}
 
 	/* let them blink for fun */
-	ioctl(fd, LED_OFF, LED_AMBER);
+	ioctl(fd, LED_OFF, LED_RED);
 	ioctl(fd, LED_OFF, LED_BLUE);
 	ioctl(fd, LED_OFF, LED_GREEN);
+	ioctl(fd, LED_OFF, LED_EXT1);
+	ioctl(fd, LED_OFF, LED_EXT2);
+	ioctl(fd, LED_OFF, LED_EXT3);
 
 	int i;
 	uint8_t ledon = 0;
 
-	printf("\tTest LED AMBER\n");
+	printf("\tTest LED RED\n");
 	for (i = 0; i < 10; i++) {
 		if (ledon) {
-			ioctl(fd, LED_OFF, LED_AMBER);
+			ioctl(fd, LED_OFF, LED_RED);
 
 		} else {
-			ioctl(fd, LED_ON, LED_AMBER);
+			ioctl(fd, LED_ON, LED_RED);
 		}
 
 		ledon = !ledon;
 		usleep(1000000);
 	}
-	ioctl(fd, LED_OFF, LED_AMBER);
+	ioctl(fd, LED_OFF, LED_RED);
 
 	ledon = 0;
 	printf("\tTest LED BLUE\n");
@@ -1105,10 +887,58 @@ int test_led(int argc, char *argv[])
 	}
 	ioctl(fd, LED_OFF, LED_GREEN);
 
+	ledon = 0;
+	printf("\tTest LED EXT 1\n");
+	for (i = 0; i < 10; i++) {
+		if (ledon) {
+			ioctl(fd, LED_OFF, LED_EXT1);
+
+		} else {
+			ioctl(fd, LED_ON, LED_EXT1);
+		}
+
+		ledon = !ledon;
+		usleep(1000000);
+	}
+	ioctl(fd, LED_OFF, LED_EXT1);
+
+	ledon = 0;
+	printf("\tTest LED EXT 2\n");
+	for (i = 0; i < 10; i++) {
+		if (ledon) {
+			ioctl(fd, LED_OFF, LED_EXT2);
+
+		} else {
+			ioctl(fd, LED_ON, LED_EXT2);
+		}
+
+		ledon = !ledon;
+		usleep(1000000);
+	}
+	ioctl(fd, LED_OFF, LED_EXT2);
+
+	ledon = 0;
+	printf("\tTest LED EXT 3\n");
+	for (i = 0; i < 10; i++) {
+		if (ledon) {
+			ioctl(fd, LED_OFF, LED_EXT3);
+
+		} else {
+			ioctl(fd, LED_ON, LED_EXT3);
+		}
+
+		ledon = !ledon;
+		usleep(1000000);
+	}
+	ioctl(fd, LED_OFF, LED_EXT3);
+
 	/* Go back to default */
-	ioctl(fd, LED_OFF, LED_AMBER);
+	ioctl(fd, LED_OFF, LED_RED);
 	ioctl(fd, LED_OFF, LED_BLUE);
 	ioctl(fd, LED_OFF, LED_GREEN);
+	ioctl(fd, LED_OFF, LED_EXT1);
+	ioctl(fd, LED_OFF, LED_EXT2);
+	ioctl(fd, LED_OFF, LED_EXT3);
 #endif
 
 	printf("\t LED test completed, no errors.\n");
