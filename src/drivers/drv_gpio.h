@@ -94,27 +94,7 @@
 
 #endif
 
-#ifdef CONFIG_ARCH_BOARD_VRBRAIN_V40
-
-/**
- * Device paths for things that support the GPIO ioctl protocol.
- */
-# define VROUTPUT_DEVICE_PATH	"/dev/vroutput"
-# define VRINPUT_DEVICE_PATH	"/dev/vrinput"
-
-#endif
-
 #ifdef CONFIG_ARCH_BOARD_VRBRAIN_V45
-
-/**
- * Device paths for things that support the GPIO ioctl protocol.
- */
-# define VROUTPUT_DEVICE_PATH	"/dev/vroutput"
-# define VRINPUT_DEVICE_PATH	"/dev/vrinput"
-
-#endif
-
-#ifdef CONFIG_ARCH_BOARD_VRBRAIN_V50
 
 /**
  * Device paths for things that support the GPIO ioctl protocol.
@@ -164,7 +144,7 @@
 
 #endif
 
-#ifdef CONFIG_ARCH_BOARD_HBRAIN_V10
+#ifdef CONFIG_ARCH_BOARD_HBRAIN_V00
 
 /**
  * Device paths for things that support the GPIO ioctl protocol.
@@ -174,10 +154,7 @@
 
 #endif
 
-#ifdef CONFIG_ARCH_BOARD_VRHERO_V10
-
-# define GPIO_EXT_SHUTDOWN_INT		(1<<0)		/**< shutdown interrupt signal */
-# define GPIO_EXT_SHUTDOWN_OUT		(1<<1)		/**< shutdown output consensus */
+#ifdef CONFIG_ARCH_BOARD_HBRAIN_V10
 
 /**
  * Device paths for things that support the GPIO ioctl protocol.
