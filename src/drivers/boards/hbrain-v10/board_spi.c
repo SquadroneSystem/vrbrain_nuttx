@@ -71,15 +71,11 @@ __EXPORT void weak_function stm32_spiinitialize(void)
 {
 	stm32_configgpio(GPIO_SPI_CS_DATAFLASH);
 	stm32_configgpio(GPIO_SPI_CS_MS5611);
-#if CONFIG_ACCEL_GYRO_TYPE(ACCEL_GYRO_ONBOARD)
 	stm32_configgpio(GPIO_SPI_CS_MPU6000);
-#endif
 	stm32_configgpio(GPIO_SPI_CS_SDCARD);
-#if CONFIG_ACCEL_GYRO_TYPE(ACCEL_GYRO_EXTERNAL)
 	stm32_configgpio(GPIO_SPI_CS_EXP_MPU6000);
-	stm32_configgpio(GPIO_SPI_CS_EXP_MS5611);
+	stm32_configgpio(GPIO_SPI_CS_EXP_FREE);
 	stm32_configgpio(GPIO_SPI_CS_EXP_HMC5983);
-#endif
 
 	/* De-activate all peripherals,
 	 * required for some peripheral
@@ -87,15 +83,11 @@ __EXPORT void weak_function stm32_spiinitialize(void)
 	 */
 	stm32_gpiowrite(GPIO_SPI_CS_DATAFLASH, 1);
 	stm32_gpiowrite(GPIO_SPI_CS_MS5611, 1);
-#if CONFIG_ACCEL_GYRO_TYPE(ACCEL_GYRO_ONBOARD)
 	stm32_gpiowrite(GPIO_SPI_CS_MPU6000, 1);
-#endif
 	stm32_gpiowrite(GPIO_SPI_CS_SDCARD, 1);
-#if CONFIG_ACCEL_GYRO_TYPE(ACCEL_GYRO_EXTERNAL)
 	stm32_gpiowrite(GPIO_SPI_CS_EXP_MPU6000, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_EXP_MS5611, 1);
+	stm32_gpiowrite(GPIO_SPI_CS_EXP_FREE, 1);
 	stm32_gpiowrite(GPIO_SPI_CS_EXP_HMC5983, 1);
-#endif
 }
 
 __EXPORT void stm32_spi1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool selected)
@@ -103,24 +95,28 @@ __EXPORT void stm32_spi1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, 
 	/* SPI select is active low, so write !selected to select the device */
 
 	switch (devid) {
-#if CONFIG_ACCEL_GYRO_TYPE(ACCEL_GYRO_EXTERNAL)
 	case SPIDEV_EXP_MPU6000:
 		/* Making sure the other peripherals are not selected */
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_MPU6000, !selected);
 		stm32_gpiowrite(GPIO_SPI_CS_MS5611, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_EXP_MS5611, 1);
+		stm32_gpiowrite(GPIO_SPI_CS_EXP_FREE, 1);
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_HMC5983, 1);
 		break;
-#endif
 
 	case SPIDEV_MS5611:
 		/* Making sure the other peripherals are not selected */
-		stm32_gpiowrite(GPIO_SPI_CS_MS5611, !selected);
-#if CONFIG_ACCEL_GYRO_TYPE(ACCEL_GYRO_EXTERNAL)
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_MPU6000, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_EXP_MS5611, 1);
+		stm32_gpiowrite(GPIO_SPI_CS_MS5611, !selected);
+		stm32_gpiowrite(GPIO_SPI_CS_EXP_FREE, 1);
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_HMC5983, 1);
-#endif
+		break;
+
+	case SPIDEV_EXP_HMC5983:
+		/* Making sure the other peripherals are not selected */
+		stm32_gpiowrite(GPIO_SPI_CS_EXP_MPU6000, 1);
+		stm32_gpiowrite(GPIO_SPI_CS_MS5611, 1);
+		stm32_gpiowrite(GPIO_SPI_CS_EXP_FREE, 1);
+		stm32_gpiowrite(GPIO_SPI_CS_EXP_HMC5983, !selected);
 		break;
 
 	default:
@@ -139,12 +135,10 @@ __EXPORT void stm32_spi2select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, 
 	/* SPI select is active low, so write !selected to select the device */
 
 	switch (devid) {
-#if CONFIG_ACCEL_GYRO_TYPE(ACCEL_GYRO_ONBOARD)
 	case SPIDEV_MPU6000:
 		/* Making sure the other peripherals are not selected */
 		stm32_gpiowrite(GPIO_SPI_CS_MPU6000, !selected);
 		break;
-#endif
 
 	default:
 		break;

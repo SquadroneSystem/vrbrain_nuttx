@@ -53,56 +53,10 @@
 #if CONFIG_RC_INPUTS_TYPE(RC_INPUT_PWM)
 
 /* PWM Input
-* RC4 PB5  Timer 3 Channel 2 (AF2)
-* RC5 PB0  Timer 3 Channel 3 (AF2)
-* RC6 PB1  Timer 3 Channel 4 (AF2)
-* RC7 PD13 Timer 4 Channel 2 (AF2)
-* RC8 PD14 Timer 4 Channel 1 (AF2)
 */
 
-__EXPORT const struct pwm_input_timer pwm_input_timers[PWM_INPUT_MAX_TIMERS] = {
-	{
-		.base = STM32_TIM3_BASE,
-		.clock_register = STM32_RCC_APB1ENR,
-		.clock_bit = RCC_APB1ENR_TIM3EN,
-		.vector	= STM32_IRQ_TIM3,
-		.clock_freq = STM32_APB1_TIM3_CLKIN
-	},
-	{
-		.base = STM32_TIM4_BASE,
-		.clock_register = STM32_RCC_APB1ENR,
-		.clock_bit = RCC_APB1ENR_TIM4EN,
-		.vector	= STM32_IRQ_TIM4,
-		.clock_freq = STM32_APB1_TIM4_CLKIN
-	}
-};
+__EXPORT const struct pwm_input_timer pwm_input_timers[PWM_INPUT_MAX_TIMERS] = {};
 
-__EXPORT const struct pwm_input_channel pwm_input_channels[PWM_INPUT_MAX_CHANNELS] = {
-	{
-		.gpio = GPIO_TIM3_CH2IN,
-		.timer_index = 0,
-		.timer_channel = 2,
-	},
-	{
-		.gpio = GPIO_TIM3_CH3IN,
-		.timer_index = 0,
-		.timer_channel = 3,
-	},
-	{
-		.gpio = GPIO_TIM3_CH4IN,
-		.timer_index = 0,
-		.timer_channel = 4,
-	},
-	{
-		.gpio = GPIO_TIM4_CH2IN,
-		.timer_index = 1,
-		.timer_channel = 2,
-	},
-	{
-		.gpio = GPIO_TIM4_CH1IN,
-		.timer_index = 1,
-		.timer_channel = 1,
-	}
-};
+__EXPORT const struct pwm_input_channel pwm_input_channels[PWM_INPUT_MAX_CHANNELS] = {};
 
 #endif

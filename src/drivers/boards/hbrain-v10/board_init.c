@@ -206,11 +206,17 @@ __EXPORT int nsh_archinitialize(void)
 	message("\n");
 
 	/* configure always-on ADC pins */
-	stm32_configgpio(GPIO_ADC1_IN1);
-	stm32_configgpio(GPIO_ADC1_IN2);
-	stm32_configgpio(GPIO_ADC1_IN3);
 	stm32_configgpio(GPIO_ADC1_IN10);
+	stm32_configgpio(GPIO_ADC1_IN11);
+	stm32_configgpio(GPIO_ADC1_IN12);
+	stm32_configgpio(GPIO_ADC1_IN13);
 
+	stm32_configgpio(GPIO_UART_SBUS_INVERTER);
+#ifdef CONFIG_RC_INPUTS_TYPE(RC_INPUT_SBUS)
+	stm32_gpiowrite(GPIO_UART_SBUS_INVERTER, 1);
+#else
+	stm32_gpiowrite(GPIO_UART_SBUS_INVERTER, 0);
+#endif
 
 	/* configure the high-resolution time/callout interface */
 	hrt_init();
@@ -265,11 +271,9 @@ __EXPORT int nsh_archinitialize(void)
 	SPI_SETFREQUENCY(spi1, 10000000);
 	SPI_SETBITS(spi1, 8);
 	SPI_SETMODE(spi1, SPIDEV_MODE3);
-#if CONFIG_ACCEL_GYRO_TYPE(ACCEL_GYRO_EXTERNAL)
 	SPI_SELECT(spi1, GPIO_SPI_CS_EXP_MPU6000, false);
-	SPI_SELECT(spi1, GPIO_SPI_CS_EXP_MS5611, false);
+	SPI_SELECT(spi1, GPIO_SPI_CS_EXP_FREE, false);
 	SPI_SELECT(spi1, GPIO_SPI_CS_EXP_HMC5983, false);
-#endif
 	SPI_SELECT(spi1, GPIO_SPI_CS_MS5611, false);
 	up_udelay(20);
 
@@ -291,9 +295,7 @@ __EXPORT int nsh_archinitialize(void)
 	SPI_SETFREQUENCY(spi2, 10000000);
 	SPI_SETBITS(spi2, 8);
 	SPI_SETMODE(spi2, SPIDEV_MODE3);
-#if CONFIG_ACCEL_GYRO_TYPE(ACCEL_GYRO_ONBOARD)
 	SPI_SELECT(spi2, GPIO_SPI_CS_MPU6000, false);
-#endif
 
 	message("[boot] Successfully initialized SPI port 2\n");
 
