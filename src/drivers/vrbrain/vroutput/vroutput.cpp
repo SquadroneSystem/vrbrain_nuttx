@@ -116,14 +116,8 @@ private:
 
 
 
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
-	static const unsigned _max_actuators = 8;
-#endif
 #if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
 	static const unsigned _max_actuators = 12;
-#endif
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
-	static const unsigned _max_actuators = 8;
 #endif
 #if defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
 	static const unsigned _max_actuators = 12;
@@ -137,11 +131,11 @@ private:
 #if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
 	static const unsigned _max_actuators = 12;
 #endif
-#if defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00)
 	static const unsigned _max_actuators = 12;
 #endif
-#if defined(CONFIG_ARCH_BOARD_VRHERO_V10)
-	static const unsigned _max_actuators = 4;
+#if defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+	static const unsigned _max_actuators = 12;
 #endif
 
 	Mode		_mode;
@@ -227,11 +221,7 @@ const VROUTPUT::GPIOConfig VROUTPUT::_gpio_tab[] = {
 
 
 
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
-#endif
 #if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
-#endif
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
 #endif
 #if defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
 #endif
@@ -241,40 +231,9 @@ const VROUTPUT::GPIOConfig VROUTPUT::_gpio_tab[] = {
 #endif
 #if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
 #endif
+#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00)
+#endif
 #if defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
-#endif
-#if defined(CONFIG_ARCH_BOARD_VRHERO_V10)
-	{GPIO_SHUTDOWN_INT, 0,			   0},
-#ifdef AUX_IO1_OUT
-	{0,       			GPIO_AUX_IO1, 0},
-#else
-	{GPIO_AUX_IO1,      0 			, 0},
-#endif
-#ifdef AUX_IO2_OUT
-	{0,       			GPIO_AUX_IO2, 0},
-#else
-	{GPIO_AUX_IO2,      0 			, 0},
-#endif
-#ifdef AUX_IO3_OUT
-	{0,       			GPIO_AUX_IO3, 0},
-#else
-	{GPIO_AUX_IO3,      0 			, 0},
-#endif
-#ifdef AUX_IO4_OUT
-	{0,       			GPIO_AUX_IO4, 0},
-#else
-	{GPIO_AUX_IO4,      0 			, 0},
-#endif
-#ifdef AUX_IO5_OUT
-	{0,       			GPIO_AUX_IO5, 0},
-#else
-	{GPIO_AUX_IO5,      0 			, 0},
-#endif
-#ifdef AUX_IO6_OUT
-  {0,             GPIO_AUX_IO6, 0},
-#else
-  {GPIO_AUX_IO6,      0       , 0},
-#endif
 #endif
 };
 
@@ -1586,17 +1545,9 @@ vroutput_new_mode(PortMode new_mode)
 
 
 
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
-		/* select 8-pin PWM mode */
-		servo_mode = VROUTPUT::MODE_8PWM;
-#endif
 #if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
 		/* select 12-pin PWM mode */
 		servo_mode = VROUTPUT::MODE_12PWM;
-#endif
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
-		/* select 8-pin PWM mode */
-		servo_mode = VROUTPUT::MODE_8PWM;
 #endif
 #if defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
 		/* select 8-pin PWM mode */
@@ -1614,13 +1565,13 @@ vroutput_new_mode(PortMode new_mode)
 		/* select 8-pin PWM mode */
 		servo_mode = VROUTPUT::MODE_12PWM;
 #endif
-#if defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00)
 		/* select 8-pin PWM mode */
 		servo_mode = VROUTPUT::MODE_12PWM;
 #endif
-#if defined(CONFIG_ARCH_BOARD_VRHERO_V10)
-		/* select 4-pin PWM mode */
-		servo_mode = VROUTPUT::MODE_4PWM;
+#if defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+		/* select 8-pin PWM mode */
+		servo_mode = VROUTPUT::MODE_12PWM;
 #endif
 		break;
 
@@ -1941,13 +1892,7 @@ vroutput_main(int argc, char *argv[])
 
 
 
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
-	fprintf(stderr, "  mode_gpio, mode_pwm, test\n");
-#endif
 #if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
-	fprintf(stderr, "  mode_gpio, mode_pwm, test\n");
-#endif
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
 	fprintf(stderr, "  mode_gpio, mode_pwm, test\n");
 #endif
 #if defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
@@ -1962,10 +1907,10 @@ vroutput_main(int argc, char *argv[])
 #if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
 	fprintf(stderr, "  mode_gpio, mode_pwm, test\n");
 #endif
-#if defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00)
 	fprintf(stderr, "  mode_gpio, mode_pwm, test\n");
 #endif
-#if defined(CONFIG_ARCH_BOARD_VRHERO_V10)
+#if defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 	fprintf(stderr, "  mode_gpio, mode_pwm, test\n");
 #endif
 	exit(1);

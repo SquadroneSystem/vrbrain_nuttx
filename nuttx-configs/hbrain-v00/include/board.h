@@ -1,5 +1,5 @@
 /************************************************************************************
- * configs/hbrain-v10/include/board.h
+ * configs/hbrain-v00/include/board.h
  * include/arch/board/board.h
  *
  *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
@@ -34,8 +34,8 @@
  *
  ************************************************************************************/
 
-#ifndef __CONFIG_HBRAIN_V10_INCLUDE_BOARD_H
-#define __CONFIG_HBRAIN_V10_INCLUDE_BOARD_H
+#ifndef __CONFIG_HBRAIN_V00_INCLUDE_BOARD_H
+#define __CONFIG_HBRAIN_V00_INCLUDE_BOARD_H
 
 /************************************************************************************
  * Included Files
@@ -268,4 +268,4 @@ int nsh_archinitialize(void);
 #endif
 
 #endif /* __ASSEMBLY__ */
-#endif  /* __CONFIG_HBRAIN_V10_INCLUDE_BOARD_H */
+#endif  /* __CONFIG_HBRAIN_V00_INCLUDE_BOARD_H */

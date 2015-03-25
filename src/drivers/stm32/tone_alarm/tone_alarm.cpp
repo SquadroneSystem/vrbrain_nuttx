@@ -118,12 +118,13 @@
 #include <systemlib/err.h>
 
 /* Tone alarm configuration */
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 
 #if   TONE_ALARM_TIMER == 2
 # define TONE_ALARM_BASE		STM32_TIM2_BASE
 # define TONE_ALARM_CLOCK		STM32_APB1_TIM2_CLKIN
 # define TONE_ALARM_CLOCK_ENABLE	RCC_APB1ENR_TIM2EN
+# define TONE_ALARM_POWER_REG	STM32_RCC_APB1ENR
 # ifdef CONFIG_STM32_TIM2
 #  error Must not set CONFIG_STM32_TIM2 when TONE_ALARM_TIMER is 2
 # endif
@@ -131,6 +132,7 @@
 # define TONE_ALARM_BASE		STM32_TIM3_BASE
 # define TONE_ALARM_CLOCK		STM32_APB1_TIM3_CLKIN
 # define TONE_ALARM_CLOCK_ENABLE	RCC_APB1ENR_TIM3EN
+# define TONE_ALARM_POWER_REG	STM32_RCC_APB1ENR
 # ifdef CONFIG_STM32_TIM3
 #  error Must not set CONFIG_STM32_TIM3 when TONE_ALARM_TIMER is 3
 # endif
@@ -138,6 +140,7 @@
 # define TONE_ALARM_BASE		STM32_TIM4_BASE
 # define TONE_ALARM_CLOCK		STM32_APB1_TIM4_CLKIN
 # define TONE_ALARM_CLOCK_ENABLE	RCC_APB1ENR_TIM4EN
+# define TONE_ALARM_POWER_REG	STM32_RCC_APB1ENR
 # ifdef CONFIG_STM32_TIM4
 #  error Must not set CONFIG_STM32_TIM4 when TONE_ALARM_TIMER is 4
 # endif
@@ -145,27 +148,31 @@
 # define TONE_ALARM_BASE		STM32_TIM5_BASE
 # define TONE_ALARM_CLOCK		STM32_APB1_TIM5_CLKIN
 # define TONE_ALARM_CLOCK_ENABLE	RCC_APB1ENR_TIM5EN
+# define TONE_ALARM_POWER_REG	STM32_RCC_APB1ENR
 # ifdef CONFIG_STM32_TIM5
 #  error Must not set CONFIG_STM32_TIM5 when TONE_ALARM_TIMER is 5
 # endif
 #elif TONE_ALARM_TIMER == 9
 # define TONE_ALARM_BASE		STM32_TIM9_BASE
-# define TONE_ALARM_CLOCK		STM32_APB1_TIM9_CLKIN
-# define TONE_ALARM_CLOCK_ENABLE	RCC_APB1ENR_TIM9EN
+# define TONE_ALARM_CLOCK		STM32_APB2_TIM9_CLKIN
+# define TONE_ALARM_CLOCK_ENABLE	RCC_APB2ENR_TIM9EN
+# define TONE_ALARM_POWER_REG	STM32_RCC_APB2ENR
 # ifdef CONFIG_STM32_TIM9
 #  error Must not set CONFIG_STM32_TIM9 when TONE_ALARM_TIMER is 9
 # endif
 #elif TONE_ALARM_TIMER == 10
 # define TONE_ALARM_BASE		STM32_TIM10_BASE
-# define TONE_ALARM_CLOCK		STM32_APB1_TIM10_CLKIN
-# define TONE_ALARM_CLOCK_ENABLE	RCC_APB1ENR_TIM10EN
+# define TONE_ALARM_CLOCK		STM32_APB2_TIM10_CLKIN
+# define TONE_ALARM_CLOCK_ENABLE	RCC_APB2ENR_TIM10EN
+# define TONE_ALARM_POWER_REG	STM32_RCC_APB2ENR
 # ifdef CONFIG_STM32_TIM10
 #  error Must not set CONFIG_STM32_TIM10 when TONE_ALARM_TIMER is 10
 # endif
 #elif TONE_ALARM_TIMER == 11
 # define TONE_ALARM_BASE		STM32_TIM11_BASE
-# define TONE_ALARM_CLOCK		STM32_APB1_TIM11_CLKIN
-# define TONE_ALARM_CLOCK_ENABLE	RCC_APB1ENR_TIM11EN
+# define TONE_ALARM_CLOCK		STM32_APB2_TIM11_CLKIN
+# define TONE_ALARM_CLOCK_ENABLE	RCC_APB2ENR_TIM11EN
+# define TONE_ALARM_POWER_REG	STM32_RCC_APB2ENR
 # ifdef CONFIG_STM32_TIM11
 #  error Must not set CONFIG_STM32_TIM11 when TONE_ALARM_TIMER is 11
 # endif
@@ -328,7 +335,7 @@ ToneAlarm::ToneAlarm() :
 	_next(nullptr)
 {
 	// enable debug() calls
-	_debug_enabled = false;
+	//_debug_enabled = true;
 	_default_tunes[TONE_STARTUP_TUNE] = "MFT240L8 O4aO5dc O4aO5dc O4aO5dc L16dcdcdcdc";		// startup tune
 	_default_tunes[TONE_ERROR_TUNE] = "MBT200a8a8a8PaaaP";						// ERROR tone
 	_default_tunes[TONE_NOTIFY_POSITIVE_TUNE] = "MFT200e8a8a";					// Notify Positive tone
@@ -341,6 +348,7 @@ ToneAlarm::ToneAlarm() :
 	_default_tunes[TONE_ARMING_FAILURE_TUNE] = "MFT255L4<<<BAP";
 	_default_tunes[TONE_PARACHUTE_RELEASE_TUNE] = "MFT255L16agagagag";			// parachute release
 	_default_tunes[TONE_EKF_WARNING_TUNE] = "MFT255L8ddd#d#eeff";				// ekf warning
+	_default_tunes[TONE_BARO_WARNING_TUNE] = "MFT255L4gf#fed#d";				// baro warning
 
 	_tune_names[TONE_STARTUP_TUNE] = "startup";			// startup tune
 	_tune_names[TONE_ERROR_TUNE] = "error";				// ERROR tone
@@ -354,6 +362,7 @@ ToneAlarm::ToneAlarm() :
 	_tune_names[TONE_ARMING_FAILURE_TUNE] = "arming_failure";            //fail to arm
 	_tune_names[TONE_PARACHUTE_RELEASE_TUNE] = "parachute_release";	// parachute release
 	_tune_names[TONE_EKF_WARNING_TUNE] = "ekf_warning";				// ekf warning
+	_tune_names[TONE_BARO_WARNING_TUNE] = "baro_warning";			// baro warning
 }
 
 ToneAlarm::~ToneAlarm()
@@ -370,12 +379,12 @@ ToneAlarm::init()
 	if (ret != OK)
 		return ret;
 
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 	/* configure the GPIO to the idle state */
 	stm32_configgpio(GPIO_TONE_ALARM_IDLE);
 
 	/* clock/power on our timer */
-	modifyreg32(STM32_RCC_APB1ENR, 0, TONE_ALARM_CLOCK_ENABLE);
+	modifyreg32(TONE_ALARM_POWER_REG, 0, TONE_ALARM_CLOCK_ENABLE);
 
 	/* initialise the timer */
 	rCR1 = 0;
@@ -405,7 +414,7 @@ ToneAlarm::init()
 unsigned
 ToneAlarm::note_to_divisor(unsigned note)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 	// compute the frequency first (Hz)
 	float freq = 880.0f * expf(logf(2.0f) * ((int)note - 46) / 12.0f);
 
@@ -423,7 +432,7 @@ ToneAlarm::note_to_divisor(unsigned note)
 unsigned
 ToneAlarm::note_duration(unsigned &silence, unsigned note_length, unsigned dots)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 	unsigned whole_note_period = (60 * 1000000 * 4) / _tempo;
 
 	if (note_length == 0)
@@ -459,7 +468,7 @@ ToneAlarm::note_duration(unsigned &silence, unsigned note_length, unsigned dots)
 unsigned
 ToneAlarm::rest_duration(unsigned rest_length, unsigned dots)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 	unsigned whole_note_period = (60 * 1000000 * 4) / _tempo;
 
 	if (rest_length == 0)
@@ -482,7 +491,7 @@ ToneAlarm::rest_duration(unsigned rest_length, unsigned dots)
 void
 ToneAlarm::start_note(unsigned note)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 	// compute the divisor
 	unsigned divisor = note_to_divisor(note);
 
@@ -506,7 +515,7 @@ ToneAlarm::start_note(unsigned note)
 void
 ToneAlarm::stop_note()
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 	/* stop the current note */
 	rCCER &= ~TONE_CCER;
 
@@ -520,7 +529,7 @@ ToneAlarm::stop_note()
 void
 ToneAlarm::start_tune(const char *tune)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 	// kill any current playback
 	hrt_cancel(&_note_call);
 
@@ -544,7 +553,7 @@ ToneAlarm::start_tune(const char *tune)
 void
 ToneAlarm::next_note()
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 	// do we have an inter-note gap to wait for?
 	if (_silence_length > 0) {
 		stop_note();

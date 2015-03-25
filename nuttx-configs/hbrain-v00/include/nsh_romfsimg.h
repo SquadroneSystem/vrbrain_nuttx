@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2012 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2013 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,63 +32,11 @@
  ****************************************************************************/
 
 /**
- * @file board_buzzer.c
+ * nsh_romfsetc.h
  *
- * VRBRAIN BUZZER backend.
+ * This file is a stub for 'make export' purposes; the actual ROMFS
+ * must be supplied by the library client.
  */
 
-#include <nuttx/config.h>
-
-#include <stdbool.h>
-
-#include "stm32.h"
-#include "board_config.h"
-
-#include <arch/board/board.h>
-
-__BEGIN_DECLS
-extern void buzzer_init();
-extern void buzzer_on(int buzzer);
-extern void buzzer_off(int buzzer);
-extern void buzzer_toggle(int buzzer);
-__END_DECLS
-
-__EXPORT void buzzer_init()
-{
-#if defined(GPIO_BUZZER)
-	stm32_configgpio(GPIO_BUZZER);
-#endif
-}
-
-__EXPORT void buzzer_on(int buzzer)
-{
-	if (buzzer == 0)
-	{
-#if defined(GPIO_BUZZER)
-		stm32_gpiowrite(GPIO_BUZZER, true);
-#endif
-	}
-}
-
-__EXPORT void buzzer_off(int buzzer)
-{
-	if (buzzer == 0)
-	{
-#if defined(GPIO_BUZZER)
-		stm32_gpiowrite(GPIO_BUZZER, false);
-#endif
-	}
-}
-
-__EXPORT void buzzer_toggle(int buzzer)
-{
-	if (buzzer == 0)
-	{
-#if defined(GPIO_BUZZER)
-		if (stm32_gpioread(GPIO_BUZZER))
-			stm32_gpiowrite(GPIO_BUZZER, false);
-		else
-			stm32_gpiowrite(GPIO_BUZZER, true);
-#endif
-	}
-}
+extern unsigned char romfs_img[];
+extern unsigned int romfs_img_len;

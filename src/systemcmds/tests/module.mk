@@ -73,7 +73,7 @@ SRCS			 = test_adc.c \
 			   test_uart_bridge.c
 endif
 
-ifneq ($(findstring HBRAIN_V1, $(CONFIG_BOARD)),)
+ifneq ($(findstring HBRAIN_V0, $(CONFIG_BOARD)),)
 SRCS			 = test_adc.c \
 			   test_hrt.c \
 			   test_led.c \
@@ -85,11 +85,14 @@ SRCS			 = test_adc.c \
 			   test_uart_bridge.c
 endif
 
-ifneq ($(findstring VRHERO_V1, $(CONFIG_BOARD)),)
+ifneq ($(findstring HBRAIN_V1, $(CONFIG_BOARD)),)
 SRCS			 = test_adc.c \
 			   test_hrt.c \
 			   test_led.c \
 			   test_sensors.c \
+			   tests_main.c \
+			   test_rc.c \
 			   test_mtd.c \
-			   tests_main.c
+			   test_buzzer.c \
+			   test_uart_bridge.c
 endif

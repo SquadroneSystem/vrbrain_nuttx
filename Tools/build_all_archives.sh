@@ -1,5 +1,6 @@
 #!/bin/sh
 
+make archives BOARDS=hbrain-v00
 make archives BOARDS=hbrain-v10
 make archives BOARDS=vrbrain-v45
 
