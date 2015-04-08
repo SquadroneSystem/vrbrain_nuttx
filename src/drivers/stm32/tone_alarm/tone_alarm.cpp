@@ -118,7 +118,7 @@
 #include <systemlib/err.h>
 
 /* Tone alarm configuration */
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 
 #if   TONE_ALARM_TIMER == 2
 # define TONE_ALARM_BASE		STM32_TIM2_BASE
@@ -379,7 +379,7 @@ ToneAlarm::init()
 	if (ret != OK)
 		return ret;
 
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	/* configure the GPIO to the idle state */
 	stm32_configgpio(GPIO_TONE_ALARM_IDLE);
 
@@ -414,7 +414,7 @@ ToneAlarm::init()
 unsigned
 ToneAlarm::note_to_divisor(unsigned note)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	// compute the frequency first (Hz)
 	float freq = 880.0f * expf(logf(2.0f) * ((int)note - 46) / 12.0f);
 
@@ -432,7 +432,7 @@ ToneAlarm::note_to_divisor(unsigned note)
 unsigned
 ToneAlarm::note_duration(unsigned &silence, unsigned note_length, unsigned dots)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	unsigned whole_note_period = (60 * 1000000 * 4) / _tempo;
 
 	if (note_length == 0)
@@ -468,7 +468,7 @@ ToneAlarm::note_duration(unsigned &silence, unsigned note_length, unsigned dots)
 unsigned
 ToneAlarm::rest_duration(unsigned rest_length, unsigned dots)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	unsigned whole_note_period = (60 * 1000000 * 4) / _tempo;
 
 	if (rest_length == 0)
@@ -491,7 +491,7 @@ ToneAlarm::rest_duration(unsigned rest_length, unsigned dots)
 void
 ToneAlarm::start_note(unsigned note)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	// compute the divisor
 	unsigned divisor = note_to_divisor(note);
 
@@ -515,7 +515,7 @@ ToneAlarm::start_note(unsigned note)
 void
 ToneAlarm::stop_note()
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	/* stop the current note */
 	rCCER &= ~TONE_CCER;
 
@@ -529,7 +529,7 @@ ToneAlarm::stop_note()
 void
 ToneAlarm::start_tune(const char *tune)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	// kill any current playback
 	hrt_cancel(&_note_call);
 
@@ -553,7 +553,7 @@ ToneAlarm::start_tune(const char *tune)
 void
 ToneAlarm::next_note()
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	// do we have an inter-note gap to wait for?
 	if (_silence_length > 0) {
 		stop_note();
