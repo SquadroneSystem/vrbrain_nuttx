@@ -112,6 +112,7 @@ private:
 	 * so we need to guarantee that transfers complete without interruption.
 	 */
 	int		_transfer(uint8_t *send, uint8_t *recv, unsigned len);
+	int toto =0;
 };
 
 device::Device *
@@ -190,21 +191,77 @@ MS5611_SPI::read(unsigned offset, void *data, unsigned count)
 		uint8_t	b[4];
 		uint32_t w;
 	} *cvt = (_cvt *)data;
-	uint8_t buf[4] = { 0 | DIR_WRITE, 0, 0, 0 };
+	uint8_t	WHOAMI[2] = {0x3D, 0x00};
 
-	/* read the most recent measurement */
-	int ret = _transfer(&buf[0], &buf[0], sizeof(buf));
+	uint8_t	REG1[2] = {0x80, 0x00};
+	uint8_t	REG2[2] = {0x80, 0x84};
+	uint8_t	REG3[2] = {0x84, 0x01};
+	uint8_t	REG4[2] = {0x84, 0x00};
+	int ret;
+
+	ret = _transfer(&REG2[0], &REG2[0], sizeof(REG2));
+	ret = _transfer(&REG3[0], &REG3[0], sizeof(REG3));
+	ret = _transfer(&WHOAMI[0], &WHOAMI[0], sizeof(WHOAMI));
+
+		uint8_t buf[4] = { 0xA1, 0, 0, 0 };
+		/* read the most recent measurement */
+		ret = _transfer(&buf[0], &buf[0], sizeof(buf));
 
 	if (ret == OK) {
-		/* fetch the raw value */
-		cvt->b[0] = buf[3];
-		cvt->b[1] = buf[2];
-		cvt->b[2] = buf[1];
-		cvt->b[3] = 0;
+					/* fetch the raw value */
+					cvt->b[0] = buf[2];
+					cvt->b[1] = 0;
+					cvt->b[2] = 0;
+					cvt->b[3] = 0;
 
-		ret = count;
-	}
+					ret = count;
+				}
 
+/*	uint8_t buf[4] = { 0 | DIR_WRITE, 0, 0, 0 };
+	/* read the most recent measurement */
+	/*   int ret = _transfer(&buf[0], &buf[0], sizeof(buf));
+
+	if (ret == OK) {
+				/* fetch the raw value */
+		/*		cvt->b[0] = buf[3];
+				cvt->b[1] = buf[2];
+				cvt->b[2] = buf[1];
+				cvt->b[3] = 0;
+
+				ret = count;
+			}*/
+
+	// ret = _transfer(&REG1[0], &REG1[0], sizeof(REG1));
+
+	/*if(toto == 1) ret = _transfer(&REG2[0], &REG2[0], sizeof(REG2));
+	if(toto == 2)  ret = _transfer(&REG3[0], &REG3[0], sizeof(REG3));
+	// ret = _transfer(&REG4[0], &REG4[0], sizeof(REG4));
+
+
+	 if (toto == 3)
+	 {
+	uint8_t buf[4] = { 0xA3, 0, 0, 0 };
+	/* read the most recent measurement */
+	/*  ret = _transfer(&buf[0], &buf[0], sizeof(buf));
+	  toto =0;
+		if (ret == OK) {
+			/* fetch the raw value */
+	/*		cvt->b[0] = buf[3];
+			cvt->b[1] = buf[2];
+			cvt->b[2] = buf[1];
+			cvt->b[3] = 0;
+
+			ret = count;
+		}
+		else{
+			cvt->b[0] = 1;
+			cvt->b[1] = 2;
+			cvt->b[2] = 3;
+			cvt->b[3] = 0;
+		}
+	 }
+
+	 toto++;*/
 	return ret;
 }
 
@@ -246,7 +303,22 @@ MS5611_SPI::_measure(unsigned addr)
 {
 	uint8_t cmd = addr | DIR_WRITE;
 
+	/*uint8_t	REG1[2] = {0x80, 0x00};
+	uint8_t	REG2[2] = {0x80, 0x84};
+	uint8_t	REG3[2] = {0x84, 0x01};
+	uint8_t	REG4[2] = {0x84, 0x00};
+
+	// ret = _transfer(&REG1[0], &REG1[0], sizeof(REG1));
+	int ret = _transfer(&REG2[0], &REG2[0], sizeof(REG2));
+	 ret = _transfer(&REG3[0], &REG3[0], sizeof(REG3));
+	// ret = _transfer(&REG4[0], &REG4[0], sizeof(REG4));
+
+		uint8_t buf[2] = { 0xA3, 0};
+		/* read the most recent measurement */
+
+	/*return _transfer(&buf[0], &buf[0], sizeof(buf));*/
 	return _transfer(&cmd, nullptr, 1);
+
 }
 
 

@@ -656,6 +656,7 @@ MS5611::collect()
 
         report.ms5611_D1 = _D1;
         report.ms5611_D2 = _D2;
+        report.temperature = raw;
 
 	/* handle a measurement */
 	if (_measure_phase == 0) {
@@ -697,9 +698,9 @@ MS5611::collect()
 		_P = P * 0.01f;
 		_T = _TEMP * 0.01f;
 
+		report.pressure = P / 100.0f;
 		/* generate a new report */
-		report.temperature = _TEMP / 100.0f;
-		report.pressure = P / 100.0f;		/* convert to millibar */
+				/* convert to millibar */
 
 		/* altitude calculations based on http://www.kansasflyer.org/index.asp?nav=Avi&sec=Alti&tab=Theory&pg=1 */
 
