@@ -55,6 +55,21 @@
 #include "ms5611.h"
 #include "board_config.h"
 
+
+
+#define BMP280_CHIP_ID_REG                   (0xD0)  /*Chip ID Register */
+#define BMP280_RST_REG                       (0xE0) /*Softreset Register */
+#define BMP280_STAT_REG                      (0xF3)  /*Status Register */
+#define BMP280_CTRL_MEAS_REG                 (0xF4)  /*Ctrl Measure Register */
+#define BMP280_CONFIG_REG                    (0xF5)  /*Configuration Register */
+#define BMP280_PRESSURE_MSB_REG              (0xF7)  /*Pressure MSB Register */
+#define BMP280_PRESSURE_LSB_REG              (0xF8)  /*Pressure LSB Register */
+#define BMP280_PRESSURE_XLSB_REG             (0xF9)  /*Pressure XLSB Register */
+#define BMP280_TEMPERATURE_MSB_REG           (0xFA)  /*Temperature MSB Reg */
+#define BMP280_TEMPERATURE_LSB_REG           (0xFB)  /*Temperature LSB Reg */
+#define BMP280_TEMPERATURE_XLSB_REG          (0xFC)  /*Temperature XLSB Reg */
+
+
 /* SPI protocol address bits */
 #define DIR_READ			(1<<7)
 #define DIR_WRITE			(0<<7)
@@ -174,11 +189,11 @@ MS5611_SPI::init()
 	}
 
 	/* read PROM */
-	ret = _read_prom();
+/*	ret = _read_prom();
 	if (ret != OK) {
 		debug("prom readout failed");
 		goto out;
-	}
+	}*/
 
 out:
 	return ret;
@@ -191,77 +206,56 @@ MS5611_SPI::read(unsigned offset, void *data, unsigned count)
 		uint8_t	b[4];
 		uint32_t w;
 	} *cvt = (_cvt *)data;
-	uint8_t	WHOAMI[2] = {0x3D, 0x00};
 
-	uint8_t	REG1[2] = {0x80, 0x00};
-	uint8_t	REG2[2] = {0x80, 0x84};
-	uint8_t	REG3[2] = {0x84, 0x01};
-	uint8_t	REG4[2] = {0x84, 0x00};
 	int ret;
+	uint8_t	REG1[4] = {BMP280_TEMPERATURE_MSB_REG | DIR_READ, 0x00, 0x00, 0x00};
+	uint8_t	REG2[4] = {BMP280_PRESSURE_MSB_REG | DIR_READ, 0x00, 0x00, 0x00};
 
-	ret = _transfer(&REG2[0], &REG2[0], sizeof(REG2));
-	ret = _transfer(&REG3[0], &REG3[0], sizeof(REG3));
-	ret = _transfer(&WHOAMI[0], &WHOAMI[0], sizeof(WHOAMI));
+	if(offset == 0)
+	{
 
-		uint8_t buf[4] = { 0xA1, 0, 0, 0 };
-		/* read the most recent measurement */
-		ret = _transfer(&buf[0], &buf[0], sizeof(buf));
+		ret = _transfer(&REG1[0], &REG1[0], sizeof(REG1));
+		if (ret == OK) {
+						/* fetch the raw value */
+						cvt->b[0] = REG1[3];
+						cvt->b[1] = REG1[2];
+						cvt->b[2] = REG1[1];
+						cvt->b[3] = 0;
+
+						ret = count;
+					}
+	}
+	else
+	{
+
+		ret = _transfer(&REG2[0], &REG2[0], sizeof(REG2));
+		if (ret == OK) {
+						/* fetch the raw value */
+						cvt->b[0] = REG2[3];
+						cvt->b[1] = REG2[2];
+						cvt->b[2] = REG2[1];
+						cvt->b[3] = 0;
+
+						ret = count;
+					}
+	}
+
+
 
 	if (ret == OK) {
 					/* fetch the raw value */
-					cvt->b[0] = buf[2];
-					cvt->b[1] = 0;
-					cvt->b[2] = 0;
+					cvt->b[0] = REG1[3];
+					cvt->b[1] = REG1[2];
+					cvt->b[2] = REG1[1];
 					cvt->b[3] = 0;
 
 					ret = count;
 				}
 
-/*	uint8_t buf[4] = { 0 | DIR_WRITE, 0, 0, 0 };
-	/* read the most recent measurement */
-	/*   int ret = _transfer(&buf[0], &buf[0], sizeof(buf));
+	//eteind l'alimentation
+	uint8_t cmd[2] = {BMP280_CTRL_MEAS_REG | DIR_WRITE, 0xFC};
+	ret = _transfer(&cmd[0], nullptr, 2);
 
-	if (ret == OK) {
-				/* fetch the raw value */
-		/*		cvt->b[0] = buf[3];
-				cvt->b[1] = buf[2];
-				cvt->b[2] = buf[1];
-				cvt->b[3] = 0;
-
-				ret = count;
-			}*/
-
-	// ret = _transfer(&REG1[0], &REG1[0], sizeof(REG1));
-
-	/*if(toto == 1) ret = _transfer(&REG2[0], &REG2[0], sizeof(REG2));
-	if(toto == 2)  ret = _transfer(&REG3[0], &REG3[0], sizeof(REG3));
-	// ret = _transfer(&REG4[0], &REG4[0], sizeof(REG4));
-
-
-	 if (toto == 3)
-	 {
-	uint8_t buf[4] = { 0xA3, 0, 0, 0 };
-	/* read the most recent measurement */
-	/*  ret = _transfer(&buf[0], &buf[0], sizeof(buf));
-	  toto =0;
-		if (ret == OK) {
-			/* fetch the raw value */
-	/*		cvt->b[0] = buf[3];
-			cvt->b[1] = buf[2];
-			cvt->b[2] = buf[1];
-			cvt->b[3] = 0;
-
-			ret = count;
-		}
-		else{
-			cvt->b[0] = 1;
-			cvt->b[1] = 2;
-			cvt->b[2] = 3;
-			cvt->b[3] = 0;
-		}
-	 }
-
-	 toto++;*/
 	return ret;
 }
 
@@ -293,31 +287,34 @@ MS5611_SPI::ioctl(unsigned operation, unsigned &arg)
 int
 MS5611_SPI::_reset()
 {
-	uint8_t cmd = ADDR_RESET_CMD | DIR_WRITE;
+	int ret ;
 
-	return  _transfer(&cmd, nullptr, 1);
+	//uint8_t cmd = ADDR_RESET_CMD | DIR_WRITE;
+	//reset
+	uint8_t cmd[2] = {BMP280_RST_REG | DIR_WRITE, 0xB6};
+	ret = _transfer(&cmd[0], nullptr, 2);
+	//config
+//	uint8_t cmd[2] = {BMP280_CTRL_MEAS_REG | DIR_WRITE, 0xFF};
+	//ret = _transfer(&cmd[0], nullptr, 2);
+	uint8_t cmd2[2] = {BMP280_CONFIG_REG | DIR_WRITE, 0x08};
+	ret = _transfer(&cmd2[0], nullptr, 2);
+
+	return  ret;
 }
 
 int
 MS5611_SPI::_measure(unsigned addr)
 {
-	uint8_t cmd = addr | DIR_WRITE;
 
-	/*uint8_t	REG1[2] = {0x80, 0x00};
-	uint8_t	REG2[2] = {0x80, 0x84};
-	uint8_t	REG3[2] = {0x84, 0x01};
-	uint8_t	REG4[2] = {0x84, 0x00};
+int ret;
 
-	// ret = _transfer(&REG1[0], &REG1[0], sizeof(REG1));
-	int ret = _transfer(&REG2[0], &REG2[0], sizeof(REG2));
-	 ret = _transfer(&REG3[0], &REG3[0], sizeof(REG3));
-	// ret = _transfer(&REG4[0], &REG4[0], sizeof(REG4));
+// alimante le composant
+uint8_t cmd[2] = {BMP280_CTRL_MEAS_REG | DIR_WRITE, 0xFE};
+	ret = _transfer(&cmd[0], nullptr, 2);
+	uint8_t cmd2[2] = {BMP280_CONFIG_REG | DIR_WRITE, 0x08};
+	ret = _transfer(&cmd2[0], nullptr, 2);
 
-		uint8_t buf[2] = { 0xA3, 0};
-		/* read the most recent measurement */
-
-	/*return _transfer(&buf[0], &buf[0], sizeof(buf));*/
-	return _transfer(&cmd, nullptr, 1);
+	return ret;
 
 }
 

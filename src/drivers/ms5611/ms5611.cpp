@@ -639,7 +639,7 @@ MS5611::collect()
         report.error_count = perf_event_count(_comms_errors);
 
 	/* read the most recent measurement - read offset/size are hardcoded in the interface */
-	ret = _interface->read(0, (void *)&raw, 0);
+	ret = _interface->read(_measure_phase, (void *)&raw, 0);
 	if (ret < 0) {
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
@@ -657,6 +657,7 @@ MS5611::collect()
         report.ms5611_D1 = _D1;
         report.ms5611_D2 = _D2;
         report.temperature = raw;
+        report.pressure = raw;
 
 	/* handle a measurement */
 	if (_measure_phase == 0) {
@@ -698,7 +699,7 @@ MS5611::collect()
 		_P = P * 0.01f;
 		_T = _TEMP * 0.01f;
 
-		report.pressure = P / 100.0f;
+
 		/* generate a new report */
 				/* convert to millibar */
 
