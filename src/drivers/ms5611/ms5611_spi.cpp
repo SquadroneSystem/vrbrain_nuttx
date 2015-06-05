@@ -189,11 +189,11 @@ MS5611_SPI::init()
 	}
 
 	/* read PROM */
-/*	ret = _read_prom();
+	ret = _read_prom();
 	if (ret != OK) {
 		debug("prom readout failed");
 		goto out;
-	}*/
+	}
 
 out:
 	return ret;
@@ -241,17 +241,6 @@ MS5611_SPI::read(unsigned offset, void *data, unsigned count)
 	}
 
 
-
-	if (ret == OK) {
-					/* fetch the raw value */
-					cvt->b[0] = REG1[3];
-					cvt->b[1] = REG1[2];
-					cvt->b[2] = REG1[1];
-					cvt->b[3] = 0;
-
-					ret = count;
-				}
-
 	//eteind l'alimentation
 	uint8_t cmd[2] = {BMP280_CTRL_MEAS_REG | DIR_WRITE, 0xFC};
 	ret = _transfer(&cmd[0], nullptr, 2);
@@ -289,7 +278,8 @@ MS5611_SPI::_reset()
 {
 	int ret ;
 
-	//uint8_t cmd = ADDR_RESET_CMD | DIR_WRITE;
+/*	uint8_t cmd1 = ADDR_RESET_CMD | DIR_WRITE;
+	ret = _transfer(&cmd1, nullptr, 1);*/
 	//reset
 	uint8_t cmd[2] = {BMP280_RST_REG | DIR_WRITE, 0xB6};
 	ret = _transfer(&cmd[0], nullptr, 2);
@@ -299,7 +289,7 @@ MS5611_SPI::_reset()
 	uint8_t cmd2[2] = {BMP280_CONFIG_REG | DIR_WRITE, 0x08};
 	ret = _transfer(&cmd2[0], nullptr, 2);
 
-	return  ret;
+	return  OK;
 }
 
 int
