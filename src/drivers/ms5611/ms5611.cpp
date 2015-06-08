@@ -192,6 +192,11 @@ protected:
 	 */
 	virtual int		measure();
 
+	double bmp280_compensate_T_double(int32_t adc_T);
+	double bmp280_compensate_P_double(int32_t adc_P);
+
+	int32_t bmp280_compensate_T_int32(int32_t adc_T);
+	uint32_t bmp280_compensate_P_int32(int32_t adc_T);
 	/**
 	 * Collect the result of the most recent measurement.
 	 */
@@ -386,7 +391,7 @@ MS5611::read(struct file *filp, char *buffer, size_t buflen)
 			break;
 		}
 
-		/* state machine will have generated a report, copy it out */
+		/* state machine will have generatebmp280_compensate_T_doubled a report, copy it out */
 		if (_reports->get(brp))
 			ret = sizeof(*brp);
 
@@ -409,7 +414,7 @@ MS5611::ioctl(struct file *filp, int cmd, unsigned long arg)
 				_measure_ticks = 0;
 				return OK;
 
-				/* external signalling not supported */
+				/* external signalling nobmp280_compensate_T_doublet supported */
 			case SENSOR_POLLRATE_EXTERNAL:
 
 				/* zero would be bad */
@@ -625,11 +630,91 @@ MS5611::measure()
 	return ret;
 }
 
+int32_t t_fine;
+
+
+int32_t MS5611::bmp280_compensate_T_int32(int32_t adc_T)
+{
+int32_t var1, var2, T;
+var1 = ((((adc_T>>3) - ((int32_t)_prom.dig_T1<<1))) * ((int32_t)_prom.dig_T2)) >> 11;
+var2 = (((((adc_T>>4) - ((int32_t)_prom.dig_T1)) * ((adc_T>>4) - ((int32_t)_prom.dig_T1))) >> 12) *
+((int32_t)_prom.dig_T3)) >> 14;
+t_fine = var1 + var2;
+T = (t_fine * 5 + 128) >> 8;
+return T;
+}
+
+// Returns pressure in Pa as unsigned 32 bit integer. Output value of “96386” equals 96386 Pa = 963.86 hPa
+uint32_t MS5611::bmp280_compensate_P_int32(int32_t adc_P)
+{
+int32_t var1, var2;
+uint32_t p;
+var1 = (((int32_t)t_fine)>>1) - (int32_t)64000;
+var2 = (((var1>>2) * (var1>>2)) >> 11 ) * ((int32_t)_prom.dig_P6);
+var2 = var2 + ((var1*((int32_t)_prom.dig_P5))<<1);
+var2 = (var2>>2)+(((int32_t)_prom.dig_P4)<<16);
+var1 = (((_prom.dig_P3 * (((var1>>2) * (var1>>2)) >> 13 )) >> 3) + ((((int32_t)_prom.dig_P2) * var1)>>1))>>18;
+var1 =((((32768+var1))*((int32_t)_prom.dig_P1))>>15);
+if (var1 == 0)
+{
+return 0; // avoid exception caused by division by zero
+}
+p = (((uint32_t)(((int32_t)1048576)-adc_P)-(var2>>12)))*3125;
+if (p < 0x80000000)
+{
+p = (p << 1) / ((uint32_t)var1);
+}
+else
+{
+p = (p / (uint32_t)var1) * 2;
+}
+var1 = (((int32_t)_prom.dig_P9) * ((int32_t)(((p>>3) * (p>>3))>>13)))>>12;
+var2 = (((int32_t)(p>>2)) * ((int32_t)_prom.dig_P8))>>13;
+p = (uint32_t)((int32_t)p + ((var1 + var2 + _prom.dig_P7) >> 4));
+return p;
+}
+
+
+double MS5611::bmp280_compensate_T_double(int32_t adc_T)
+{
+double var1, var2, T;
+var1 = (((double)adc_T)/16384.0 - ((double)_prom.dig_T1)/1024.0) * ((double)_prom.dig_T2);
+var2 = ((((double)adc_T)/131072.0 - ((double)_prom.dig_T1)/8192.0) *
+(((double)adc_T)/131072.0 - ((double) _prom.dig_T1)/8192.0)) * ((double)_prom.dig_T3);
+t_fine = (int32_t)(var1 + var2);
+T = (var1 + var2) / 5120.0;
+return T;
+}
+
+
+double MS5611::bmp280_compensate_P_double(int32_t adc_P)
+{
+	double var1, var2, p;
+	var1 = ((double)t_fine/2.0) - 64000.0;
+	var2 = var1 * var1 * ((double)_prom.dig_P6) / 32768.0;
+	var2 = var2 + var1 * ((double)_prom.dig_P5) * 2.0;
+	var2 = (var2/4.0)+(((double)_prom.dig_P4) * 65536.0);
+	var1 = (((double)_prom.dig_P3) * var1 * var1 / 524288.0 + ((double)_prom.dig_P2) * var1) / 524288.0;
+	var1 = (1.0 + var1 / 32768.0)*((double)_prom.dig_P1);
+	if (var1 == 0.0)
+	{
+		return 0; // avoid exception caused by division by zero
+	}
+	p = 1048576.0 - (double)adc_P;
+	p = (p - (var2 / 4096.0)) * 6250.0 / var1;
+	var1 = ((double)_prom.dig_P9) * p * p / 2147483648.0;
+	var2 = p * ((double)_prom.dig_P8) / 32768.0;
+	p = p + (var1 + var2 + ((double)_prom.dig_P7)) / 16.0;
+	return p;
+}
+
 int
 MS5611::collect()
 {
 	int ret;
 	uint32_t raw;
+int32_t temperature;
+int32_t pression;
 
 	perf_begin(_sample_perf);
 
@@ -639,121 +724,101 @@ MS5611::collect()
         report.error_count = perf_event_count(_comms_errors);
 
 	/* read the most recent measurement - read offset/size are hardcoded in the interface */
-	ret = _interface->read(_measure_phase, (void *)&raw, 0);
+	ret = _interface->read(1, (void *)&raw, 0);
+	if (ret < 0) {
+		perf_count(_comms_errors);
+		perf_end(_sample_perf);
+		return ret;
+	}
+temperature = raw ;
+	report.temperature = ((float)bmp280_compensate_T_int32(temperature))/ 100.0f;// raw temp *100
+
+	//report.temperature = raw;
+
+	ret = _interface->read(2, (void *)&raw, 0);
 	if (ret < 0) {
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
 		return ret;
 	}
 
+pression = raw ;
+	report.pressure = ((float)bmp280_compensate_P_int32(pression))/100.0f ; //raw press *100
+
+
 	// report the raw D1/D2 values to help diagnose problems with
 	// transfers at higher temperatures
-	if (_measure_phase == 0) {
-		_D1 = raw;
-	} else {
-		_D2 = raw;
-	}
 
-        report.ms5611_D1 = _D1;
-        report.ms5611_D2 = _D2;
-        report.temperature = raw;
-        report.pressure = raw;
+
+	report.ms5611_D1 = pression;
+	report.ms5611_D2 = temperature;
+      //  report.temperature = raw;
+       // report.pressure = raw;
 
 	/* handle a measurement */
-	if (_measure_phase == 0) {
-
-		/* temperature offset (in ADC units) */
-		int32_t dT = (int32_t)raw - ((int32_t)_prom.c5_reference_temp << 8);
-
-		/* absolute temperature in centidegrees - note intermediate value is outside 32-bit range */
-		_TEMP = 2000 + (int32_t)(((int64_t)dT * _prom.c6_temp_coeff_temp) >> 23);
-
-		/* base sensor scale/offset values */
-		_SENS = ((int64_t)_prom.c1_pressure_sens << 15) + (((int64_t)_prom.c3_temp_coeff_pres_sens * dT) >> 8);
-		_OFF  = ((int64_t)_prom.c2_pressure_offset << 16) + (((int64_t)_prom.c4_temp_coeff_pres_offset * dT) >> 7);
-
-		/* temperature compensation */
-		if (_TEMP < 2000) {
-
-			int32_t T2 = POW2(dT) >> 31;
-
-			int64_t f = POW2((int64_t)_TEMP - 2000);
-			int64_t OFF2 = 5 * f >> 1;
-			int64_t SENS2 = 5 * f >> 2;
-
-			if (_TEMP < -1500) {
-				int64_t f2 = POW2(_TEMP + 1500);
-				OFF2 += 7 * f2;
-				SENS2 += 11 * f2 >> 1;
-			}
-
-			_TEMP -= T2;
-			_OFF  -= OFF2;
-			_SENS -= SENS2;
-		}
-
-	} else {
-
-		/* pressure calculation, result in Pa */
-		int32_t P = (((raw * _SENS) >> 21) - _OFF) >> 15;
-		_P = P * 0.01f;
-		_T = _TEMP * 0.01f;
 
 
-		/* generate a new report */
-				/* convert to millibar */
+	/* pressure calculation, result in Pa */
+	int32_t P = pression;
 
-		/* altitude calculations based on http://www.kansasflyer.org/index.asp?nav=Avi&sec=Alti&tab=Theory&pg=1 */
+	_P = (float)bmp280_compensate_P_int32(pression)/10;
+	_T = (float)bmp280_compensate_T_int32(temperature)/100;
 
-		/*
-		 * PERFORMANCE HINT:
-		 *
-		 * The single precision calculation is 50 microseconds faster than the double
-		 * precision variant. It is however not obvious if double precision is required.
-		 * Pending more inspection and tests, we'll leave the double precision variant active.
-		 *
-		 * Measurements:
-		 * 	double precision: ms5611_read: 992 events, 258641us elapsed, min 202us max 305us
-		 *	single precision: ms5611_read: 963 events, 208066us elapsed, min 202us max 241us
-		 */
 
-		/* tropospheric properties (0-11km) for standard atmosphere */
-		const double T1 = 15.0 + 273.15;	/* temperature at base height in Kelvin */
-		const double a  = -6.5 / 1000;	/* temperature gradient in degrees per metre */
-		const double g  = 9.80665;	/* gravity constant in m/s/s */
-		const double R  = 287.05;	/* ideal gas constant in J/kg/K */
+	/* generate a new report */
+			/* convert to millibar */
 
-		/* current pressure at MSL in kPa */
-		double p1 = _msl_pressure / 1000.0;
+	/* altitude calculations based on http://www.kansasflyer.org/index.asp?nav=Avi&sec=Alti&tab=Theory&pg=1 */
 
-		/* measured pressure in kPa */
-		double p = P / 1000.0;
+	/*
+	 * PERFORMANCE HINT:
+	 *
+	 * The single precision calculation is 50 microseconds faster than the double
+	 * precision variant. It is however not obvious if double precision is required.
+	 * Pending more inspection and tests, we'll leave the double precision variant active.
+	 *
+	 * Measurements:
+	 * 	double precision: ms5611_read: 992 events, 258641us elapsed, min 202us max 305us
+	 *	single precision: ms5611_read: 963 events, 208066us elapsed, min 202us max 241us
+	 */
 
-		/*
-		 * Solve:
-		 *
-		 *     /        -(aR / g)     \
-		 *    | (p / p1)          . T1 | - T1
-		 *     \                      /
-		 * h = -------------------------------  + h1
-		 *                   a
-		 */
-		report.altitude = (((pow((p / p1), (-(a * R) / g))) * T1) - T1) / a;
-		_Alt = report.altitude;
+	/* tropospheric properties (0-11km) for standard atmosphere */
+	const double T1 = 15.0 + 273.15;	/* temperature at base height in Kelvin */
+	const double a  = -6.5 / 1000;	/* temperature gradient in degrees per metre */
+	const double g  = 9.80665;	/* gravity constant in m/s/s */
+	const double R  = 287.05;	/* ideal gas constant in J/kg/K */
 
+	/* current pressure at MSL in kPa */
+	double p1 = _msl_pressure / 1000.0;
+
+	/* measured pressure in kPa */
+	double p = P / 1000.0;
+
+	/*
+	 * Solve:
+	 *
+	 *     /        -(aR / g)     \
+	 *    | (p / p1)          . T1 | - T1
+	 *     \                      /
+	 * h = -------------------------------  + h1
+	 *                   a
+	 */
+	report.altitude = (((pow((p / p1), (-(a * R) / g))) * T1) - T1) / a;
+	_Alt = report.altitude;
+
+	/* publish it */
+	if (_baro_topic > 0 && !(_pub_blocked)) {
 		/* publish it */
-		if (_baro_topic > 0 && !(_pub_blocked)) {
-			/* publish it */
-			orb_publish(ORB_ID(sensor_baro), _baro_topic, &report);
-		}
-
-		if (_reports->force(&report)) {
-			perf_count(_buffer_overflows);
-		}
-
-		/* notify anyone waiting for data */
-		poll_notify(POLLIN);
+		orb_publish(ORB_ID(sensor_baro), _baro_topic, &report);
 	}
+
+	if (_reports->force(&report)) {
+		perf_count(_buffer_overflows);
+	}
+
+	/* notify anyone waiting for data */
+	poll_notify(POLLIN);
+
 
 	/* update the measurement state machine */
 	INCREMENT(_measure_phase, MS5611_MEASUREMENT_RATIO + 1);
@@ -779,14 +844,14 @@ MS5611::print_info()
 	printf("alt:            %.3f\n", _Alt);
 	printf("MSL pressure:   %10.4f\n", (double)(_msl_pressure / 100.f));
 
-	printf("factory_setup             %u\n", _prom.factory_setup);
+/*	printf("factory_setup             %u\n", _prom.factory_setup);
 	printf("c1_pressure_sens          %u\n", _prom.c1_pressure_sens);
 	printf("c2_pressure_offset        %u\n", _prom.c2_pressure_offset);
 	printf("c3_temp_coeff_pres_sens   %u\n", _prom.c3_temp_coeff_pres_sens);
 	printf("c4_temp_coeff_pres_offset %u\n", _prom.c4_temp_coeff_pres_offset);
 	printf("c5_reference_temp         %u\n", _prom.c5_reference_temp);
 	printf("c6_temp_coeff_temp        %u\n", _prom.c6_temp_coeff_temp);
-	printf("serial_and_crc            %u\n", _prom.serial_and_crc);
+	printf("serial_and_crc            %u\n", _prom.serial_and_crc);*/
 }
 
 /**
@@ -894,8 +959,8 @@ start(enum BusSensor bustype)
 	/* create the driver, try SPI first, fall back to I2C if unsuccessful */
 	if (MS5611_spi_interface != nullptr)
 		interface = MS5611_spi_interface(prom_buf, bustype);
-	if (interface == nullptr && (MS5611_i2c_interface != nullptr))
-		interface = MS5611_i2c_interface(prom_buf);
+	//if (interface == nullptr && (MS5611_i2c_interface != nullptr))
+		//interface = MS5611_i2c_interface(prom_buf);
 
 	if (interface == nullptr)
 		errx(1, "failed to allocate an interface");
