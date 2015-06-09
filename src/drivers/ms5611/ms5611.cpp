@@ -391,7 +391,7 @@ MS5611::read(struct file *filp, char *buffer, size_t buflen)
 			break;
 		}
 
-		/* state machine will have generatebmp280_compensate_T_doubled a report, copy it out */
+		/* state machine will have a report, copy it out */
 		if (_reports->get(brp))
 			ret = sizeof(*brp);
 
@@ -414,7 +414,7 @@ MS5611::ioctl(struct file *filp, int cmd, unsigned long arg)
 				_measure_ticks = 0;
 				return OK;
 
-				/* external signalling nobmp280_compensate_T_doublet supported */
+				/* external signalling not supported */
 			case SENSOR_POLLRATE_EXTERNAL:
 
 				/* zero would be bad */
@@ -731,7 +731,7 @@ int32_t pression;
 		return ret;
 	}
 temperature = raw ;
-	report.temperature = ((float)bmp280_compensate_T_int32(temperature))/ 100.0f;// raw temp *100
+	report.temperature = (float)bmp280_compensate_T_double(temperature);// raw temp *100
 
 	//report.temperature = raw;
 
@@ -743,7 +743,7 @@ temperature = raw ;
 	}
 
 pression = raw ;
-	report.pressure = ((float)bmp280_compensate_P_int32(pression))/100.0f ; //raw press *100
+	report.pressure = (float)bmp280_compensate_P_double(pression)/100.0f ; //raw press *100
 
 
 	// report the raw D1/D2 values to help diagnose problems with
