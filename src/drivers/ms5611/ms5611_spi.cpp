@@ -290,7 +290,7 @@ MS5611_SPI::_reset()
 	// alimante le composant
 	    uint8_t CTRL_MEAS[2] = {BMP280_CTRL_MEAS_REG & DIR_WRITE, 0x57};
 		ret = _transfer(&CTRL_MEAS[0], nullptr, 2);
-		uint8_t CONFIG_REG[2] = {BMP280_CONFIG_REG & DIR_WRITE, 0x1C};
+		uint8_t CONFIG_REG[2] = {BMP280_CONFIG_REG & DIR_WRITE, 0x0C};
 		ret = _transfer(&CONFIG_REG[0], nullptr, 2);
 
 	return  OK;
