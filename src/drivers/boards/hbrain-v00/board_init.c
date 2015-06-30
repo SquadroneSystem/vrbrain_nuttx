@@ -274,7 +274,7 @@ __EXPORT int nsh_archinitialize(void)
 	SPI_SELECT(spi1, GPIO_SPI_CS_EXP_MPU6000, false);
 	SPI_SELECT(spi1, GPIO_SPI_CS_EXP_FREE, false);
 	SPI_SELECT(spi1, GPIO_SPI_CS_EXP_HMC5983, false);
-	SPI_SELECT(spi1, GPIO_SPI_CS_MS5611, false);
+	SPI_SELECT(spi1, GPIO_SPI_CS_BMP280, false);
 	up_udelay(20);
 
 	message("[boot] Successfully initialized SPI port 1\r\n");
