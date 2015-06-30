@@ -70,7 +70,7 @@
 __EXPORT void weak_function stm32_spiinitialize(void)
 {
 	stm32_configgpio(GPIO_SPI_CS_DATAFLASH);
-	stm32_configgpio(GPIO_SPI_CS_MS5611);
+	stm32_configgpio(GPIO_SPI_CS_BMP280);
 	stm32_configgpio(GPIO_SPI_CS_MPU6000);
 	stm32_configgpio(GPIO_SPI_CS_SDCARD);
 	stm32_configgpio(GPIO_SPI_CS_EXP_MPU6000);
@@ -82,7 +82,7 @@ __EXPORT void weak_function stm32_spiinitialize(void)
 	 * state machines
 	 */
 	stm32_gpiowrite(GPIO_SPI_CS_DATAFLASH, 1);
-	stm32_gpiowrite(GPIO_SPI_CS_MS5611, 1);
+	stm32_gpiowrite(GPIO_SPI_CS_BMP280, 1);
 	stm32_gpiowrite(GPIO_SPI_CS_MPU6000, 1);
 	stm32_gpiowrite(GPIO_SPI_CS_SDCARD, 1);
 	stm32_gpiowrite(GPIO_SPI_CS_EXP_MPU6000, 1);
@@ -98,15 +98,15 @@ __EXPORT void stm32_spi1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, 
 	case SPIDEV_EXP_MPU6000:
 		/* Making sure the other peripherals are not selected */
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_MPU6000, !selected);
-		stm32_gpiowrite(GPIO_SPI_CS_MS5611, 1);
+		stm32_gpiowrite(GPIO_SPI_CS_BMP280, 1);
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_FREE, 1);
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_HMC5983, 1);
 		break;
 
-	case SPIDEV_MS5611:
+	case SPIDEV_BMP280:
 		/* Making sure the other peripherals are not selected */
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_MPU6000, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_MS5611, !selected);
+		stm32_gpiowrite(GPIO_SPI_CS_BMP280, !selected);
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_FREE, 1);
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_HMC5983, 1);
 		break;
@@ -114,7 +114,7 @@ __EXPORT void stm32_spi1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, 
 	case SPIDEV_EXP_HMC5983:
 		/* Making sure the other peripherals are not selected */
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_MPU6000, 1);
-		stm32_gpiowrite(GPIO_SPI_CS_MS5611, 1);
+		stm32_gpiowrite(GPIO_SPI_CS_BMP280, 1);
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_FREE, 1);
 		stm32_gpiowrite(GPIO_SPI_CS_EXP_HMC5983, !selected);
 		break;
