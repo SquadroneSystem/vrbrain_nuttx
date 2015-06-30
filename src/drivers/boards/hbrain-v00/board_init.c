@@ -212,6 +212,7 @@ __EXPORT int nsh_archinitialize(void)
 	stm32_configgpio(GPIO_ADC1_IN13);
 
 	stm32_configgpio(GPIO_UART_SBUS_INVERTER);
+	stm32_gpiowrite(SBUS_RX, 1);
 #ifdef CONFIG_RC_INPUTS_TYPE(RC_INPUT_SBUS)
 	stm32_gpiowrite(GPIO_UART_SBUS_INVERTER, 1);
 #else
