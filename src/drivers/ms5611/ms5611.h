@@ -58,21 +58,35 @@ namespace ms5611
  */
 #pragma pack(push,1)
 struct prom_s {
-	uint16_t factory_setup;
+	uint16_t dig_T1;
+	int16_t dig_T2;
+	int16_t dig_T3;
+	uint16_t dig_P1;
+	int16_t dig_P2;
+	int16_t dig_P3;
+	int16_t dig_P4;
+	int16_t dig_P5;
+	int16_t dig_P6;
+	int16_t dig_P7;
+	int16_t dig_P8;
+	int16_t dig_P9;
+
+
+	/*uint16_t factory_setup;
 	uint16_t c1_pressure_sens;
 	uint16_t c2_pressure_offset;
 	uint16_t c3_temp_coeff_pres_sens;
 	uint16_t c4_temp_coeff_pres_offset;
 	uint16_t c5_reference_temp;
 	uint16_t c6_temp_coeff_temp;
-	uint16_t serial_and_crc;
+	uint16_t serial_and_crc;*/
 };
 
 /**
  * Grody hack for crc4()
  */
 union prom_u {
-	uint16_t c[8];
+	uint16_t c[12];
 	prom_s s;
 };
 #pragma pack(pop)
