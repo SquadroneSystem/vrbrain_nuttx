@@ -206,7 +206,7 @@ protected:
 /*
  * Driver 'main' command.
  */
-extern "C" __EXPORT int ms5611_main(int argc, char *argv[]);
+extern "C" __EXPORT int bmp280_main(int argc, char *argv[]);
 
 BMP280::BMP280(device::Device *interface, const char *path, bmp280::prom_u &prom_buf) :
 	CDev("BMP280", path),
@@ -1332,7 +1332,7 @@ bmp280_usage()
 }
 
 int
-ms5611_main(int argc, char *argv[])
+bmp280_main(int argc, char *argv[])
 {
 	int ch;
 	enum BusSensor bustype = TYPE_BUS_SENSOR_NONE;
