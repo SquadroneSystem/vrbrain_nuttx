@@ -31,7 +31,7 @@ MODULES		+= drivers/mpu6000
 MODULES		+= drivers/hmc5883
 MODULES		+= drivers/hmc5983
 
-MODULES		+= drivers/ms5611
+MODULES		+= drivers/bmp280
 
 
 

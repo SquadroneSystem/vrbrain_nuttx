@@ -35,6 +35,6 @@
 # BMP280 driver
 #
 
-MODULE_COMMAND	= ms5611
+MODULE_COMMAND	= bmp280
 
 SRCS		= bmp280.cpp bmp280_spi.cpp
