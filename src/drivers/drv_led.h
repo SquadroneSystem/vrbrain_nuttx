@@ -95,7 +95,7 @@
 #define LED_GREEN		0
 #define LED_EXT1		3
 #define LED_EXT2		4
-#elif defined(CONFIG_ARCH_BOARD_HBRAIN_V00)
+#elif defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00_BMP280)
 #define LED_YELLOW		2
 #define LED_BLUE		2
 #define LED_AMBER		0
