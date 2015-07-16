@@ -106,7 +106,7 @@ private:
 	 * @param reg		The register to read.
 	 */
 	uint16_t	_reg16(unsigned reg);
-	int16_t	_reg16s(unsigned reg);
+	int16_t		_reg16s(unsigned reg);
 	/**
 	 * Wrapper around transfer() that prevents interrupt-context transfers
 	 * from pre-empting us. The sensor may (does) share a bus with sensors
@@ -198,7 +198,7 @@ BMP280_SPI::read(unsigned offset, void *data, unsigned count)
 	uint8_t	TEMPERATURE[4] = {BMP280_TEMPERATURE_MSB_REG | DIR_READ, 0x00, 0x00, 0x00};
 	uint8_t	PRESSURE[4] = {BMP280_PRESSURE_MSB_REG | DIR_READ, 0x00, 0x00, 0x00};
 
-	if(offset == 1)
+	if(offset == READ_TEMPERATURE)
 	{
 
 		ret = _transfer(&TEMPERATURE[0], &TEMPERATURE[0], sizeof(TEMPERATURE));
@@ -212,7 +212,7 @@ BMP280_SPI::read(unsigned offset, void *data, unsigned count)
 						ret = count;
 					}
 	}
-	else if (offset == 2)
+	else if (offset == READ_PRESSURE)
 	{
 
 		ret = _transfer(&PRESSURE[0], &PRESSURE[0], sizeof(PRESSURE));
@@ -257,10 +257,24 @@ BMP280_SPI::ioctl(unsigned operation, unsigned &arg)
 int
 BMP280_SPI::_reset()
 {
+	/* warning with config it2.24 max rate = 26 hz so we call a 100hz for nothing */
+	// try dynamic device to have 83hz
+
 	int ret ;
-	uint8_t CTRL_MEAS[2] = {BMP280_CTRL_MEAS_REG & DIR_WRITE, 0x57};
+	/* CTRL_MEAS_REG(0xF4): 		osrs_t 		| 		 osrs_p 	   | mode 			*/
+	/*				   bit:			7 6 5  		| 		 4 3 2         | 1 0  			*/
+	uint8_t ctrl_meas = 0 | OVERSAMPLING_2 << 5 | OVERSAMPLING_16 << 2 | NORMAL_MODE;//config it2.24
+	//try dynamic device uint8_t ctrl_meas = 0 | OVERSAMPLING_1 << 5 | OVERSAMPLING_4 << 2 | NORMAL_MODE;
+
+	uint8_t CTRL_MEAS[2] = {BMP280_CTRL_MEAS_REG & DIR_WRITE, ctrl_meas};
 	ret = _transfer(&CTRL_MEAS[0], nullptr, 2);
-	uint8_t CONFIG_REG[2] = {BMP280_CONFIG_REG & DIR_WRITE, 0x0C};
+
+	/* CTRL_MEAS_REG(0xF5):  		t_sb  		| 		filter   | X | SPI_3W_en */
+	/*				   bit:			7 6 5  		| 		4 3 2    | 1 |   0   	 */
+	uint8_t config_reg = 0 | T_STANDBY_05 << 5  |  FILTER_4 << 2 | SPI_4_WIRE_EN;//config it2.24
+	//try dynamic device uint8_t config_reg = 0 | T_STANDBY_05 << 5 |  FILTER_16 << 2 | SPI_4_WIRE_EN;
+
+	uint8_t CONFIG_REG[2] = {BMP280_CONFIG_REG & DIR_WRITE, config_reg};
 	ret = _transfer(&CONFIG_REG[0], nullptr, 2);
 	return  ret;
 }
