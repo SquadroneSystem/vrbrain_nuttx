@@ -183,7 +183,7 @@ BMP280_SPI::init()
 	}
 
 out:
-	return OK;
+	return ret;
 }
 
 int
@@ -262,7 +262,7 @@ BMP280_SPI::_reset()
 	ret = _transfer(&CTRL_MEAS[0], nullptr, 2);
 	uint8_t CONFIG_REG[2] = {BMP280_CONFIG_REG & DIR_WRITE, 0x0C};
 	ret = _transfer(&CONFIG_REG[0], nullptr, 2);
-	return  OK;
+	return  ret;
 }
 
 int
@@ -303,7 +303,7 @@ BMP280_SPI::_read_prom()
 	 * called immediately after reset.
 	 */
 	usleep(3000);
-
+	int ret;
 	/* read and convert PROM words */
     bool all_zero = true;
 	for (int i = 0; i < 12; i++) {
@@ -315,11 +315,19 @@ BMP280_SPI::_read_prom()
 		{
 			_prom.c[i] = _reg16s(cmd);
 		}
-		if (_prom.c[i] != 0)
+		if (_prom.c[i] != 0xFFFF)
 		all_zero = false;
 	}
-
-	return OK;
+    if (all_zero)
+    {
+		debug("prom all zero");
+		ret = -EIO;
+    }
+    else
+    {
+    	ret = OK;
+    }
+    return ret;
 }
 
 uint16_t

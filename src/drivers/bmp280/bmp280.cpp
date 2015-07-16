@@ -764,15 +764,19 @@ BMP280::print_info()
 	printf("T:              %.3f\n", _T);
 	printf("alt:            %.3f\n", _Alt);
 	printf("MSL pressure:   %10.4f\n", (double)(_msl_pressure / 100.f));
+	printf("dig_T1             %u\n", _prom.dig_T1);
+	printf("dig_T2             %i\n", _prom.dig_T2);
+	printf("dig_T3             %i\n", _prom.dig_T3);
+	printf("dig_P1             %u\n", _prom.dig_P1);
+	printf("dig_P2             %i\n", _prom.dig_P2);
+	printf("dig_P3             %i\n", _prom.dig_P3);
+	printf("dig_P4             %i\n", _prom.dig_P4);
+	printf("dig_P5             %i\n", _prom.dig_P5);
+	printf("dig_P6             %i\n", _prom.dig_P6);
+	printf("dig_P7             %i\n", _prom.dig_P7);
+	printf("dig_P8             %i\n", _prom.dig_P8);
+	printf("dig_P9             %i\n", _prom.dig_P9);
 
-/*	printf("factory_setup             %u\n", _prom.factory_setup);
-	printf("c1_pressure_sens          %u\n", _prom.c1_pressure_sens);
-	printf("c2_pressure_offset        %u\n", _prom.c2_pressure_offset);
-	printf("c3_temp_coeff_pres_sens   %u\n", _prom.c3_temp_coeff_pres_sens);
-	printf("c4_temp_coeff_pres_offset %u\n", _prom.c4_temp_coeff_pres_offset);
-	printf("c5_reference_temp         %u\n", _prom.c5_reference_temp);
-	printf("c6_temp_coeff_temp        %u\n", _prom.c6_temp_coeff_temp);
-	printf("serial_and_crc            %u\n", _prom.serial_and_crc);*/
 }
 
 /**
