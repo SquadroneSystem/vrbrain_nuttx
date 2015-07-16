@@ -698,7 +698,7 @@ int test_led(int argc, char *argv[])
 	ioctl(fd, LED_OFF, LED_EXT1);
 	ioctl(fd, LED_OFF, LED_EXT2);
 
-#elif defined(CONFIG_ARCH_BOARD_HBRAIN_V00)
+#elif defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00_BMP280)
 
 	if (ioctl(fd, LED_ON, LED_RED) ||
 	    ioctl(fd, LED_ON, LED_BLUE) ||
