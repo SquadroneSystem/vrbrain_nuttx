@@ -57,24 +57,10 @@
 
 
 
-#define BMP280_CHIP_ID_REG                   (0xD0)  /*Chip ID Register */
-#define BMP280_RST_REG                       (0xE0) /*Softreset Register */
-#define BMP280_STAT_REG                      (0xF3)  /*Status Register */
-#define BMP280_CTRL_MEAS_REG                 (0xF4)  /*Ctrl Measure Register */
-#define BMP280_CONFIG_REG                    (0xF5)  /*Configuration Register */
-#define BMP280_PRESSURE_MSB_REG              (0xF7)  /*Pressure MSB Register */
-#define BMP280_PRESSURE_LSB_REG              (0xF8)  /*Pressure LSB Register */
-#define BMP280_PRESSURE_XLSB_REG             (0xF9)  /*Pressure XLSB Register */
-#define BMP280_TEMPERATURE_MSB_REG           (0xFA)  /*Temperature MSB Reg */
-#define BMP280_TEMPERATURE_LSB_REG           (0xFB)  /*Temperature LSB Reg */
-#define BMP280_TEMPERATURE_XLSB_REG          (0xFC)  /*Temperature XLSB Reg */
-#define BMP280_ADDR_PROM_SETUP				 (0x88)  /*adresse prom param*/
-
-
 /* SPI protocol address bits */
 #define DIR_READ			(1<<7)
 #define DIR_WRITE			(0x7F)
-#define ADDR_INCREMENT			(1<<6)
+#define ADDR_INCREMENT		(1<<6)
 
 #if defined(SPIDEV_BMP280) || defined(SPIDEV_EXP_BMP280) || defined(SPIDEV_IMU_BMP280)
 
@@ -240,12 +226,6 @@ BMP280_SPI::read(unsigned offset, void *data, unsigned count)
 						ret = count;
 					}
 	}
-
-
-	//eteind l'alimentation
-//	uint8_t cmd[2] = {BMP280_CTRL_MEAS_REG | DIR_WRITE, 0xFC};
-//	ret = _transfer(&cmd[0], nullptr, 2);
-
 	return ret;
 }
 
@@ -278,35 +258,12 @@ int
 BMP280_SPI::_reset()
 {
 	int ret ;
-
-/*	uint8_t cmd1 = ADDR_RESET_CMD | DIR_WRITE;
-	ret = _transfer(&cmd1, nullptr, 1);*/
-	//reset
-	//uint8_t RST_REG[2] = {BMP280_RST_REG & DIR_WRITE, 0xB6};
-	//ret = _transfer(&RST_REG[0], nullptr, 2);
-	//config
-
-
-	// alimante le composant
-	    uint8_t CTRL_MEAS[2] = {BMP280_CTRL_MEAS_REG & DIR_WRITE, 0x57};
-		ret = _transfer(&CTRL_MEAS[0], nullptr, 2);
-		uint8_t CONFIG_REG[2] = {BMP280_CONFIG_REG & DIR_WRITE, 0x0C};
-		ret = _transfer(&CONFIG_REG[0], nullptr, 2);
-
+	uint8_t CTRL_MEAS[2] = {BMP280_CTRL_MEAS_REG & DIR_WRITE, 0x57};
+	ret = _transfer(&CTRL_MEAS[0], nullptr, 2);
+	uint8_t CONFIG_REG[2] = {BMP280_CONFIG_REG & DIR_WRITE, 0x0C};
+	ret = _transfer(&CONFIG_REG[0], nullptr, 2);
 	return  OK;
 }
-
-/*int
-BMP280_SPI::_measure(unsigned addr)
-{
-
-int ret;
-
-
-
-	return ret;
-
-}*/
 
 int
 BMP280_SPI::_checkConfig(unsigned addr)
@@ -348,7 +305,7 @@ BMP280_SPI::_read_prom()
 	usleep(3000);
 
 	/* read and convert PROM words */
-        bool all_zero = true;
+    bool all_zero = true;
 	for (int i = 0; i < 12; i++) {
 		uint8_t cmd = (BMP280_ADDR_PROM_SETUP + (i * 2));
 
@@ -356,23 +313,13 @@ BMP280_SPI::_read_prom()
 		else if (i == 3 ) _prom.c[i] = _reg16(cmd);
 		else
 		{
-		_prom.c[i] = _reg16s(cmd);
+			_prom.c[i] = _reg16s(cmd);
 		}
-                if (_prom.c[i] != 0)
-			all_zero = false;
-                //debug("prom[%u]=0x%x", (unsigned)i, (unsigned)_prom.c[i]);
+		if (_prom.c[i] != 0)
+		all_zero = false;
 	}
 
-	/* calculate CRC and return success/failure accordingly */
-	/*int ret = bmp280::crc4(&_prom.c[0]) ? OK : -EIO;
-        if (ret != OK) {
-		debug("crc failed");
-        }
-        if (all_zero) {
-		debug("prom all zero");
-		ret = -EIO;
-        }*/
-        return OK;
+	return OK;
 }
 
 uint16_t

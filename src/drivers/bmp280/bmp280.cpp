@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /**
- * @file ms5611.cpp
+ * @file bmp280.cpp
  * Driver for the BMP280 barometric pressure sensor connected via I2C or SPI.
  */
 
@@ -195,8 +195,6 @@ protected:
 	double bmp280_compensate_T_double(int32_t adc_T);
 	double bmp280_compensate_P_double(int32_t adc_P);
 
-	int32_t bmp280_compensate_T_int32(int32_t adc_T);
-	uint32_t bmp280_compensate_P_int32(int32_t adc_T);
 	/**
 	 * Collect the result of the most recent measurement.
 	 */
@@ -298,19 +296,6 @@ BMP280::init()
 			break;
 		}
 
-		/* now do a pressure measurement */
-		if (OK != measure()) {
-			ret = -EIO;
-			break;
-		}
-
-		usleep(BMP280_CONVERSION_INTERVAL);
-
-		if (OK != collect()) {
-			ret = -EIO;
-			break;
-		}
-
 		/* state machine will have generated a report, copy it out */
 		_reports->get(&brp);
 
@@ -366,19 +351,6 @@ BMP280::read(struct file *filp, char *buffer, size_t buflen)
 		_reports->flush();
 
 		/* do temperature first */
-		if (OK != measure()) {
-			ret = -EIO;
-			break;
-		}
-
-		usleep(BMP280_CONVERSION_INTERVAL);
-
-		if (OK != collect()) {
-			ret = -EIO;
-			break;
-		}
-
-		/* now do a pressure measurement */
 		if (OK != measure()) {
 			ret = -EIO;
 			break;
@@ -552,7 +524,7 @@ BMP280::cycle()
 		if (ret != OK) {
 			if (ret == -6) {
 				/*
-				 * The ms5611 seems to regularly fail to respond to
+				 * The bmp280 seems to regularly fail to respond to
 				 * its address; this happens often enough that we'd rather not
 				 * spam the console with a message for this.
 				 */
@@ -616,8 +588,8 @@ BMP280::measure()
 	/*
 	 * In phase zero, request temperature; in other phases, request pressure.
 	 */
-	unsigned addr = (_measure_phase == 0) ? ADDR_CMD_CONVERT_D2 : ADDR_CMD_CONVERT_D1;
-
+	//unsigned addr = (_measure_phase == 0) ? ADDR_CMD_CONVERT_D2 : ADDR_CMD_CONVERT_D1;
+	unsigned addr = BMP280_CTRL_MEAS_REG;
 	/*
 	 * Send the command to begin measuring.
 	 */
@@ -633,46 +605,6 @@ BMP280::measure()
 int32_t t_fine;
 
 
-int32_t BMP280::bmp280_compensate_T_int32(int32_t adc_T)
-{
-int32_t var1, var2, T;
-var1 = ((((adc_T>>3) - ((int32_t)_prom.dig_T1<<1))) * ((int32_t)_prom.dig_T2)) >> 11;
-var2 = (((((adc_T>>4) - ((int32_t)_prom.dig_T1)) * ((adc_T>>4) - ((int32_t)_prom.dig_T1))) >> 12) *
-((int32_t)_prom.dig_T3)) >> 14;
-t_fine = var1 + var2;
-T = (t_fine * 5 + 128) >> 8;
-return T;
-}
-
-// Returns pressure in Pa as unsigned 32 bit integer. Output value of “96386” equals 96386 Pa = 963.86 hPa
-uint32_t BMP280::bmp280_compensate_P_int32(int32_t adc_P)
-{
-int32_t var1, var2;
-uint32_t p;
-var1 = (((int32_t)t_fine)>>1) - (int32_t)64000;
-var2 = (((var1>>2) * (var1>>2)) >> 11 ) * ((int32_t)_prom.dig_P6);
-var2 = var2 + ((var1*((int32_t)_prom.dig_P5))<<1);
-var2 = (var2>>2)+(((int32_t)_prom.dig_P4)<<16);
-var1 = (((_prom.dig_P3 * (((var1>>2) * (var1>>2)) >> 13 )) >> 3) + ((((int32_t)_prom.dig_P2) * var1)>>1))>>18;
-var1 =((((32768+var1))*((int32_t)_prom.dig_P1))>>15);
-if (var1 == 0)
-{
-return 0; // avoid exception caused by division by zero
-}
-p = (((uint32_t)(((int32_t)1048576)-adc_P)-(var2>>12)))*3125;
-if (p < 0x80000000)
-{
-p = (p << 1) / ((uint32_t)var1);
-}
-else
-{
-p = (p / (uint32_t)var1) * 2;
-}
-var1 = (((int32_t)_prom.dig_P9) * ((int32_t)(((p>>3) * (p>>3))>>13)))>>12;
-var2 = (((int32_t)(p>>2)) * ((int32_t)_prom.dig_P8))>>13;
-p = (uint32_t)((int32_t)p + ((var1 + var2 + _prom.dig_P7) >> 4));
-return p;
-}
 
 
 double BMP280::bmp280_compensate_T_double(int32_t adc_T)
@@ -713,8 +645,8 @@ BMP280::collect()
 {
 	int ret;
 	uint32_t raw;
-int32_t temperature;
-int32_t pression;
+	int32_t temperature;
+	int32_t pression;
 
 	perf_begin(_sample_perf);
 
@@ -730,7 +662,7 @@ int32_t pression;
 		perf_end(_sample_perf);
 		return ret;
 	}
-temperature = raw ;
+	temperature = raw ;
 	report.temperature = (float)bmp280_compensate_T_double(temperature);// raw temp *100
 
 	//report.temperature = raw;
@@ -742,31 +674,20 @@ temperature = raw ;
 		return ret;
 	}
 
-pression = raw ;
+	pression = raw ;
 	report.pressure = (float)bmp280_compensate_P_double(pression)/100.0f ; //raw press *100
 
 
 	// report the raw D1/D2 values to help diagnose problems with
 	// transfers at higher temperatures
 
-
-	report.ms5611_D1 = pression;
-	report.ms5611_D2 = temperature;
-      //  report.temperature = raw;
-       // report.pressure = raw;
-
 	/* handle a measurement */
-
 
 	/* pressure calculation, result in Pa */
 	int32_t P = pression;
 
-	_P = (float)bmp280_compensate_P_int32(pression)/10;
-	_T = (float)bmp280_compensate_T_int32(temperature)/100;
-
-
-	/* generate a new report */
-			/* convert to millibar */
+	_P = (float)bmp280_compensate_P_double(pression)/10;
+	_T = (float)bmp280_compensate_T_double(temperature)/100;
 
 	/* altitude calculations based on http://www.kansasflyer.org/index.asp?nav=Avi&sec=Alti&tab=Theory&pg=1 */
 
@@ -778,8 +699,8 @@ pression = raw ;
 	 * Pending more inspection and tests, we'll leave the double precision variant active.
 	 *
 	 * Measurements:
-	 * 	double precision: ms5611_read: 992 events, 258641us elapsed, min 202us max 305us
-	 *	single precision: ms5611_read: 963 events, 208066us elapsed, min 202us max 241us
+	 * 	double precision: bmp280_read: 992 events, 258641us elapsed, min 202us max 305us
+	 *	single precision: bmp280_read: 963 events, 208066us elapsed, min 202us max 241us
 	 */
 
 	/* tropospheric properties (0-11km) for standard atmosphere */
@@ -865,57 +786,9 @@ BMP280	*g_dev_exp;
 BMP280	*g_dev_imu;
 
 void	start(enum BusSensor bustype);
-void	test(enum BusSensor bustype);
-void	test2(enum BusSensor bustype);
 void	reset(enum BusSensor bustype);
 void	info(enum BusSensor bustype);
 void	calibrate(enum BusSensor bustype, unsigned altitude);
-
-/**
- * BMP280 crc4 cribbed from the datasheet
- */
-bool
-crc4(uint16_t *n_prom)
-{
-	int16_t cnt;
-	uint16_t n_rem;
-	uint16_t crc_read;
-	uint8_t n_bit;
-
-	n_rem = 0x00;
-
-	/* save the read crc */
-	crc_read = n_prom[7];
-
-	/* remove CRC byte */
-	n_prom[7] = (0xFF00 & (n_prom[7]));
-
-	for (cnt = 0; cnt < 16; cnt++) {
-		/* uneven bytes */
-		if (cnt & 1) {
-			n_rem ^= (uint8_t)((n_prom[cnt >> 1]) & 0x00FF);
-
-		} else {
-			n_rem ^= (uint8_t)(n_prom[cnt >> 1] >> 8);
-		}
-
-		for (n_bit = 8; n_bit > 0; n_bit--) {
-			if (n_rem & 0x8000) {
-				n_rem = (n_rem << 1) ^ 0x3000;
-
-			} else {
-				n_rem = (n_rem << 1);
-			}
-		}
-	}
-
-	/* final 4 bit remainder is CRC value */
-	n_rem = (0x000F & (n_rem >> 12));
-	n_prom[7] = crc_read;
-
-	/* return true if CRCs match */
-	return (0x000F & crc_read) == (n_rem ^ 0x00);
-}
 
 
 /**
@@ -959,8 +832,6 @@ start(enum BusSensor bustype)
 	/* create the driver, try SPI first, fall back to I2C if unsuccessful */
 	if (BMP280_spi_interface != nullptr)
 		interface = BMP280_spi_interface(prom_buf, bustype);
-	//if (interface == nullptr && (BMP280_i2c_interface != nullptr))
-		//interface = BMP280_i2c_interface(prom_buf);
 
 	if (interface == nullptr)
 		errx(1, "failed to allocate an interface");
@@ -1001,166 +872,6 @@ fail:
 	}
 
 	errx(1, "driver start failed");
-}
-
-/**
- * Perform some basic functional tests on the driver;
- * make sure we can collect data from the sensor in polled
- * and automatic modes.
- */
-void
-test(enum BusSensor bustype)
-{
-	struct baro_report report;
-	ssize_t sz;
-	int ret;
-	const char *path;
-
-	switch (bustype) {
-	case TYPE_BUS_SENSOR_INTERNAL:
-#ifdef SPI_BUS_BMP280
-		path = BMP280_BARO_DEVICE_PATH_INT;
-#endif
-		break;
-	case TYPE_BUS_SENSOR_IMU:
-#ifdef SPI_BUS_IMU_BMP280
-		path = BMP280_BARO_DEVICE_PATH_IMU;
-#endif
-		break;
-	case TYPE_BUS_SENSOR_EXTERNAL:
-#ifdef SPI_BUS_EXP_BMP280
-		path = BMP280_BARO_DEVICE_PATH_EXP;
-#endif
-		break;
-	}
-
-	int fd = open(path, O_RDONLY);
-
-	if (fd < 0)
-		err(1, "%s open failed (try 'ms5611 start' if the driver is not running)", path);
-
-	/* do a simple demand read */
-	sz = read(fd, &report, sizeof(report));
-
-	if (sz != sizeof(report))
-		err(1, "immediate read failed");
-
-	warnx("single read");
-	warnx("pressure:    %10.4f", (double)report.pressure);
-	warnx("altitude:    %11.4f", (double)report.altitude);
-	warnx("temperature: %8.4f", (double)report.temperature);
-	warnx("time:        %lld", report.timestamp);
-
-	/* set the queue depth to 10 */
-	if (OK != ioctl(fd, SENSORIOCSQUEUEDEPTH, 10))
-		errx(1, "failed to set queue depth");
-
-	/* start the sensor polling at 2Hz */
-	if (OK != ioctl(fd, SENSORIOCSPOLLRATE, 2))
-		errx(1, "failed to set 2Hz poll rate");
-
-	/* read the sensor 5x and report each value */
-	for (unsigned i = 0; i < 5; i++) {
-		struct pollfd fds;
-
-		/* wait for data to be ready */
-		fds.fd = fd;
-		fds.events = POLLIN;
-		ret = poll(&fds, 1, 2000);
-
-		if (ret != 1)
-			errx(1, "timed out waiting for sensor data");
-
-		/* now go get it */
-		sz = read(fd, &report, sizeof(report));
-
-		if (sz != sizeof(report))
-			err(1, "periodic read failed");
-
-		warnx("periodic read %u", i);
-		warnx("pressure:    %10.4f", (double)report.pressure);
-		warnx("altitude:    %11.4f", (double)report.altitude);
-		warnx("temperature: %8.4f", (double)report.temperature);
-		warnx("time:        %lld", report.timestamp);
-	}
-
-	errx(0, "PASS");
-}
-
-/**
- * Perform some basic functional tests on the driver;
- * make sure we can collect data from the sensor in polled
- * and automatic modes.
- */
-void
-test2(enum BusSensor bustype)
-{
-	struct baro_report report;
-	ssize_t sz;
-	int ret;
-
-	int fd = open(BARO_DEVICE_PATH, O_RDONLY);
-
-	if (fd < 0)
-		err(1, "%s open failed (try 'ms5611 start' if the driver is not running)", BARO_DEVICE_PATH);
-
-	/* set the queue depth to 20 */
-	if (OK != ioctl(fd, SENSORIOCSQUEUEDEPTH, 20))
-		errx(1, "failed to set queue depth");
-
-	/* start the sensor polling at max speed */
-	if (OK != ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_MAX))
-		errx(1, "failed to set 2Hz poll rate");
-
-        hrt_abstime last_report = hrt_absolute_time();
-        uint32_t last_D1=0, last_D2=0;
-
-	/* read the sensor for 5 mins, reporting large D1 jumps and data at 1Hz */
-        while (true) {
-		struct pollfd fds;
-
-		/* wait for data to be ready */
-		fds.fd = fd;
-		fds.events = POLLIN;
-		ret = poll(&fds, 1, 2000);
-
-		if (ret != 1)
-			errx(1, "timed out waiting for sensor data");
-
-		/* now go get it */
-		sz = read(fd, &report, sizeof(report));
-
-		if (sz != sizeof(report))
-			err(1, "periodic read failed");
-
-                int32_t d1_diff = abs((int32_t)last_D1 - (int32_t)report.ms5611_D1);
-                if (last_D1 != 0 && d1_diff >= 0x10000) {
-                    printf("jump D1=0x%08x/0x%08x D2=0x%08x/0x%08x\n", 
-                           (unsigned)last_D1, (unsigned)report.ms5611_D1,
-                           (unsigned)last_D2, (unsigned)report.ms5611_D2);
-                }
-
-                if (hrt_elapsed_time(&last_report) >= 1000*1000) {
-                    printf("temp %u press %u D1=0x%08x D2=0x%08x alt=%u\n", 
-                           (unsigned)(report.temperature*100.0),
-                           (unsigned)(report.pressure*1000.0),
-                           (unsigned)report.ms5611_D1,
-                           (unsigned)report.ms5611_D2,
-                           (unsigned)report.altitude);
-                    last_report = hrt_absolute_time();
-                }
-                last_D1 = report.ms5611_D1;
-                last_D2 = report.ms5611_D2;
-
-		fds.fd = 0;
-		fds.events = POLLIN;
-		if (poll(&fds, 1, 0) == 1) {
-                    // user input
-                    break;
-                }                
-	}
-
-	errx(0, "PASS");
 }
 
 /**
@@ -1264,7 +975,7 @@ calibrate(enum BusSensor bustype, unsigned altitude)
 	int fd = open(path, O_RDONLY);
 
 	if (fd < 0)
-		err(1, "%s open failed (try 'ms5611 start' if the driver is not running)", path);
+		err(1, "%s open failed (try 'bmp280 start' if the driver is not running)", path);
 
 	/* start the sensor polling at max */
 	if (OK != ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_MAX))
@@ -1324,7 +1035,7 @@ calibrate(enum BusSensor bustype, unsigned altitude)
 void
 bmp280_usage()
 {
-	warnx("missing command: try 'start', 'info', 'test', 'test2', 'reset', 'calibrate'");
+	warnx("missing command: try 'start', 'info', 'reset', 'calibrate'");
 	warnx("options:");
 	warnx("    -X only external bus");
 	warnx("    -U only external IMU");
@@ -1363,17 +1074,6 @@ bmp280_main(int argc, char *argv[])
 	if (!strcmp(verb, "start"))
 		bmp280::start(bustype);
 
-	/*
-	 * Test the driver/device.
-	 */
-	if (!strcmp(verb, "test"))
-		bmp280::test(bustype);
-
-	/*
-	 * Test the driver/device for 300 seconds
-	 */
-	if (!strcmp(verb, "test2"))
-		bmp280::test2(bustype);
 
 	/*
 	 * Reset the driver.
@@ -1399,5 +1099,5 @@ bmp280_main(int argc, char *argv[])
 		bmp280::calibrate(bustype, altitude);
 	}
 
-	errx(1, "unrecognised command, try 'start', 'test', 'reset' or 'info'");
+	errx(1, "unrecognised command, try 'start', 'reset' or 'info'");
 }
