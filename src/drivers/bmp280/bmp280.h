@@ -32,22 +32,28 @@
  ****************************************************************************/
 
 /**
- * @file ms5611.h
+ * @file bmp280.h
  *
- * Shared defines for the ms5611 driver.
+ * Shared defines for the bmp280 driver.
  */
 
 #include <board_config.h>
 
-#define ADDR_RESET_CMD			0x1E	/* write to this address to reset chip */
-#define ADDR_CMD_CONVERT_D1		0x48	/* write to this address to start temperature conversion */
-#define ADDR_CMD_CONVERT_D2		0x58	/* write to this address to start pressure conversion */
-#define ADDR_DATA			0x00	/* address of 3 bytes / 32bit pressure data */
-#define ADDR_PROM_SETUP			0xA0	/* address of 8x 2 bytes factory and calibration data */
-#define ADDR_PROM_C1			0xA2	/* address of 6x 2 bytes calibration data */
+#define BMP280_CHIP_ID_REG                   (0xD0)  /*Chip ID Register */
+#define BMP280_RST_REG                       (0xE0) /*Softreset Register */
+#define BMP280_STAT_REG                      (0xF3)  /*Status Register */
+#define BMP280_CTRL_MEAS_REG                 (0xF4)  /*Ctrl Measure Register */
+#define BMP280_CONFIG_REG                    (0xF5)  /*Configuration Register */
+#define BMP280_PRESSURE_MSB_REG              (0xF7)  /*Pressure MSB Register */
+#define BMP280_PRESSURE_LSB_REG              (0xF8)  /*Pressure LSB Register */
+#define BMP280_PRESSURE_XLSB_REG             (0xF9)  /*Pressure XLSB Register */
+#define BMP280_TEMPERATURE_MSB_REG           (0xFA)  /*Temperature MSB Reg */
+#define BMP280_TEMPERATURE_LSB_REG           (0xFB)  /*Temperature LSB Reg */
+#define BMP280_TEMPERATURE_XLSB_REG          (0xFC)  /*Temperature XLSB Reg */
+#define BMP280_ADDR_PROM_SETUP				 (0x88)  /*adresse prom param*/
 
 /* interface ioctls */
-#define IOCTL_RESET			2
+#define IOCTL_RESET				2
 #define IOCTL_MEASURE			3
 
 namespace bmp280
@@ -91,7 +97,6 @@ union prom_u {
 };
 #pragma pack(pop)
 
-extern bool crc4(uint16_t *n_prom);
 
 } /* namespace */
 
