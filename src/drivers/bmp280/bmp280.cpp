@@ -190,7 +190,7 @@ protected:
 	 *
 	 * @return		OK if the measurement command was successful.
 	 */
-	virtual int		measure();
+	virtual int		checkconfig();
 
 	double bmp280_compensate_T_double(int32_t adc_T);
 	double bmp280_compensate_P_double(int32_t adc_P);
@@ -284,7 +284,7 @@ BMP280::init()
 	/* this do..while is goto without goto */
 	do {
 		/* do temperature first */
-		if (OK != measure()) {
+		if (OK != checkconfig()) {
 			ret = -EIO;
 			break;
 		}
@@ -351,7 +351,7 @@ BMP280::read(struct file *filp, char *buffer, size_t buflen)
 		_reports->flush();
 
 		/* do temperature first */
-		if (OK != measure()) {
+		if (OK != checkconfig()) {
 			ret = -EIO;
 			break;
 		}
@@ -559,7 +559,7 @@ BMP280::cycle()
 	}
 
 	/* measurement phase */
-	ret = measure();
+	ret = checkconfig();
 	if (ret != OK) {
 		//log("measure error %d", ret);
 		/* reset the collection state machine and try again */
@@ -579,7 +579,7 @@ BMP280::cycle()
 }
 
 int
-BMP280::measure()
+BMP280::checkconfig()
 {
 	int ret;
 
@@ -656,7 +656,7 @@ BMP280::collect()
         report.error_count = perf_event_count(_comms_errors);
 
 	/* read the most recent measurement - read offset/size are hardcoded in the interface */
-	ret = _interface->read(1, (void *)&raw, 0);
+	ret = _interface->read(READ_TEMPERATURE, (void *)&raw, 0);
 	if (ret < 0) {
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
@@ -665,9 +665,7 @@ BMP280::collect()
 	temperature = raw ;
 	report.temperature = (float)bmp280_compensate_T_double(temperature);// raw temp *100
 
-	//report.temperature = raw;
-
-	ret = _interface->read(2, (void *)&raw, 0);
+	ret = _interface->read(READ_PRESSURE, (void *)&raw, 0);
 	if (ret < 0) {
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
@@ -676,10 +674,6 @@ BMP280::collect()
 
 	pression = raw ;
 	report.pressure = (float)bmp280_compensate_P_double(pression)/100.0f ; //raw press *100
-
-
-	// report the raw D1/D2 values to help diagnose problems with
-	// transfers at higher temperatures
 
 	/* handle a measurement */
 

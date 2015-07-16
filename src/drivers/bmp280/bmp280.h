@@ -52,6 +52,37 @@
 #define BMP280_TEMPERATURE_XLSB_REG          (0xFC)  /*Temperature XLSB Reg */
 #define BMP280_ADDR_PROM_SETUP				 (0x88)  /*adresse prom param*/
 
+#define OVERSAMPLING_1  1
+#define OVERSAMPLING_2  2
+#define OVERSAMPLING_4  3
+#define OVERSAMPLING_8  4
+#define OVERSAMPLING_16 5
+
+#define FILTER_1  1
+#define FILTER_2  2
+#define FILTER_4  3
+#define FILTER_8  4
+#define FILTER_16 5
+
+#define SPI_4_WIRE_EN 0
+#define SPI_3_WIRE_EN 1
+
+#define SLEEP_MODE  0
+#define FORCED_MODE 1
+#define NORMAL_MODE 3
+
+#define T_STANDBY_05  0
+#define T_STANDBY_625 1
+#define T_STANDBY_125  2
+#define T_STANDBY_250  3
+#define T_STANDBY_500  4
+#define T_STANDBY_1000 5
+#define T_STANDBY_2000 6
+#define T_STANDBY_4000 7
+
+#define READ_TEMPERATURE 1
+#define READ_PRESSURE 2
+
 /* interface ioctls */
 #define IOCTL_RESET				2
 #define IOCTL_MEASURE			3
