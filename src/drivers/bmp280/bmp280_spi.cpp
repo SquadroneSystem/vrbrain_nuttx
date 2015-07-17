@@ -101,6 +101,14 @@ private:
 	int		_read_prom();
 
 	/**
+	 * Read the BMP280 PROM twice
+	 *
+	 * @return		OK if the PROM reads successfully.
+	 */
+	int		_second_read_prom();
+
+
+	/**
 	 * Read a 16-bit register value.
 	 *
 	 * @param reg		The register to read.
@@ -177,6 +185,13 @@ BMP280_SPI::init()
 
 	/* read PROM */
 	ret = _read_prom();
+	if (ret != OK) {
+		debug("prom readout failed");
+		goto out;
+	}
+
+	/* check PROM */
+	ret = _second_read_prom();
 	if (ret != OK) {
 		debug("prom readout failed");
 		goto out;
@@ -319,7 +334,7 @@ BMP280_SPI::_read_prom()
 	usleep(3000);
 	int ret;
 	/* read and convert PROM words */
-    bool all_zero = true;
+    bool one_zero = false;
 	for (int i = 0; i < 12; i++) {
 		uint8_t cmd = (BMP280_ADDR_PROM_SETUP + (i * 2));
 
@@ -329,12 +344,57 @@ BMP280_SPI::_read_prom()
 		{
 			_prom.c[i] = _reg16s(cmd);
 		}
-		if (_prom.c[i] != 0xFFFF)
-		all_zero = false;
+		if (_prom.c[i] == 0xFFFF)
+		one_zero = true;
 	}
-    if (all_zero)
+    if (one_zero)
     {
-		debug("prom all zero");
+		debug("prom one zero");
+		ret = -EIO;
+    }
+    else
+    {
+    	ret = OK;
+    }
+    return ret;
+}
+
+int
+BMP280_SPI::_second_read_prom()
+{
+	/*
+	 * Wait for PROM contents to be in the device (2.8 ms) in the case we are
+	 * called immediately after reset.
+	 */
+	usleep(3000);
+//	uint8_t buffer[24];
+	uint16_t reponse;
+	int ret;
+	/* read and convert PROM words */
+    bool one_disparity = false;
+	for (int i = 0; i < 12; i++) {
+		uint8_t cmd = (BMP280_ADDR_PROM_SETUP + (i * 2));
+
+		if (i == 0)
+		{
+			reponse = _reg16(cmd);
+			if (_prom.c[0] != reponse) one_disparity = true;
+		}
+		else if (i == 3)
+		{
+			reponse = _reg16(cmd);
+			if (_prom.c[3] != reponse) one_disparity = true;
+		}
+		else
+		{
+			reponse = _reg16s(cmd);
+			if (_prom.c[i] != reponse) one_disparity = true;
+		}
+
+	}
+    if (one_disparity)
+    {
+		debug("prom one disparity");
 		ret = -EIO;
     }
     else
