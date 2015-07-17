@@ -89,7 +89,7 @@ __BEGIN_DECLS
 #define RC_INPUT_DSM 		8
 
 #ifndef CONFIG_RC_INPUTS
- #define CONFIG_RC_INPUTS  RC_INPUT_PPMSUM + RC_INPUT_SBUS
+ #define CONFIG_RC_INPUTS  RC_INPUT_PPMSUM
 #endif
 
 #ifdef CONFIG_RC_INPUTS
@@ -110,6 +110,9 @@ __BEGIN_DECLS
 #endif
 
 /* VRBRAIN GPIOs ***********************************************************************************/
+
+/* SBUS RX */
+#define SBUS_RX         (GPIO_INPUT|GPIO_PULLDOWN|GPIO_SPEED_50MHz|GPIO_PORTC|GPIO_PIN7)
 
 /* BOARD LEDs */
 #define GPIO_LED1       (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_CLEAR|GPIO_PORTC|GPIO_PIN5)
