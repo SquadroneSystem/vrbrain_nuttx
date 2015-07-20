@@ -254,7 +254,7 @@ BMP280_SPI::ioctl(unsigned operation, unsigned &arg)
 		ret = _reset();
 		break;
 
-	case IOCTL_MEASURE:
+	case IOCTL_CHECKCONFIG:
 		ret = _checkConfig(arg);
 		break;
 
