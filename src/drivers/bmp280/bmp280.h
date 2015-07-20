@@ -85,7 +85,7 @@
 
 /* interface ioctls */
 #define IOCTL_RESET				2
-#define IOCTL_MEASURE			3
+#define IOCTL_CHECKCONFIG			3
 
 namespace bmp280
 {

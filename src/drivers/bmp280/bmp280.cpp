@@ -593,7 +593,7 @@ BMP280::checkconfig()
 	/*
 	 * Send the command to begin measuring.
 	 */
-	ret = _interface->ioctl(IOCTL_MEASURE, addr);
+	ret = _interface->ioctl(IOCTL_CHECKCONFIG, addr);
 	if (OK != ret)
 		perf_count(_comms_errors);
 
