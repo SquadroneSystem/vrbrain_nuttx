@@ -131,7 +131,7 @@ private:
 #if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
 	static const unsigned _max_actuators = 12;
 #endif
-#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00)
+#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00_BMP280)
 	static const unsigned _max_actuators = 12;
 #endif
 #if defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
@@ -231,7 +231,7 @@ const VROUTPUT::GPIOConfig VROUTPUT::_gpio_tab[] = {
 #endif
 #if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
 #endif
-#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00)
+#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00_BMP280)
 #endif
 #if defined(CONFIG_ARCH_BOARD_HBRAIN_V10)
 #endif
@@ -1565,7 +1565,7 @@ vroutput_new_mode(PortMode new_mode)
 		/* select 8-pin PWM mode */
 		servo_mode = VROUTPUT::MODE_12PWM;
 #endif
-#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00)
+#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00_BMP280)
 		/* select 8-pin PWM mode */
 		servo_mode = VROUTPUT::MODE_12PWM;
 #endif
@@ -1907,7 +1907,7 @@ vroutput_main(int argc, char *argv[])
 #if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
 	fprintf(stderr, "  mode_gpio, mode_pwm, test\n");
 #endif
-#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00)
+#if defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00_BMP280)
 	fprintf(stderr, "  mode_gpio, mode_pwm, test\n");
 #endif
 #if defined(CONFIG_ARCH_BOARD_HBRAIN_V10)

@@ -443,6 +443,10 @@ adc_main(int argc, char *argv[])
 		/* XXX this hardcodes the default channel set for HBRAINv00 - should be configurable */
 		g_adc = new ADC((1 << 10) | (1 << 11) | (1 << 12) | (1 << 13));
 #endif
+#ifdef CONFIG_ARCH_BOARD_HBRAIN_V00_BMP280
+		/* XXX this hardcodes the default channel set for HBRAINv00 - should be configurable */
+		g_adc = new ADC((1 << 10) | (1 << 11) | (1 << 12) | (1 << 13));
+#endif
 #ifdef CONFIG_ARCH_BOARD_HBRAIN_V10
 		/* XXX this hardcodes the default channel set for HBRAINv10 - should be configurable */
 		g_adc = new ADC((1 << 10) | (1 << 11) | (1 << 12) | (1 << 13));
