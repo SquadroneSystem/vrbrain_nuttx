@@ -171,7 +171,7 @@ const struct {
 	{"buzzer",		test_buzzer,	OPT_NOJIGTEST | OPT_NOALLTEST},
 	{"uart_bridge",	test_uart_bridge,	OPT_NOJIGTEST | OPT_NOALLTEST},
 
-#elif defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00_BMP280)
+#elif defined(CONFIG_ARCH_BOARD_HBRAIN_V00) || defined(CONFIG_ARCH_BOARD_HBRAIN_V00_BMP280) || defined(CONFIG_ARCH_BOARD_HBRAIN_V20)
 
 	{"led",			test_led,	0},
 	{"sensors",		test_sensors,	0},

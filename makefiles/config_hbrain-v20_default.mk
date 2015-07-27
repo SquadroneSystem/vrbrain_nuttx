@@ -1,13 +1,12 @@
 #
-# Makefile for the HEXO+ BRAIN 1.0 APM configuration
+# Makefile for the HEXO+ BRAIN 1.0 default configuration
 #
 
 #
 # Use the configuration's ROMFS.
 #
-ROMFS_ROOT	 = $(SKETCHBOOK)/mk/VRBRAIN/ROMFS_HBRAIN00BMP280_APM
+ROMFS_ROOT	 = $(VRX_BASE)/ROMFS/vrbrain_common
 
-MODULES		+= $(APM_MODULE_DIR)
 
 #
 # Board support modules
@@ -20,7 +19,7 @@ MODULES		+= drivers/led
 MODULES		+= drivers/buzzer
 
 
-MODULES		+= drivers/boards/hbrain-v00-bmp280
+MODULES		+= drivers/boards/hbrain-v20
 MODULES		+= drivers/vrbrain/vroutput
 MODULES		+= drivers/vrbrain/vrinput/controls
 MODULES		+= drivers/vrbrain/vrinput
