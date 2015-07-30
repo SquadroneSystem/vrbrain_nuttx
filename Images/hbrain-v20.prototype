@@ -1,10 +1,10 @@
 {
-    "board_id": 5210, 
-    "magic": "HBRAINv20", 
+    "board_id": 1352, 
+    "magic": "HBRAINv20 ", 
     "description": "Firmware for the HEXO+  board", 
     "image": "", 
     "build_time": 0, 
-    "summary": "HBRAIN",
+    "summary": "HBRAINv20",
     "version": "1.0",
     "image_size": 0,
     "git_identity": "",
