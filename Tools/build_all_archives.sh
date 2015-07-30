@@ -3,6 +3,7 @@
 make archives BOARDS=hbrain-v00
 make archives BOARDS=hbrain-v00-bmp280
 make archives BOARDS=hbrain-v10
+make archives BOARDS=hbrain-v20
 make archives BOARDS=vrbrain-v45
 
 make archives BOARDS=vrbrain-v51
