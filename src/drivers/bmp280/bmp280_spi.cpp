@@ -314,9 +314,10 @@ BMP280_SPI::_checkConfig(unsigned addr)
 		config_reg_value = CONFIG_REG[1];
 	}
 	// for plug and play
-	if ((config_reg_value == 0x00) || (ctrl_meas_value == 0x00))
+	if (((config_reg_value == 0x00) || (ctrl_meas_value == 0x00)) ||
+	    ((config_reg_value == 0xFF) && (ctrl_meas_value == 0xFF)))
 	{
-		ret = _reset();
+		ret = -1;
 	}
 
 
