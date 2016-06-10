@@ -68,7 +68,7 @@
 
 #include <uORB/uORB.h>
 #include <uORB/topics/subsystem_info.h>
-//#include <uORB/topics/optical_flow.h>
+#include <uORB/topics/optical_flow.h>
 
 #include <board_config.h>
 
@@ -80,7 +80,7 @@
 /* PX4FLOW Registers addresses */
 #define PX4FLOW_REG	0x00		/* Measure Register */
 
-#define PX4FLOW_CONVERSION_INTERVAL 8000 /* 8ms 125Hz
+#define PX4FLOW_CONVERSION_INTERVAL 8000 /* 8ms 125Hz*/
 
 /* oddly, ERROR is not defined for c++ */
 #ifdef ERROR
@@ -92,23 +92,11 @@ static const int ERROR = -1;
 # error This requires CONFIG_SCHED_WORKQUEUE.
 #endif
 
-//struct i2c_frame
-//{
-//    uint16_t frame_count;
-//    int16_t pixel_flow_x_sum;
-//    int16_t pixel_flow_y_sum;
-//    int16_t flow_comp_m_x;
-//    int16_t flow_comp_m_y;
-//    int16_t qual;
-//    int16_t gyro_x_rate;
-//    int16_t gyro_y_rate;
-//    int16_t gyro_z_rate;
-//    uint8_t gyro_range;
-//    uint8_t sonar_timestamp;
-//    int16_t ground_distance;
-//};
-//
-//struct i2c_frame f;
+#include "i2c_frame.h"
+
+struct i2c_frame f;
+
+struct i2c_integral_frame f_integral;
 
 class PX4FLOW : public device::I2C
 {
@@ -222,17 +210,21 @@ PX4FLOW::init()
 	int ret = ERROR;
 
 	/* do I2C init (and probe) first */
-	if (I2C::init() != OK)
+	if (I2C::init() != OK){
+		errx(1, "I2C init failed");
 		goto out;
+	}
 
 	/* allocate basic report buffers */
-	_reports = new RingBuffer(2, sizeof(px4flow_report));
+	_reports = new RingBuffer(2, sizeof(optical_flow_s));
 
-	if (_reports == nullptr)
+	if (_reports == nullptr){
+		errx(1, "Nothing receved");
 		goto out;
+	}
 
 	/* get a publish handle on the px4flow topic */
-	struct px4flow_report zero_report;
+	struct optical_flow_s zero_report;
 	memset(&zero_report, 0, sizeof(zero_report));
 	_px4flow_topic = orb_advertise(ORB_ID(optical_flow), &zero_report);
 
@@ -350,8 +342,8 @@ PX4FLOW::ioctl(struct file *filp, int cmd, unsigned long arg)
 ssize_t
 PX4FLOW::read(struct file *filp, char *buffer, size_t buflen)
 {
-	unsigned count = buflen / sizeof(struct px4flow_report);
-	struct px4flow_report *rbuf = reinterpret_cast<struct px4flow_report *>(buffer);
+	unsigned count = buflen / sizeof(struct optical_flow_s);
+	struct optical_flow_s *rbuf = reinterpret_cast<struct optical_flow_s *>(buffer);
 	int ret = 0;
 
 	/* buffer must be large enough */
@@ -432,49 +424,64 @@ PX4FLOW::measure()
 int
 PX4FLOW::collect()
 {
-	int	ret = -EIO;
-	
+	int ret = -EIO;
+
 	/* read from the sensor */
-	uint8_t val[22] = {0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0};
-	
+	uint8_t val[I2C_FRAME_SIZE + I2C_INTEGRAL_FRAME_SIZE] = { 0 };
+
 	perf_begin(_sample_perf);
-	
-	ret = transfer(nullptr, 0, &val[0], 22);
-	
-	if (ret < 0)
-	{
-		log("error reading from sensor: %d", ret);
+
+	if (PX4FLOW_REG == 0x00) {
+		ret = transfer(nullptr, 0, &val[0], I2C_FRAME_SIZE + I2C_INTEGRAL_FRAME_SIZE);
+	}
+
+	if (PX4FLOW_REG == 0x16) {
+		ret = transfer(nullptr, 0, &val[0], I2C_INTEGRAL_FRAME_SIZE);
+	}
+
+	/* CCO if (ret < 0) {
+		DEVICE_DEBUG("error reading from sensor: %d", ret);
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
 		return ret;
+	}*/
+
+	if (PX4FLOW_REG == 0) {
+		memcpy(&f, val, I2C_FRAME_SIZE);
+		memcpy(&f_integral, &(val[I2C_FRAME_SIZE]), I2C_INTEGRAL_FRAME_SIZE);
 	}
-	
-//	f.frame_count = val[1] << 8 | val[0];
-//	f.pixel_flow_x_sum= val[3] << 8 | val[2];
-//	f.pixel_flow_y_sum= val[5] << 8 | val[4];
-//	f.flow_comp_m_x= val[7] << 8 | val[6];
-//	f.flow_comp_m_y= val[9] << 8 | val[8];
-//	f.qual= val[11] << 8 | val[10];
-//	f.gyro_x_rate= val[13] << 8 | val[12];
-//	f.gyro_y_rate= val[15] << 8 | val[14];
-//	f.gyro_z_rate= val[17] << 8 | val[16];
-//	f.gyro_range= val[18];
-//	f.sonar_timestamp= val[19];
-//	f.ground_distance= val[21] << 8 | val[20];
 
-	int16_t flowcx = val[7] << 8 | val[6];
-	int16_t flowcy = val[9] << 8 | val[8];
-	int16_t gdist = val[21] << 8 | val[20];
+	if (PX4FLOW_REG == 0x16) {
+		memcpy(&f_integral, val, I2C_INTEGRAL_FRAME_SIZE);
+	}
 
-	struct px4flow_report report;
-	report.flow_comp_x_m = float(flowcx)/1000.0f;
-	report.flow_comp_y_m = float(flowcy)/1000.0f;
-	report.flow_raw_x= val[3] << 8 | val[2];
-	report.flow_raw_y= val[5] << 8 | val[4];
-	report.ground_distance_m =float(gdist)/1000.0f;
-	report.quality=  val[10];
-	report.sensor_id = 0;
+struct optical_flow_s report;
+
 	report.timestamp = hrt_absolute_time();
+
+	report.pixel_flow_x_integral = static_cast<float>(f_integral.pixel_flow_x_integral) / 10000.0f;//convert to radians
+
+	report.pixel_flow_y_integral = static_cast<float>(f_integral.pixel_flow_y_integral) / 10000.0f;//convert to radians
+
+	report.frame_count_since_last_readout = f_integral.frame_count_since_last_readout;
+
+	report.ground_distance_m = static_cast<float>(f_integral.ground_distance) / 1000.0f;//convert to meters
+
+	report.quality = f_integral.qual; //0:bad ; 255 max quality
+
+	report.gyro_x_rate_integral = static_cast<float>(f_integral.gyro_x_rate_integral) / 10000.0f; //convert to radians
+
+	report.gyro_y_rate_integral = static_cast<float>(f_integral.gyro_y_rate_integral) / 10000.0f; //convert to radians
+
+	report.gyro_z_rate_integral = static_cast<float>(f_integral.gyro_z_rate_integral) / 10000.0f; //convert to radians
+
+	report.integration_timespan = f_integral.integration_timespan; //microseconds
+
+	report.time_since_last_sonar_update = f_integral.sonar_timestamp;//microseconds
+
+	report.gyro_temperature = f_integral.gyro_temperature;//Temperature * 100 in centi-degrees Celsius
+
+	report.sensor_id = 0;
 
 
 	/* publish it */
@@ -678,7 +685,7 @@ void stop()
 void
 test()
 {
-	struct px4flow_report report;
+	struct optical_flow_s report;
 	ssize_t sz;
 	int ret;
 
@@ -694,9 +701,9 @@ test()
 	//	err(1, "immediate read failed");
 
 	warnx("single read");
-	warnx("flowx: %0.2f m/s", (double)report.flow_comp_x_m);
-	warnx("flowy: %0.2f m/s", (double)report.flow_comp_y_m);
-	warnx("time:        %lld", report.timestamp);
+	warnx("pixel_flow_x_integral: %i", f_integral.pixel_flow_x_integral);
+	warnx("pixel_flow_y_integral: %i", f_integral.pixel_flow_y_integral);
+	warnx("framecount_integral: %u", f_integral.frame_count_since_last_readout);
 
 
 	/* start the sensor polling at 2Hz */
@@ -722,10 +729,9 @@ test()
 			err(1, "periodic read failed");
 
 		warnx("periodic read %u", i);
-		warnx("flowx: %0.2f m/s", (double)report.flow_comp_x_m);
-		warnx("flowy: %0.2f m/s", (double)report.flow_comp_y_m);
-		warnx("time:        %lld", report.timestamp);
-
+		warnx("pixel_flow_x_integral: %i", f_integral.pixel_flow_x_integral);
+		warnx("pixel_flow_y_integral: %i", f_integral.pixel_flow_y_integral);
+		warnx("framecount_integral: %u", f_integral.frame_count_since_last_readout);
 
 	}
 

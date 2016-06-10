@@ -67,6 +67,7 @@ __BEGIN_DECLS
 #define APM_BUILD_ArduPlane      3
 #define APM_BUILD_AntennaTracker 4
 
+
 #ifndef APM_BUILD_DIRECTORY
 #define APM_BUILD_DIRECTORY		APM_BUILD_ArduCopter
 #endif
@@ -165,8 +166,9 @@ __BEGIN_DECLS
 /*
  * I2C busses
  */
-#define I2C_BUS_EXT_HMC5883		0
+#define I2C_BUS_EXT_HMC5883		1
 #define I2C_BUS_EEPROM			2
+#define PX4_I2C_BUS_EXPANSION	1
 
 /*
  * Devices on the onboard bus.
