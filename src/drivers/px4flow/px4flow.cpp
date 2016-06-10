@@ -543,49 +543,20 @@ PX4FLOW::cycle_trampoline(void *arg)
 void
 PX4FLOW::cycle()
 {
-	/* collection phase? */
-	if (_collect_phase) {
-
-		/* perform collection */
-		if (OK != collect()) {
-			log("collection error");
-			/* restart the measurement state machine */
-			start();
-			return;
-		}
-
-		/* next phase is measurement */
-		_collect_phase = false;
-
-		/*
-		 * Is there a collect->measure gap?
-		 */
-		if (_measure_ticks > USEC2TICK(PX4FLOW_CONVERSION_INTERVAL)) {
-
-			/* schedule a fresh cycle call when we are ready to measure again */
-			work_queue(HPWORK,
-				   &_work,
-				   (worker_t)&PX4FLOW::cycle_trampoline,
-				   this,
-				   _measure_ticks - USEC2TICK(PX4FLOW_CONVERSION_INTERVAL));
-
-			return;
-		}
+	if (OK != measure()) {
+		//DEVICE_DEBUG("measure error");
 	}
 
-	/* measurement phase */
-	if (OK != measure())
-		log("measure error");
+	/* perform collection */
+	if (OK != collect()) {
+		/*DEVICE_DEBUG("collection error");*/
+		/* restart the measurement state machine */
+		start();
+		return;
+	}
 
-	/* next phase is collection */
-	_collect_phase = true;
-
-	/* schedule a fresh cycle call when the measurement is done */
-	work_queue(HPWORK,
-		   &_work,
-		   (worker_t)&PX4FLOW::cycle_trampoline,
-		   this,
-		   USEC2TICK(PX4FLOW_CONVERSION_INTERVAL));
+	work_queue(HPWORK, &_work, (worker_t)&PX4FLOW::cycle_trampoline, this,
+		   _measure_ticks);
 }
 
 void
@@ -611,8 +582,11 @@ namespace px4flow
 const int ERROR = -1;
 
 PX4FLOW	*g_dev;
+bool start_in_progress = false;
 
-void	start();
+const int START_RETRY_COUNT = 5;
+const int START_RETRY_TIMEOUT = 1000;
+int	start();
 void	stop();
 void	test();
 void	reset();
@@ -621,43 +595,108 @@ void	info();
 /**
  * Start the driver.
  */
-void
+int
 start()
 {
 	int fd;
+	/* entry check: */
+	if (start_in_progress) {
+		warnx("start already in progress");
+		return 1;
+	}
 
-	if (g_dev != nullptr)
-		errx(1, "already started");
+	start_in_progress = true;
 
-	/* create the driver */
-	g_dev = new PX4FLOW(PX4FLOW_BUS);
+	if (g_dev != nullptr) {
+		start_in_progress = false;
+		warnx("already started");
+		return 1;
+	}
 
-	if (g_dev == nullptr)
-		goto fail;
+	warnx("scanning I2C buses for device..");
 
-	if (OK != g_dev->init())
-		goto fail;
+	int retry_nr = 0;
 
-	/* set the poll rate to default, starts automatic data collection */
-	fd = open(PX4FLOW_DEVICE_PATH, O_RDONLY);
+	while (1) {
+		const int busses_to_try[] = {
+			PX4_I2C_BUS_EXPANSION,
+#ifdef PX4_I2C_BUS_ESC
+			PX4_I2C_BUS_ESC,
+#endif
+#ifdef PX4_I2C_BUS_ONBOARD
+			PX4_I2C_BUS_ONBOARD,
+#endif
+			-1
+		};
 
-	if (fd < 0)
-		goto fail;
+		const int *cur_bus = busses_to_try;
 
-	if (ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_MAX) < 0)
-		goto fail;
+		while (*cur_bus != -1) {
+			/* create the driver */
+			/* warnx("trying bus %d", *cur_bus); */
+			g_dev = new PX4FLOW(*cur_bus);
 
-	exit(0);
+			if (g_dev == nullptr) {
+				/* this is a fatal error */
+				break;
+			}
 
-fail:
+			/* init the driver: */
+			if (OK == g_dev->init()) {
+				/* success! */
+				break;
+			}
 
-	if (g_dev != nullptr) 
-	{
+			/* destroy it again because it failed. */
+			delete g_dev;
+			g_dev = nullptr;
+
+			/* try next! */
+			cur_bus++;
+		}
+
+		/* check whether we found it: */
+		if (*cur_bus != -1) {
+
+			/* check for failure: */
+			if (g_dev == nullptr) {
+				break;
+			}
+
+			/* set the poll rate to default, starts automatic data collection */
+			fd = open(PX4FLOW_DEVICE_PATH, O_RDONLY);
+
+			if (fd < 0) {
+				break;
+			}
+
+			if (ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_MAX) < 0) {
+				break;
+			}
+
+			/* success! */
+			start_in_progress = false;
+			return 0;
+		}
+
+		if (retry_nr < START_RETRY_COUNT) {
+			/* lets not be too verbose */
+			// warnx("PX4FLOW not found on I2C busses. Retrying in %d ms. Giving up in %d retries.", START_RETRY_TIMEOUT, START_RETRY_COUNT - retry_nr);
+			usleep(START_RETRY_TIMEOUT * 1000);
+			retry_nr++;
+
+		} else {
+			break;
+		}
+	}
+
+	if (g_dev != nullptr) {
 		delete g_dev;
 		g_dev = nullptr;
 	}
 
-	errx(1, "driver start failed");
+	start_in_progress = false;
+	return 1;
 }
 
 /**
@@ -782,7 +821,7 @@ px4flow_main(int argc, char *argv[])
 	 * Start/load the driver.
 	 */
 	if (!strcmp(argv[1], "start"))
-		px4flow::start();
+		return px4flow::start();
 	
 	 /*
 	  * Stop the driver
