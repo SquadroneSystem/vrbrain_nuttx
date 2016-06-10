@@ -55,15 +55,19 @@
  */
 struct optical_flow_s {
 
-	uint64_t timestamp;		/**< in microseconds since system start          */
-
-	int16_t flow_raw_x;		/**< flow in pixels in X direction, not rotation-compensated */
-	int16_t flow_raw_y;		/**< flow in pixels in Y direction, not rotation-compensated */
-	float flow_comp_x_m;		/**< speed over ground in meters, rotation-compensated */
-	float flow_comp_y_m;		/**< speed over ground in meters, rotation-compensated */
-	float ground_distance_m;	/**< Altitude / distance to ground in meters */
-	uint8_t	quality;		/**< Quality of the measurement, 0: bad quality, 255: maximum quality */
-	uint8_t sensor_id;		/**< id of the sensor emitting the flow value */
+	uint64_t timestamp;                     // in microseconds since system start
+	    uint8_t sensor_id;                      // id of the sensor emitting the flow value
+	    float pixel_flow_x_integral;            // accumulated optical flow in radians around x axis
+	    float pixel_flow_y_integral;            // accumulated optical flow in radians around y axis
+	    float gyro_x_rate_integral;             // accumulated gyro value in radians around x axis
+	    float gyro_y_rate_integral;             // accumulated gyro value in radians around y axis
+	    float gyro_z_rate_integral;             // accumulated gyro value in radians around z axis
+	    float ground_distance_m;                // Altitude / distance to ground in meters
+	    uint32_t integration_timespan;          // accumulation time span in microseconds
+	    uint32_t time_since_last_sonar_update;  // time since last sonar update in microseconds
+	    uint16_t frame_count_since_last_readout;//number of accumulated frames in time span
+	    int16_t gyro_temperature;               // Temperature * 100 in centi-degrees celsius
+	    uint8_t quality;                        // Average of quality of accumulated frames, 0: bad quality, 255: maximum quality
 
 };
 
