@@ -78,9 +78,9 @@
 //range 0x42 - 0x49
 
 /* PX4FLOW Registers addresses */
-#define PX4FLOW_REG	0x00		/* Measure Register */
+#define PX4FLOW_REG	0x16		/* Measure Register */
 
-#define PX4FLOW_CONVERSION_INTERVAL 8000 /* 8ms 125Hz*/
+#define PX4FLOW_CONVERSION_INTERVAL	100000	///< in microseconds! 20000 = 50 Hz 100000 = 10Hz
 
 /* oddly, ERROR is not defined for c++ */
 #ifdef ERROR
