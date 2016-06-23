@@ -209,6 +209,13 @@ PX4FLOW::init()
 {
 	int ret = ERROR;
 
+	uint64_t timetowait = hrt_absolute_time();
+	while (hrt_absolute_time() <= timetowait + 3000000)// wait 3s for opticalflow sensors start
+	{
+
+	}
+
+
 	/* do I2C init (and probe) first */
 	if (I2C::init() != OK){
 		errx(1, "I2C init failed");
